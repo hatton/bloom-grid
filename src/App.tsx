@@ -1,11 +1,24 @@
-import React from "react";
-import * as GridUtils from "./grid-utils";
+import React, { useState, useEffect } from "react";
+import * as GridUtils from "./grid-operations";
 
 const App: React.FC = () => {
+  const [canUndo, setCanUndo] = useState(false);
+
+  // Update undo state after any operation
+  const updateUndoState = () => {
+    setCanUndo(GridUtils.canUndo());
+  };
+
+  useEffect(() => {
+    // Check initial undo state
+    updateUndoState();
+  }, []);
+
   const handleAddRow = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.addRow(grid);
+      updateUndoState();
     } else {
       console.warn("Target grid not found for adding a row.");
     }
@@ -15,6 +28,7 @@ const App: React.FC = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.removeLastRow(grid);
+      updateUndoState();
     } else {
       console.warn("Target grid not found for removing a row.");
     }
@@ -24,11 +38,25 @@ const App: React.FC = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.addColumn(grid);
+      updateUndoState();
     } else {
       console.warn("Target grid not found for adding a column.");
     }
   };
 
+  const handleUndo = () => {
+    const grid = GridUtils.getTargetGrid();
+    if (grid) {
+      const success = GridUtils.undoLastOperation(grid);
+      if (success) {
+        updateUndoState();
+      } else {
+        console.warn("No operations to undo.");
+      }
+    } else {
+      console.warn("Target grid not found for undo operation.");
+    }
+  };
   return (
     <div className="p-6 bg-gray-50 rounded-lg shadow">
       <div className="flex flex-wrap space-x-0 sm:space-x-4 space-y-2 sm:space-y-0 justify-center">
@@ -52,6 +80,18 @@ const App: React.FC = () => {
           aria-label="Add a new column to the right of the main grid"
         >
           Add Column to Grid
+        </button>
+        <button
+          onClick={handleUndo}
+          disabled={!canUndo}
+          className={`w-full sm:w-auto font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
+            canUndo
+              ? "bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-400 focus:ring-opacity-50"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+          aria-label="Undo the last grid operation"
+        >
+          Undo
         </button>
       </div>
     </div>
