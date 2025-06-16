@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as GridUtils from "./grid-operations";
+import { gridUI } from "./grid-ui";
 
 const App: React.FC = () => {
   const [canUndo, setCanUndo] = useState(false);
@@ -10,15 +11,42 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // Check initial undo state
     updateUndoState();
+
+    const grid = GridUtils.getTargetGrid();
+    if (grid) {
+      gridUI.attach(grid);
+    }
+
+    // Listen for history updates to refresh undo state
+    const handleGridHistoryUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log(
+        "App: gridHistoryUpdated event received. Detail:",
+        customEvent.detail
+      );
+      updateUndoState();
+    };
+
+    document.addEventListener("gridHistoryUpdated", handleGridHistoryUpdated);
+
+    // Cleanup on unmount
+    return () => {
+      if (grid) {
+        gridUI.detach(grid);
+      }
+      document.removeEventListener(
+        "gridHistoryUpdated",
+        handleGridHistoryUpdated
+      );
+    };
   }, []);
 
   const handleAddRow = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.addRow(grid);
-      updateUndoState();
+      // updateUndoState(); // No longer needed here, gridHistoryUpdated handles it
     } else {
       console.warn("Target grid not found for adding a row.");
     }
@@ -28,7 +56,7 @@ const App: React.FC = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.removeLastRow(grid);
-      updateUndoState();
+      // updateUndoState(); // No longer needed here, gridHistoryUpdated handles it
     } else {
       console.warn("Target grid not found for removing a row.");
     }
@@ -38,7 +66,7 @@ const App: React.FC = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       GridUtils.addColumn(grid);
-      updateUndoState();
+      // updateUndoState(); // No longer needed here, gridHistoryUpdated handles it
     } else {
       console.warn("Target grid not found for adding a column.");
     }
@@ -48,10 +76,13 @@ const App: React.FC = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
       const success = GridUtils.undoLastOperation(grid);
-      if (success) {
-        updateUndoState();
-      } else {
-        console.warn("No operations to undo.");
+      // if (success) {
+      //   updateUndoState(); // No longer needed here, gridHistoryUpdated handles it
+      // } else {
+      //   console.warn("No operations to undo or undo failed.");
+      // }
+      if (!success) {
+        console.warn("No operations to undo or undo failed.");
       }
     } else {
       console.warn("Target grid not found for undo operation.");

@@ -7,67 +7,147 @@ export const getTargetGrid = (): HTMLElement | null => {
 export const addRow = (grid: HTMLElement): void => {
   if (!grid) return;
 
-  // Save current state before making changes
-  gridHistoryManager.saveState(grid, "Add Row");
+  const description = "Add Row";
+  const performOperation = () => {
+    const columnWidthsAttr = grid.getAttribute("data-column-widths");
+    const numColumns = columnWidthsAttr
+      ? columnWidthsAttr.split(",").length
+      : 1;
 
-  const columnWidthsAttr = grid.getAttribute("data-column-widths");
-  const numColumns = columnWidthsAttr ? columnWidthsAttr.split(",").length : 1;
+    const newRow = document.createElement("div");
+    newRow.className = "row";
+    // It's good practice to assign a unique ID if rows can be reordered or specifically targeted for undo
+    // newRow.id = `row-${Date.now()}`;
 
-  const newRow = document.createElement("div");
-  newRow.className = "row";
-  // Default data-row-height is 'fit' which is handled by existing script in index.html
+    for (let i = 0; i < numColumns; i++) {
+      const newCell = document.createElement("div");
+      newCell.className = "cell";
+      newCell.textContent = `New Row Cell ${i + 1}`;
+      newRow.appendChild(newCell);
+    }
+    grid.appendChild(newRow);
+  };
 
-  for (let i = 0; i < numColumns; i++) {
-    const newCell = document.createElement("div");
-    newCell.className = "cell";
-    newCell.textContent = `New Row Cell ${i + 1}`;
-    // Cells will inherit styling and won't span by default
-    newRow.appendChild(newCell);
-  }
+  const undoOperation = (
+    gridElement: HTMLElement,
+    prevState: import("./grid-history").GridState
+  ) => {
+    // Restore the entire grid state from before the row was added.
+    // This is simpler than trying to find and remove the specific row if IDs aren't stable.
+    gridElement.innerHTML = prevState.innerHTML;
+    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
+    const rows = gridElement.querySelectorAll(".row");
+    rows.forEach((row, index) => {
+      const height = prevState.rowHeights[index.toString()];
+      if (height) {
+        row.setAttribute("data-row-height", height);
+      } else {
+        row.removeAttribute("data-row-height");
+      }
+    });
+    Object.keys(prevState.gridStyles).forEach((key) => {
+      (gridElement.style as any)[key] = prevState.gridStyles[key];
+    });
+  };
 
-  grid.appendChild(newRow);
-  // The existing MutationObserver in index.html should automatically update grid-template-rows
+  gridHistoryManager.addHistoryEntry(
+    grid,
+    description,
+    performOperation,
+    undoOperation
+  );
 };
 
 export const removeLastRow = (grid: HTMLElement): void => {
   if (!grid) return;
 
-  const rows = grid.querySelectorAll("#main-grid > .row"); // Ensure we only get direct children rows of main-grid
-  if (rows.length > 0) {
-    // Save current state before making changes
-    gridHistoryManager.saveState(grid, "Remove Row");
-
-    grid.removeChild(rows[rows.length - 1]);
-    // The existing MutationObserver in index.html should automatically update grid-template-rows
-  } else {
+  const rows = grid.querySelectorAll("#main-grid > .row");
+  if (rows.length === 0) {
     console.info("No rows to remove from the target grid.");
+    return;
   }
+
+  const description = "Remove Last Row";
+  const performOperation = () => {
+    grid.removeChild(rows[rows.length - 1]);
+  };
+
+  const undoOperation = (
+    gridElement: HTMLElement,
+    prevState: import("./grid-history").GridState
+  ) => {
+    // Restore the entire grid state from before the row was removed.
+    gridElement.innerHTML = prevState.innerHTML;
+    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
+    const newRows = gridElement.querySelectorAll(".row");
+    newRows.forEach((row, index) => {
+      const height = prevState.rowHeights[index.toString()];
+      if (height) {
+        row.setAttribute("data-row-height", height);
+      } else {
+        row.removeAttribute("data-row-height");
+      }
+    });
+    Object.keys(prevState.gridStyles).forEach((key) => {
+      (gridElement.style as any)[key] = prevState.gridStyles[key];
+    });
+  };
+
+  gridHistoryManager.addHistoryEntry(
+    grid,
+    description,
+    performOperation,
+    undoOperation
+  );
 };
 
 export const addColumn = (grid: HTMLElement): void => {
   if (!grid) return;
 
-  // Save current state before making changes
-  gridHistoryManager.saveState(grid, "Add Column");
+  const description = "Add Column";
+  const performOperation = () => {
+    const currentColumnWidths = grid.getAttribute("data-column-widths") || "";
+    const newColumnWidths = currentColumnWidths
+      ? `${currentColumnWidths},fit`
+      : "fit";
+    grid.setAttribute("data-column-widths", newColumnWidths);
 
-  const currentColumnWidths = grid.getAttribute("data-column-widths") || "";
-  // Add a new column with 'fit' width. Other options: 'fill', '1fr', '100px', etc.
-  const newColumnWidths = currentColumnWidths
-    ? `${currentColumnWidths},fit`
-    : "fit";
-  grid.setAttribute("data-column-widths", newColumnWidths);
+    const rows = grid.querySelectorAll(".row");
+    rows.forEach((row) => {
+      const newCell = document.createElement("div");
+      newCell.className = "cell";
+      newCell.textContent = "New Col Cell";
+      row.appendChild(newCell);
+    });
+  };
 
-  // Add a new cell to each existing row
-  const rows = grid.querySelectorAll("#main-grid > .row"); // Ensure we only get direct children rows
-  rows.forEach((row) => {
-    const newCell = document.createElement("div");
-    newCell.className = "cell";
-    newCell.textContent = "New Col Cell";
-    // Cell will inherit styling and won't span by default
-    row.appendChild(newCell);
-  });
-  // The MutationObserver will call applyColumns due to 'data-column-widths' change.
-  // DOM changes for cells within rows are handled by standard browser rendering.
+  const undoOperation = (
+    gridElement: HTMLElement,
+    prevState: import("./grid-history").GridState
+  ) => {
+    // Restore the entire grid state from before the column was added.
+    gridElement.innerHTML = prevState.innerHTML;
+    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
+    const newRows = gridElement.querySelectorAll(".row");
+    newRows.forEach((row, index) => {
+      const height = prevState.rowHeights[index.toString()];
+      if (height) {
+        row.setAttribute("data-row-height", height);
+      } else {
+        row.removeAttribute("data-row-height");
+      }
+    });
+    Object.keys(prevState.gridStyles).forEach((key) => {
+      (gridElement.style as any)[key] = prevState.gridStyles[key];
+    });
+  };
+
+  gridHistoryManager.addHistoryEntry(
+    grid,
+    description,
+    performOperation,
+    undoOperation
+  );
 };
 
 export const undoLastOperation = (grid: HTMLElement): boolean => {
