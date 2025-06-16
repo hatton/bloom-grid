@@ -2,11 +2,182 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bloom Grid Example</title>
+    <title>
+      CSS‑Grid Requirements Demo – three‑tier styling (defaults → grid → cell)
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* ---------- Global defaults (tier‑1) ---------- */
+      :root {
+        /* default look for every <div class="cell"> unless overridden */
+        --cell-bg: #fff; /* white background */
+        --cell-padding: 8px 10px; /* roomy text padding */
+        --cell-border-width: 1px; /* 1 px hairlines */
+        --cell-border-color: #444; /* dark grey stroke */
+      }
+
+      /* ---------------- Base page styling ---------------- */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+      }
+
+      /* ---------- Core layout utilities (value‑agnostic) ---------- */
+      .grid {
+        display: grid;
+        gap: var(--gap, 0);
+        background: var(--bg, transparent);
+        border: var(--border-width, 0) solid var(--border-color, currentColor);
+        /* grid-template-columns and -rows injected by JS */
+      }
+
+      .row {
+        display: contents;
+      }
+
+      .cell {
+        /* Tier‑2: inherit (or override) from the parent .grid */
+        background: var(--cell-bg);
+        padding: var(--cell-padding);
+        border: var(--cell-border-width) solid var(--cell-border-color);
+
+        /* Tier‑3: this individual cell can override via inline vars */
+        background: var(--this-bg, var(--cell-bg));
+        padding: var(--this-padding, var(--cell-padding));
+        border-width: var(--this-border-width, var(--cell-border-width));
+        border-color: var(--this-border-color, var(--cell-border-color));
+
+        grid-column: span var(--span-x, 1);
+        grid-row: span var(--span-y, 1);
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "react/": "https://esm.sh/react@^19.1.0/",
+          "react": "https://esm.sh/react@^19.1.0",
+          "react-dom/": "https://esm.sh/react-dom@^19.1.0/"
+        }
+      }
+    </script>
+    <script type="module" src="/src/grid-observer.ts"></script>
   </head>
   <body>
-    <h1>Bloom Grid Example</h1>
-    <div id="example-table"></div>
+    <!-- ================ OUTER GRID ================= -->
+    <div
+      id="main-grid"
+      class="grid"
+      data-column-widths="fit,25%,fill"
+      style="
+        --bg: #444; /* dark backdrop for contrast */
+        --border-color: #444;
+        --border-width: 1px;
+        --gap: 1px;
+        /* Tier‑2: give all outer‑grid cells a light orange bg & tighter padding */
+        --cell-bg: #fffbe6; /* pale yellow */
+        --cell-padding: 6px 8px; /* slightly tighter */
+        --cell-border-color: #444;
+      "
+    >
+      <!-- ---------- Row 1 (default height = fit) ---------- -->
+      <div class="row">
+        <div class="cell">Column modes: fill / manual 25 % / fit</div>
+        <div class="cell">Manual‑width column (25 %)</div>
+        <div class="cell" style="--span-x: 2">This cell spans 2 columns →</div>
+      </div>
+
+      <!-- ---------- Row 2 (explicit 4rem height) ---------- -->
+      <div class="row" data-row-height="4rem">
+        <div class="cell">Row 2 (4 rem tall), Col 1</div>
+        <div class="cell">Plain cell</div>
+        <!-- Cell spanning downward that hosts the grey‑lined nested grid (2×2) -->
+        <div class="cell" style="--span-y: 2; --this-padding: 0">
+          <div
+            class="grid"
+            data-column-widths="fill,fill"
+            style="
+              --gap: 1px;
+              --bg: #888; /* grey frame */
+              --border-color: #888;
+              --border-width: 1px;
+              /* nested cells stay white */
+              --cell-bg: #fff; /* Tier‑2 override */
+              --cell-padding: 8px 10px;
+            "
+          >
+            <div class="row">
+              <div class="cell">A</div>
+              <div class="cell">B</div>
+            </div>
+            <div class="row">
+              <div class="cell" style="--span-x: 2">Spanning nested cell</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- Row 3 (fill) ---------- -->
+      <div class="row" data-row-height="fill">
+        <div class="cell">Row 3 fills remaining height</div>
+        <!-- 3 × 2 table‑style nested grid (grey lines) -->
+        <div class="cell" style="--this-padding: 0">
+          <div
+            class="grid"
+            data-column-widths="fit,fit,fill"
+            style="--border-color: #888; --border-width: 1px; --cell-bg: white"
+          >
+            <div class="row">
+              <div class="cell">1,1</div>
+              <div class="cell">1,2</div>
+              <div class="cell">1,3</div>
+            </div>
+            <div class="row">
+              <div class="cell">2,1</div>
+              <div class="cell">2,2</div>
+              <div class="cell">2,3</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 × 2 no‑border nested grid -->
+        <div class="cell" style="--this-padding: 0">
+          <div
+            class="grid"
+            data-column-widths="fill,fill"
+            style="
+              --gap: 0;
+              --bg: transparent;
+              --border-width: 0;
+              --cell-border-width: 0;
+              --cell-bg: #fff;
+            "
+          >
+            <div class="row">
+              <div class="cell">A1</div>
+              <div class="cell">A2</div>
+            </div>
+            <div class="row">
+              <div class="cell">B1</div>
+              <div class="cell">B2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- Row 4 (default fit) ---------- -->
+      <div class="row">
+        <div class="cell" style="--span-x: 3">
+          Final row spanning the full width
+        </div>
+      </div>
+    </div>
+
+    <div id="root" class="mt-8"></div>
+
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
