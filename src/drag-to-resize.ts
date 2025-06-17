@@ -13,7 +13,7 @@ interface DragState {
   rowTopEdge?: number;
 }
 
-export class GridUI {
+export class DragToResize {
   private attachedGrids = new Set<HTMLElement>();
   private dragState: DragState = {
     isDragging: false,
@@ -736,4 +736,4 @@ export class GridUI {
 }
 
 // Export a singleton instance
-export const gridUI = new GridUI();
+export const dragToResize = new DragToResize();

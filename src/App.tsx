@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as GridUtils from "./grid-operations";
-import { gridUI } from "./grid-ui";
+import { dragToResize } from "./drag-to-resize";
 
 const App: React.FC = () => {
   const [canUndo, setCanUndo] = useState(false);
@@ -15,16 +15,11 @@ const App: React.FC = () => {
 
     const grid = GridUtils.getTargetGrid();
     if (grid) {
-      gridUI.attach(grid);
+      dragToResize.attach(grid);
     }
 
     // Listen for history updates to refresh undo state
     const handleGridHistoryUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      // console.log(
-      //   "App: gridHistoryUpdated event received. Detail:",
-      //   customEvent.detail
-      // );
       updateUndoState();
     };
 
@@ -33,7 +28,7 @@ const App: React.FC = () => {
     // Cleanup on unmount
     return () => {
       if (grid) {
-        gridUI.detach(grid);
+        dragToResize.detach(grid);
       }
       document.removeEventListener(
         "gridHistoryUpdated",
