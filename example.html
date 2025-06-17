@@ -36,7 +36,7 @@
         display: grid;
         gap: var(--gap, 0);
         background: var(--bg, transparent);
-        border: var(--border-width, 0) solid var(--border-color, currentColor);
+
         /* grid-template-columns and -rows injected by JS */
       }
 
@@ -88,12 +88,12 @@
           height: 100%;
           --bg: #ffffff; /* if we see this, it means our cell counts are off */
           --border-color: red; /* no border on the main grid */
-          --border-width: 0px; /* no border on the main grid */
+
           --gap: 1px;
           /* Tier‑2: give all outer‑grid cells a light orange bg & tighter padding */
           --cell-bg: transparent;
           --cell-padding: 6px 8px; /* slightly tighter */
-          --cell-border-color: #ecf0f6;
+          /*--cell-border-color: #ecf0f6;*/
         "
       >
         <div class="row">
@@ -118,15 +118,7 @@
             <div
               class="grid"
               data-column-widths="fill,fill"
-              style="
-                --gap: 1px;
-                --bg: #888; /* grey frame */
-                --border-color: #888;
-                --border-width: 1px;
-                /* nested cells stay white */
-                --cell-bg: #fff; /* Tier‑2 override */
-                --cell-padding: 8px 10px;
-              "
+              style="--border-color: green; --cell-border-width: 1px"
             >
               <div class="row">
                 <div class="cell"><div contenteditable="true">A</div></div>
@@ -148,8 +140,8 @@
               class="grid"
               data-column-widths="fit,fit,fit"
               style="
-                --border-width: 1px;
                 --cell-border-color: black;
+                --cell-border-width: 1px;
                 margin-left: auto;
                 margin-right: auto;
                 width: fit-content;

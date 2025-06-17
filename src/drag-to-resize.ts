@@ -334,8 +334,8 @@ export class DragToResize {
     const rect = target.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    console.info(`getResizeInfo: target=${this.tagInfo(target)}`);
-    console.info(`boudingClientRect:${JSON.stringify(rect)} x:${x}, y:${y}`);
+    // console.info(`getResizeInfo: target=${this.tagInfo(target)}`);
+    // console.info(`boudingClientRect:${JSON.stringify(rect)} x:${x}, y:${y}`);
 
     const edgeThreshold = 5; // pixels from edge to trigger resize
 
