@@ -30,7 +30,7 @@ export const addRow = (grid: HTMLElement): void => {
     for (let i = 0; i < numColumns; i++) {
       const newCell = document.createElement("div");
       newCell.className = "cell";
-      newCell.textContent = `cell`;
+      newCell.innerHTML = `<div contenteditable="true"></div>`;
       newRow.appendChild(newCell);
     }
     grid.appendChild(newRow);

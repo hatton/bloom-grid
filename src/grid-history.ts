@@ -43,7 +43,6 @@ class GridHistoryManager {
       gridStyles: gridStyles,
     };
   }
-
   addHistoryEntry(
     grid: HTMLElement,
     description: string,
@@ -52,7 +51,10 @@ class GridHistoryManager {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     undoOperation: (grid: HTMLElement, prevState: GridState) => void
   ): void {
-    if (!grid || !this.isAttached(grid)) {
+    // Find the top-level grid - we may have been handed a child grid, but our history is for the top-level grid
+    const topLevelGrid = this.findTopLevelGrid(grid);
+
+    if (!topLevelGrid || !this.isAttached(topLevelGrid)) {
       console.warn(
         "GridHistoryManager: Attempted to add history entry for a detached or null grid."
       );
@@ -68,7 +70,7 @@ class GridHistoryManager {
     //console.info(`GridHistoryManager: Adding history entry - ${description}`);
     // Capture the state of the grid
 
-    const stateBeforeOperation = this.captureGridState(grid);
+    const stateBeforeOperation = this.captureGridState(topLevelGrid);
 
     this.operationInProgress = true;
     let operationSuccess = false;
@@ -196,6 +198,20 @@ class GridHistoryManager {
       detail: { operation: "Clear History" },
     });
     document.dispatchEvent(event);
+  }
+
+  private findTopLevelGrid(grid: HTMLElement): HTMLElement {
+    // Start from the current grid and traverse up to find the top-level grid
+    let currentGrid = grid;
+    let parentGrid = currentGrid.parentElement?.closest<HTMLElement>(".grid");
+
+    // Keep moving up until we find a grid that has no parent grid
+    while (parentGrid) {
+      currentGrid = parentGrid;
+      parentGrid = currentGrid.parentElement?.closest<HTMLElement>(".grid");
+    }
+
+    return currentGrid;
   }
 }
 
