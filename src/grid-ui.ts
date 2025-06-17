@@ -33,11 +33,10 @@ export class GridUI {
     }
 
     this.attachedGrids.add(div);
-    gridHistoryManager.attachGrid(div);
-
-    // Add event listeners
+    gridHistoryManager.attachGrid(div); // Add event listeners
     div.addEventListener("mousemove", this.updateCursorOnMouseMove);
     div.addEventListener("mousedown", this.handleMouseDown);
+    div.addEventListener("dblclick", this.handleDoubleClick);
     div.addEventListener("mouseleave", this.handleMouseLeave);
 
     // Add global mouse move and up listeners for dragging
@@ -54,11 +53,10 @@ export class GridUI {
     }
 
     this.attachedGrids.delete(div);
-    gridHistoryManager.detachGrid(div);
-
-    // Remove event listeners
+    gridHistoryManager.detachGrid(div); // Remove event listeners
     div.removeEventListener("mousemove", this.updateCursorOnMouseMove);
     div.removeEventListener("mousedown", this.handleMouseDown);
+    div.removeEventListener("dblclick", this.handleDoubleClick);
     div.removeEventListener("mouseleave", this.handleMouseLeave);
 
     // If no grids are attached, remove global listeners
@@ -196,11 +194,11 @@ export class GridUI {
           );
         }
       };
-
-      undoOperation = (gridElement, prevState) => {
-        // prevState.columnWidths reflects the state *after* the preview.
+      undoOperation = (gridElement) => {
         // We need to revert the specific column to its capturedOriginalValue.
-        const columnWidthsArray = prevState.columnWidths.split(",");
+        const currentWidths =
+          gridElement.getAttribute("data-column-widths") || "";
+        const columnWidthsArray = currentWidths.split(",");
         if (
           capturedTargetIndex >= 0 &&
           capturedTargetIndex < columnWidthsArray.length
@@ -220,8 +218,7 @@ export class GridUI {
       performOperation = () => {
         rowElement.setAttribute("data-row-height", newHeight);
       };
-
-      undoOperation = (gridElement, prevState) => {
+      undoOperation = (gridElement) => {
         // gridElement is the parent grid.
         // We need to find the specific row and restore its height using capturedOriginalValue.
         const rows = gridElement.querySelectorAll(".row"); // Query rows from the gridElement passed to undo
@@ -277,31 +274,37 @@ export class GridUI {
       grid.setAttribute("data-column-widths", widthArray.join(","));
     }
   }
-
   private updateRowHeightPreview(row: HTMLElement, deltaY: number): void {
-    const deltaRem = deltaY / 16;
     const currentHeight = this.dragState.originalValue;
 
+    // Convert deltaY to a percentage change
+    const deltaPercent = deltaY / 5; // Adjust sensitivity as needed
     let newHeight: string;
 
-    if (currentHeight === "fit" || currentHeight === "fill") {
-      newHeight = `${Math.max(2, 4 + deltaRem)}rem`;
+    if (
+      currentHeight === "fit" ||
+      currentHeight === "fill" ||
+      currentHeight === "min-content"
+    ) {
+      // Start with a base percentage when converting from auto-sizing values
+      newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
     } else {
       const match = currentHeight.match(/^(\d+(?:\.\d+)?)(rem|px|%)$/);
       if (match) {
         const value = parseFloat(match[1]);
         const unit = match[2];
 
-        if (unit === "rem") {
-          newHeight = `${Math.max(1, value + deltaRem)}rem`;
-        } else if (unit === "px") {
-          newHeight = `${Math.max(16, value + deltaY)}px`;
-        } else {
-          const deltaPercent = deltaY / 10;
+        if (unit === "%") {
+          // Already percentage, just adjust
           newHeight = `${Math.max(5, value + deltaPercent)}%`;
+        } else {
+          // Convert from other units to percentage
+          // For simplicity, we'll start with a base percentage and adjust
+          newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
         }
       } else {
-        newHeight = `${Math.max(2, 4 + deltaRem)}rem`;
+        // Fallback to percentage
+        newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
       }
     }
 
@@ -508,6 +511,51 @@ export class GridUI {
     const value = style.getPropertyValue(cssVar).trim();
     return value ? parseInt(value, 10) : 1;
   }
+
+  private handleDoubleClick = (event: MouseEvent): void => {
+    const target = event.target as HTMLElement;
+    const resizeInfo = this.getResizeInfo(target, event);
+
+    // Only handle double-click on row splitters
+    if (resizeInfo && resizeInfo.type === "row") {
+      event.preventDefault();
+
+      const rowElement = resizeInfo.element;
+      const currentHeight = rowElement.getAttribute("data-row-height") || "fit";
+
+      // Set up the auto-sizing operation
+      const grid = this.findParentGrid(rowElement, false);
+      if (!grid) {
+        console.warn("HandleDoubleClick: Could not find parent grid.");
+        return;
+      }
+
+      const rowIndex = resizeInfo.index;
+      const description = `Auto-size Row ${rowIndex + 1}`;
+      const performOperation = () => {
+        rowElement.removeAttribute("data-row-height");
+      };
+
+      const undoOperation = (gridElement: HTMLElement) => {
+        const rows = gridElement.querySelectorAll(".row");
+        if (rowIndex >= 0 && rowIndex < rows.length) {
+          const rowToRestore = rows[rowIndex] as HTMLElement;
+          if (currentHeight && currentHeight !== "fit") {
+            rowToRestore.setAttribute("data-row-height", currentHeight);
+          } else {
+            rowToRestore.removeAttribute("data-row-height");
+          }
+        }
+      };
+
+      gridHistoryManager.addHistoryEntry(
+        grid,
+        description,
+        performOperation,
+        undoOperation
+      );
+    }
+  };
 }
 
 // Export a singleton instance
