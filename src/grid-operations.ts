@@ -1,7 +1,15 @@
 import { gridHistoryManager } from "./grid-history";
 
 export const getTargetGrid = (): HTMLElement | null => {
-  return document.getElementById("main-grid");
+  // Start from the currently focused element
+  let currentElement = document.activeElement as HTMLElement | null;
+
+  if (!currentElement) {
+    console.warn("No active element found. Cannot determine target grid.");
+    return null;
+  }
+
+  return currentElement.closest<HTMLElement>(".grid") || null;
 };
 
 export const addRow = (grid: HTMLElement): void => {
@@ -61,7 +69,10 @@ export const addRow = (grid: HTMLElement): void => {
 export const removeLastRow = (grid: HTMLElement): void => {
   if (!grid) return;
 
-  const rows = grid.querySelectorAll("#main-grid > .row");
+  // Only select direct child rows of this grid, not nested rows from embedded grids
+  const rows = Array.from(grid.children).filter((child) =>
+    child.classList.contains("row")
+  );
   if (rows.length === 0) {
     console.info("No rows to remove from the target grid.");
     return;
@@ -112,11 +123,18 @@ export const addColumn = (grid: HTMLElement): void => {
       : "fit";
     grid.setAttribute("data-column-widths", newColumnWidths);
 
-    const rows = grid.querySelectorAll(".row");
+    // Only select direct child rows of this grid, not nested rows from embedded grids
+    const rows = Array.from(grid.children).filter((child) =>
+      child.classList.contains("row")
+    );
     rows.forEach((row) => {
       const newCell = document.createElement("div");
       newCell.className = "cell";
-      newCell.textContent = "New Col Cell";
+      // add a contenteditable div to the new cell
+      const contentEditableDiv = document.createElement("div");
+      contentEditableDiv.contentEditable = "true";
+
+      newCell.appendChild(contentEditableDiv);
       row.appendChild(newCell);
     });
   };
@@ -166,10 +184,12 @@ export const getLastOperation = (): string | null => {
 
 export function removeLastColumn(grid: HTMLElement) {
   if (!grid) return;
-
   // unlike rows, there are no div.column elements. Instead, columns are represented by the cells in each row. There is also an array of column widths stored in the grid's data attribute.
   // so we need to remove the last cell from each row and the entry in the data-column-widths attribute.
-  const rows = grid.querySelectorAll(".row");
+  // Only select direct child rows of this grid, not nested rows from embedded grids
+  const rows = Array.from(grid.children).filter((child) =>
+    child.classList.contains("row")
+  );
   if (rows.length === 0) {
     console.info("No columns to remove from the target grid.");
     return;
