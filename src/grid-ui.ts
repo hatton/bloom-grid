@@ -10,6 +10,7 @@ interface DragState {
   originalValue: string;
   hasStartedOperation: boolean;
   columnLeftEdge?: number;
+  rowTopEdge?: number;
 }
 
 export class GridUI {
@@ -87,12 +88,17 @@ export class GridUI {
     const resizeInfo = this.getResizeInfo(target, event, true);
 
     if (resizeInfo) {
-      event.preventDefault();
-
-      // Always capture the left edge position for column resizing
+      event.preventDefault(); // Capture the appropriate edge position based on resize type
       let columnLeftEdge: number | undefined;
+      let rowTopEdge: number | undefined;
       if (resizeInfo.type === "column") {
-        columnLeftEdge = this.getColumnLeftEdge(resizeInfo.element, resizeInfo.index);
+        columnLeftEdge = this.getColumnLeftEdge(
+          resizeInfo.element,
+          resizeInfo.index
+        );
+      } else if (resizeInfo.type === "row") {
+        rowTopEdge = this.getRowTopEdge(resizeInfo.element);
+        console.info(`handleMouseDown: Row top edge is ${rowTopEdge}`);
       }
 
       this.dragState = {
@@ -105,6 +111,7 @@ export class GridUI {
         originalValue: resizeInfo.currentValue,
         hasStartedOperation: false,
         columnLeftEdge: columnLeftEdge,
+        rowTopEdge: rowTopEdge,
       };
     }
   };
@@ -267,13 +274,17 @@ export class GridUI {
 
   private calculateFinalRowHeight(row: HTMLElement): string {
     return row.getAttribute("data-row-height") || "fit";
-  }  private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
+  }
+  private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
     const currentWidths = grid.getAttribute("data-column-widths") || "";
     const widthArray = currentWidths.split(",");
 
     // Simple approach: always use column left edge + current mouse position
     const currentMouseX = this.dragState.startX + deltaX;
-    const newWidth = Math.max(50, currentMouseX - (this.dragState.columnLeftEdge || 0));
+    const newWidth = Math.max(
+      50,
+      currentMouseX - (this.dragState.columnLeftEdge || 0)
+    );
 
     if (this.dragState.targetIndex < widthArray.length) {
       widthArray[this.dragState.targetIndex] = `${newWidth}px`;
@@ -281,40 +292,14 @@ export class GridUI {
     }
   }
   private updateRowHeightPreview(row: HTMLElement, deltaY: number): void {
-    const currentHeight = this.dragState.originalValue;
+    // Simple approach: always use row top edge + current mouse position
+    const currentMouseY = this.dragState.startY + deltaY;
+    const newHeight = Math.max(
+      20,
+      currentMouseY - (this.dragState.rowTopEdge || 0)
+    );
 
-    // Convert deltaY to a percentage change
-    const deltaPercent = deltaY / 5; // Adjust sensitivity as needed
-    let newHeight: string;
-
-    if (
-      currentHeight === "fit" ||
-      currentHeight === "fill" ||
-      currentHeight === "min-content"
-    ) {
-      // Start with a base percentage when converting from auto-sizing values
-      newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
-    } else {
-      const match = currentHeight.match(/^(\d+(?:\.\d+)?)(rem|px|%)$/);
-      if (match) {
-        const value = parseFloat(match[1]);
-        const unit = match[2];
-
-        if (unit === "%") {
-          // Already percentage, just adjust
-          newHeight = `${Math.max(5, value + deltaPercent)}%`;
-        } else {
-          // Convert from other units to percentage
-          // For simplicity, we'll start with a base percentage and adjust
-          newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
-        }
-      } else {
-        // Fallback to percentage
-        newHeight = `${Math.max(5, 20 + deltaPercent)}%`;
-      }
-    }
-
-    row.setAttribute("data-row-height", newHeight);
+    row.setAttribute("data-row-height", `${newHeight}px`);
   }
   private resetDragState(): void {
     this.dragState = {
@@ -327,6 +312,7 @@ export class GridUI {
       originalValue: "",
       hasStartedOperation: false,
       columnLeftEdge: undefined,
+      rowTopEdge: undefined,
     };
   }
 
@@ -633,7 +619,8 @@ export class GridUI {
         }
         // If it's a fractional unit or other value, estimate based on grid width
         const gridRect = grid.getBoundingClientRect();
-        return Math.round(gridRect.width / columns.length);      }
+        return Math.round(gridRect.width / columns.length);
+      }
     }
 
     // Ultimate fallback
@@ -643,48 +630,103 @@ export class GridUI {
   private getColumnLeftEdge(grid: HTMLElement, columnIndex: number): number {
     // Force layout to ensure we get current measurements
     grid.offsetHeight;
-    
+
     // Try to find a cell in the target column to get its position
     const rows = grid.querySelectorAll(".row");
-    
+
     for (const row of rows) {
       const cells = row.querySelectorAll(".cell");
       let currentColumnIndex = 0;
-      
+
       for (const cell of cells) {
         const cellElement = cell as HTMLElement;
         const colspan = this.getSpanValue(cellElement, "--span-x");
-        
+
         if (currentColumnIndex === columnIndex) {
           const rect = cellElement.getBoundingClientRect();
           const gridRect = grid.getBoundingClientRect();
           return rect.left - gridRect.left;
         }
-        
+
         currentColumnIndex += colspan;
         if (currentColumnIndex > columnIndex) break;
       }
     }
-    
+
     // Fallback: calculate based on grid computed style
     const computedStyle = window.getComputedStyle(grid);
     const gridTemplateColumns = computedStyle.gridTemplateColumns;
-    
+
     if (gridTemplateColumns && gridTemplateColumns !== "none") {
-      const columnWidths = gridTemplateColumns.split(' ');
+      const columnWidths = gridTemplateColumns.split(" ");
       let leftPosition = 0;
-      
+
       for (let i = 0; i < columnIndex && i < columnWidths.length; i++) {
         const match = columnWidths[i].match(/([0-9.]+)px/);
         if (match) {
           leftPosition += parseFloat(match[1]);
         }
       }
-      
+
       return leftPosition;
     }
-    
+
     // Ultimate fallback
+    return 0;
+  }
+  private getRowTopEdge(row: HTMLElement): number {
+    console.info(`getRowTopEdge: Called with element:`, row);
+
+    // Find the parent grid
+    const grid = this.findParentGrid(row, false);
+    if (!grid) {
+      console.warn(`getRowTopEdge: Could not find parent grid, returning 0`);
+      return 0;
+    }
+
+    // Get the row index to calculate position
+    const rowIndex = this.getRowIndex(row);
+    console.info(`getRowTopEdge: Row index:`, rowIndex);
+
+    // Force layout to ensure we get current measurements
+    grid.offsetHeight;
+
+    // Get the computed grid template rows
+    const computedStyle = window.getComputedStyle(grid);
+    const gridTemplateRows = computedStyle.gridTemplateRows;
+    console.info(`getRowTopEdge: Grid template rows:`, gridTemplateRows);
+
+    if (gridTemplateRows && gridTemplateRows !== "none") {
+      const rowHeights = gridTemplateRows.split(" ");
+      console.info(`getRowTopEdge: Parsed row heights:`, rowHeights);
+
+      let topPosition = 0;
+
+      // Sum up the heights of all rows before the target row
+      for (let i = 0; i < rowIndex && i < rowHeights.length; i++) {
+        const heightValue = rowHeights[i];
+        let height = 0;
+
+        // Extract pixel value from computed style
+        const match = heightValue.match(/([0-9.]+)px/);
+        if (match) {
+          height = parseFloat(match[1]);
+        }
+
+        console.info(
+          `getRowTopEdge: Row ${i} height from grid template:`,
+          height
+        );
+        topPosition += height;
+      }
+
+      console.info(`getRowTopEdge: Calculated top position:`, topPosition);
+      return topPosition;
+    }
+
+    console.warn(
+      `getRowTopEdge: Could not parse grid template rows, returning 0`
+    );
     return 0;
   }
 }
