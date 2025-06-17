@@ -334,6 +334,8 @@ export class DragToResize {
     const rect = target.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+    console.info(`getResizeInfo: target=${this.tagInfo(target)}`);
+    console.info(`boudingClientRect:${JSON.stringify(rect)} x:${x}, y:${y}`);
 
     const edgeThreshold = 5; // pixels from edge to trigger resize
 
@@ -396,33 +398,10 @@ export class DragToResize {
   }
 
   private findParentGrid(
-    element: HTMLElement,
+    row: HTMLElement,
     verbose: boolean
   ): HTMLElement | null {
-    let current = element;
-    while (current && current !== document.body) {
-      // print out the contents of the element with all of its attributes but not the children
-      if (verbose) {
-        console.info(`findParentGrid(${this.tagInfo(element)})`);
-      }
-      if (current.classList.contains("grid")) {
-        // Ensure the grid is not nested within another cell
-        const parentCell = current.closest(".cell");
-        if (!parentCell || !parentCell.closest(".grid")) {
-          if (verbose) {
-            console.info(`    --> ${this.tagInfo(current)}`);
-          }
-          return current;
-        } else {
-          if (verbose) console.info("findParentGrid: Skipping nested grid.");
-        }
-      }
-      current = current.parentElement as HTMLElement;
-    }
-    if (verbose) {
-      console.info("findParentGrid: Could not find main grid.");
-    }
-    return null;
+    return row.closest<HTMLElement>(".grid") || null;
   }
 
   private findRowOfCell(

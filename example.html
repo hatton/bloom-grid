@@ -3,9 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <title>
-      CSS‑Grid Requirements Demo – three‑tier styling (defaults → grid → cell)
+      CSS‑Grid Requirements Demo – three‑tier styl <!-- -------- <!-- ----------
+      Row 4 (default fit) ---------- --> <div class="row"> <div class="cell">
+      <div contenteditable="true">Papa i salim mama smapim lip.</div> </div>
+      </div>ow 4 (default fit) ---------- --> <div class="row"> <div
+      class="cell"> Final row spanning the full width </div> </div>efaults →
+      grid → cell)
     </title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
       /* ---------- Global defaults (tier‑1) ---------- */
       :root {
@@ -43,16 +48,18 @@
         /* Tier‑2: inherit (or override) from the parent .grid */
         background: var(--cell-bg);
         padding: var(--cell-padding);
-        border: var(--cell-border-width) solid var(--cell-border-color);
+        outline: var(--cell-border-width) solid var(--cell-border-color);
 
         /* Tier‑3: this individual cell can override via inline vars */
         background: var(--this-bg, var(--cell-bg));
         padding: var(--this-padding, var(--cell-padding));
-        border-width: var(--this-border-width, var(--cell-border-width));
-        border-color: var(--this-border-color, var(--cell-border-color));
 
         grid-column: span var(--span-x, 1);
         grid-row: span var(--span-y, 1);
+      }
+
+      [contenteditable]:focus {
+        outline: none; /* Removes the border completely */
       }
     </style>
     <script type="importmap">
@@ -66,117 +73,110 @@
     </script>
     <script type="module" src="/src/grid-observer.ts"></script>
   </head>
-  <body>
-    <!-- ================ OUTER GRID ================= -->
+  <body style="background: rgb(61, 61, 61); padding: 10px">
+    <div id="controls-root" class="mt-8"></div>
+    <br />
     <div
-      id="main-grid"
-      class="grid"
-      data-column-widths="fit,25%,fill"
-      style="
-        --bg: #444; /* dark backdrop for contrast */
-        --border-color: #444;
-        --border-width: 1px;
-        --gap: 1px;
-        /* Tier‑2: give all outer‑grid cells a light orange bg & tighter padding */
-        --cell-bg: #fffbe6; /* pale yellow */
-        --cell-padding: 6px 8px; /* slightly tighter */
-        --cell-border-color: #444;
-      "
+      id="page"
+      style="background: white; padding: 10px; height: 800px; width: 600px"
     >
-      <!-- ---------- Row 1 (default height = fit) ---------- -->
-      <div class="row">
-        <div class="cell">Column modes: fill / manual 25 % / fit</div>
-        <div class="cell">Manual‑width column (25 %)</div>
-        <div class="cell">top right</div>
-      </div>
-
-      <!-- ---------- Row 2 (explicit 4rem height) ---------- -->
-      <div class="row" data-row-height="4rem">
-        <div class="cell">Row 2 (4 rem tall), Col 1</div>
-        <div class="cell">Plain cell</div>
-        <!-- Cell spanning downward that hosts the grey‑lined nested grid (2×2) -->
-        <div class="cell" style="--span-y: 2; --this-padding: 0">
-          <div
-            class="grid"
-            data-column-widths="fill,fill"
-            style="
-              --gap: 1px;
-              --bg: #888; /* grey frame */
-              --border-color: #888;
-              --border-width: 1px;
-              /* nested cells stay white */
-              --cell-bg: #fff; /* Tier‑2 override */
-              --cell-padding: 8px 10px;
-            "
-          >
-            <div class="row">
-              <div class="cell">A</div>
-              <div class="cell">B</div>
-            </div>
-            <div class="row">
-              <div class="cell" style="--span-x: 2">Spanning nested cell</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ---------- Row 3 (fill) ---------- -->
-      <div class="row" data-row-height="fill">
-        <div class="cell">Row 3 fills remaining height</div>
-        <!-- 3 × 2 table‑style nested grid (grey lines) -->
-        <div class="cell" style="--this-padding: 0">
-          <div
-            class="grid"
-            data-column-widths="fit,fit,fill"
-            style="--border-color: #888; --border-width: 1px; --cell-bg: white"
-          >
-            <div class="row">
-              <div class="cell">1,1</div>
-              <div class="cell">1,2</div>
-              <div class="cell">1,3</div>
-            </div>
-            <div class="row">
-              <div class="cell">2,1</div>
-              <div class="cell">2,2</div>
-              <div class="cell">2,3</div>
+      <div
+        id="main-grid"
+        class="grid"
+        data-column-widths="fill"
+        style="
+          height: 100%;
+          --bg: #ffffff; /* if we see this, it means our cell counts are off */
+          --border-color: red; /* no border on the main grid */
+          --border-width: 0px; /* no border on the main grid */
+          --gap: 1px;
+          /* Tier‑2: give all outer‑grid cells a light orange bg & tighter padding */
+          --cell-bg: transparent;
+          --cell-padding: 6px 8px; /* slightly tighter */
+          --cell-border-color: #ecf0f6;
+        "
+      >
+        <div class="row">
+          <div class="cell">
+            <div contenteditable="true">
+              <h1>A heading</h1>
+              <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+                enim ad minim veniam, quis nostrud exercitation ullamco laboris
+                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
+                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+                sunt in culpa qui officia deserunt mollit anim id est laborum.
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- 2 × 2 no‑border nested grid -->
-        <div class="cell" style="--this-padding: 0">
-          <div
-            class="grid"
-            data-column-widths="fill,fill"
-            style="
-              --gap: 0;
-              --bg: transparent;
-              --border-width: 0;
-              --cell-border-width: 0;
-              --cell-bg: #fff;
-            "
-          >
-            <div class="row">
-              <div class="cell">A1</div>
-              <div class="cell">A2</div>
-            </div>
-            <div class="row">
-              <div class="cell">B1</div>
-              <div class="cell">B2</div>
+        <div class="row">
+          <div class="cell">
+            <div
+              class="grid"
+              data-column-widths="fill,fill"
+              style="
+                --gap: 1px;
+                --bg: #888; /* grey frame */
+                --border-color: #888;
+                --border-width: 1px;
+                /* nested cells stay white */
+                --cell-bg: #fff; /* Tier‑2 override */
+                --cell-padding: 8px 10px;
+              "
+            >
+              <div class="row">
+                <div class="cell"><div contenteditable="true">A</div></div>
+                <div class="cell"><div contenteditable="true">B</div></div>
+              </div>
+              <div class="row">
+                <div class="cell" style="--span-x: 2">
+                  <div contenteditable="true">Spanning nested cell</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ---------- Row 4 (default fit) ---------- -->
-      <div class="row">
-        <div class="cell" style="--span-x: 3">
-          Final row spanning the full width
+        <!-- ---------- Row 3 (fill) ---------- -->
+        <div class="row" data-row-height="fit">
+          <div class="cell">
+            <div
+              class="grid"
+              data-column-widths="fit,fit,fit"
+              style="
+                --border-width: 1px;
+                --cell-border-color: black;
+                margin-left: auto;
+                margin-right: auto;
+                width: fit-content;
+              "
+            >
+              <div class="row">
+                <div class="cell"><div contenteditable="true">l</div></div>
+                <div class="cell"><div contenteditable="true">a</div></div>
+                <div class="cell"><div contenteditable="true">m</div></div>
+              </div>
+              <div class="row">
+                <div class="cell"><div contenteditable="true">i</div></div>
+                <div class="cell"><div contenteditable="true">p</div></div>
+                <div class="cell"><div contenteditable="true">i</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- Row 4 (default fit) ---------- -->
+        <div class="row">
+          <div class="cell">
+            <div contenteditable="true">Papa i salim mama smapim lip.</div>
+          </div>
         </div>
       </div>
     </div>
-
-    <div id="root" class="mt-8"></div>
 
     <script type="module" src="/src/index.tsx"></script>
   </body>
