@@ -68,10 +68,11 @@ export class GridUI {
     }
   }
 
-  // This just handles the cursor. Unfortunately it gets called repeatedly even when we're not doing anything.
+  // This just handles the cursor. Unfortunately it gets called repeatedly even when we\'re not doing anything.
   private updateCursorOnMouseMove = (event: MouseEvent): void => {
     if (this.dragState.isDragging) {
-      return; // Don't change cursor while dragging
+      // If dragging, the cursor is already set and latched, so do nothing here.
+      return;
     }
     const target = event.target as HTMLElement;
     const resizeInfo = this.getResizeInfo(target, event);
@@ -96,9 +97,11 @@ export class GridUI {
           resizeInfo.element,
           resizeInfo.index
         );
+        document.body.style.cursor = "ew-resize"; // Latch cursor
       } else if (resizeInfo.type === "row") {
         rowTopEdge = this.getRowTopEdge(resizeInfo.element);
         console.info(`handleMouseDown: Row top edge is ${rowTopEdge}`);
+        document.body.style.cursor = "ns-resize"; // Latch cursor
       }
 
       this.dragState = {
@@ -158,6 +161,7 @@ export class GridUI {
       this.commitResizeOperation();
     }
     this.resetDragState();
+    document.body.style.cursor = "default"; // Release cursor
   };
   private commitResizeOperation(): void {
     //console.info("commitResizeOperation: Invoked.");
