@@ -9,6 +9,7 @@ interface DragState {
   startY: number;
   originalValue: string;
   hasStartedOperation: boolean;
+  columnLeftEdge?: number;
 }
 
 export class GridUI {
@@ -81,13 +82,18 @@ export class GridUI {
       target.style.cursor = "default";
     }
   };
-
   private handleMouseDown = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
     const resizeInfo = this.getResizeInfo(target, event, true);
 
     if (resizeInfo) {
       event.preventDefault();
+
+      // Always capture the left edge position for column resizing
+      let columnLeftEdge: number | undefined;
+      if (resizeInfo.type === "column") {
+        columnLeftEdge = this.getColumnLeftEdge(resizeInfo.element, resizeInfo.index);
+      }
 
       this.dragState = {
         isDragging: true,
@@ -98,6 +104,7 @@ export class GridUI {
         startY: event.clientY,
         originalValue: resizeInfo.currentValue,
         hasStartedOperation: false,
+        columnLeftEdge: columnLeftEdge,
       };
     }
   };
@@ -260,14 +267,13 @@ export class GridUI {
 
   private calculateFinalRowHeight(row: HTMLElement): string {
     return row.getAttribute("data-row-height") || "fit";
-  }
-
-  private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
+  }  private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
     const currentWidths = grid.getAttribute("data-column-widths") || "";
     const widthArray = currentWidths.split(",");
 
-    const deltaPercent = Math.round(deltaX / 10);
-    const newWidth = Math.max(50, 200 + deltaPercent);
+    // Simple approach: always use column left edge + current mouse position
+    const currentMouseX = this.dragState.startX + deltaX;
+    const newWidth = Math.max(50, currentMouseX - (this.dragState.columnLeftEdge || 0));
 
     if (this.dragState.targetIndex < widthArray.length) {
       widthArray[this.dragState.targetIndex] = `${newWidth}px`;
@@ -310,7 +316,6 @@ export class GridUI {
 
     row.setAttribute("data-row-height", newHeight);
   }
-
   private resetDragState(): void {
     this.dragState = {
       isDragging: false,
@@ -321,6 +326,7 @@ export class GridUI {
       startY: 0,
       originalValue: "",
       hasStartedOperation: false,
+      columnLeftEdge: undefined,
     };
   }
 
@@ -544,7 +550,8 @@ export class GridUI {
             rowToRestore.removeAttribute("data-row-height");
           }
         }
-      };      gridHistoryManager.addHistoryEntry(
+      };
+      gridHistoryManager.addHistoryEntry(
         grid,
         description,
         performOperation,
@@ -562,7 +569,8 @@ export class GridUI {
       const columnIndex = resizeInfo.index;
       const currentWidths = grid.getAttribute("data-column-widths") || "";
       const widthArray = currentWidths.split(",");
-      const currentWidth = columnIndex < widthArray.length ? widthArray[columnIndex] : "fit";
+      const currentWidth =
+        columnIndex < widthArray.length ? widthArray[columnIndex] : "fit";
 
       const description = `Auto-size Column ${columnIndex + 1}`;
 
@@ -576,7 +584,8 @@ export class GridUI {
       };
 
       const undoOperation = (gridElement: HTMLElement) => {
-        const currentWidths = gridElement.getAttribute("data-column-widths") || "";
+        const currentWidths =
+          gridElement.getAttribute("data-column-widths") || "";
         const widthArray = currentWidths.split(",");
         if (columnIndex >= 0 && columnIndex < widthArray.length) {
           widthArray[columnIndex] = currentWidth;
@@ -592,6 +601,92 @@ export class GridUI {
       );
     }
   };
+
+  private calculateActualColumnWidth(
+    grid: HTMLElement,
+    columnIndex: number
+  ): number {
+    // Try to find a cell in the specified column to measure its width
+    const rows = grid.querySelectorAll(".row");
+
+    for (const row of rows) {
+      const cells = row.querySelectorAll('.cell, [class*="cell"]');
+      if (columnIndex < cells.length) {
+        const cell = cells[columnIndex] as HTMLElement;
+        const rect = cell.getBoundingClientRect();
+        return Math.round(rect.width);
+      }
+    }
+
+    // Fallback: try to calculate based on grid template columns if available
+    const computedStyle = window.getComputedStyle(grid);
+    const gridTemplateColumns = computedStyle.gridTemplateColumns;
+
+    if (gridTemplateColumns && gridTemplateColumns !== "none") {
+      const columns = gridTemplateColumns.split(" ");
+      if (columnIndex < columns.length) {
+        const columnValue = columns[columnIndex];
+        // If it's a pixel value, extract it
+        const match = columnValue.match(/(\d+(?:\.\d+)?)px/);
+        if (match) {
+          return parseFloat(match[1]);
+        }
+        // If it's a fractional unit or other value, estimate based on grid width
+        const gridRect = grid.getBoundingClientRect();
+        return Math.round(gridRect.width / columns.length);      }
+    }
+
+    // Ultimate fallback
+    return 200;
+  }
+
+  private getColumnLeftEdge(grid: HTMLElement, columnIndex: number): number {
+    // Force layout to ensure we get current measurements
+    grid.offsetHeight;
+    
+    // Try to find a cell in the target column to get its position
+    const rows = grid.querySelectorAll(".row");
+    
+    for (const row of rows) {
+      const cells = row.querySelectorAll(".cell");
+      let currentColumnIndex = 0;
+      
+      for (const cell of cells) {
+        const cellElement = cell as HTMLElement;
+        const colspan = this.getSpanValue(cellElement, "--span-x");
+        
+        if (currentColumnIndex === columnIndex) {
+          const rect = cellElement.getBoundingClientRect();
+          const gridRect = grid.getBoundingClientRect();
+          return rect.left - gridRect.left;
+        }
+        
+        currentColumnIndex += colspan;
+        if (currentColumnIndex > columnIndex) break;
+      }
+    }
+    
+    // Fallback: calculate based on grid computed style
+    const computedStyle = window.getComputedStyle(grid);
+    const gridTemplateColumns = computedStyle.gridTemplateColumns;
+    
+    if (gridTemplateColumns && gridTemplateColumns !== "none") {
+      const columnWidths = gridTemplateColumns.split(' ');
+      let leftPosition = 0;
+      
+      for (let i = 0; i < columnIndex && i < columnWidths.length; i++) {
+        const match = columnWidths[i].match(/([0-9.]+)px/);
+        if (match) {
+          leftPosition += parseFloat(match[1]);
+        }
+      }
+      
+      return leftPosition;
+    }
+    
+    // Ultimate fallback
+    return 0;
+  }
 }
 
 // Export a singleton instance
