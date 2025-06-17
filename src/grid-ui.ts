@@ -511,12 +511,10 @@ export class GridUI {
     const value = style.getPropertyValue(cssVar).trim();
     return value ? parseInt(value, 10) : 1;
   }
-
   private handleDoubleClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
     const resizeInfo = this.getResizeInfo(target, event);
 
-    // Only handle double-click on row splitters
     if (resizeInfo && resizeInfo.type === "row") {
       event.preventDefault();
 
@@ -545,6 +543,44 @@ export class GridUI {
           } else {
             rowToRestore.removeAttribute("data-row-height");
           }
+        }
+      };      gridHistoryManager.addHistoryEntry(
+        grid,
+        description,
+        performOperation,
+        undoOperation
+      );
+    } else if (resizeInfo && resizeInfo.type === "column") {
+      event.preventDefault();
+
+      const grid = this.findParentGrid(resizeInfo.element, false);
+      if (!grid) {
+        console.warn("HandleDoubleClick: Could not find parent grid.");
+        return;
+      }
+
+      const columnIndex = resizeInfo.index;
+      const currentWidths = grid.getAttribute("data-column-widths") || "";
+      const widthArray = currentWidths.split(",");
+      const currentWidth = columnIndex < widthArray.length ? widthArray[columnIndex] : "fit";
+
+      const description = `Auto-size Column ${columnIndex + 1}`;
+
+      const performOperation = () => {
+        const currentWidths = grid.getAttribute("data-column-widths") || "";
+        const widthArray = currentWidths.split(",");
+        if (columnIndex >= 0 && columnIndex < widthArray.length) {
+          widthArray[columnIndex] = "fit";
+          grid.setAttribute("data-column-widths", widthArray.join(","));
+        }
+      };
+
+      const undoOperation = (gridElement: HTMLElement) => {
+        const currentWidths = gridElement.getAttribute("data-column-widths") || "";
+        const widthArray = currentWidths.split(",");
+        if (columnIndex >= 0 && columnIndex < widthArray.length) {
+          widthArray[columnIndex] = currentWidth;
+          gridElement.setAttribute("data-column-widths", widthArray.join(","));
         }
       };
 
