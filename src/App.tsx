@@ -21,10 +21,10 @@ const App: React.FC = () => {
     // Listen for history updates to refresh undo state
     const handleGridHistoryUpdated = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log(
-        "App: gridHistoryUpdated event received. Detail:",
-        customEvent.detail
-      );
+      // console.log(
+      //   "App: gridHistoryUpdated event received. Detail:",
+      //   customEvent.detail
+      // );
       updateUndoState();
     };
 
@@ -72,6 +72,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRemoveColumn = () => {
+    const grid = GridUtils.getTargetGrid();
+    if (grid) {
+      GridUtils.removeLastColumn(grid);
+      // updateUndoState(); // No longer needed here, gridHistoryUpdated handles it
+    } else {
+      console.warn("Target grid not found for removing a column.");
+    }
+  };
+
   const handleUndo = () => {
     const grid = GridUtils.getTargetGrid();
     if (grid) {
@@ -96,21 +106,29 @@ const App: React.FC = () => {
           className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Add a new row to the bottom of the main grid"
         >
-          Add Row to Grid
+          + Row
         </button>
         <button
           onClick={handleRemoveRow}
           className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Remove the last row from the main grid"
         >
-          Remove Last Row
+          - Row
         </button>
         <button
           onClick={handleAddColumn}
           className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Add a new column to the right of the main grid"
         >
-          Add Column to Grid
+          + Column
+        </button>
+        {/* - Column */}
+        <button
+          onClick={handleRemoveColumn}
+          className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
+          aria-label="Remove the last column from the main grid"
+        >
+          - Column
         </button>
         <button
           onClick={handleUndo}

@@ -22,7 +22,7 @@ export const addRow = (grid: HTMLElement): void => {
     for (let i = 0; i < numColumns; i++) {
       const newCell = document.createElement("div");
       newCell.className = "cell";
-      newCell.textContent = `New Row Cell ${i + 1}`;
+      newCell.textContent = `cell`;
       newRow.appendChild(newCell);
     }
     grid.appendChild(newRow);
@@ -163,3 +163,61 @@ export const canUndo = (): boolean => {
 export const getLastOperation = (): string | null => {
   return gridHistoryManager.getLastOperation();
 };
+
+export function removeLastColumn(grid: HTMLElement) {
+  if (!grid) return;
+
+  // unlike rows, there are no div.column elements. Instead, columns are represented by the cells in each row. There is also an array of column widths stored in the grid's data attribute.
+  // so we need to remove the last cell from each row and the entry in the data-column-widths attribute.
+  const rows = grid.querySelectorAll(".row");
+  if (rows.length === 0) {
+    console.info("No columns to remove from the target grid.");
+    return;
+  }
+  const description = "Remove Last Column";
+  const performOperation = () => {
+    const columnWidthsAttr = grid.getAttribute("data-column-widths");
+    if (!columnWidthsAttr) return;
+
+    const columnWidths = columnWidthsAttr.split(",");
+    if (columnWidths.length === 0) return;
+
+    // Remove the last column width
+    columnWidths.pop();
+    grid.setAttribute("data-column-widths", columnWidths.join(","));
+
+    // Remove the last cell from each row
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll(".cell");
+      if (cells.length > 0) {
+        row.removeChild(cells[cells.length - 1]);
+      }
+    });
+  };
+  const undoOperation = (
+    gridElement: HTMLElement,
+    prevState: import("./grid-history").GridState
+  ) => {
+    // Restore the entire grid state from before the column was removed.
+    gridElement.innerHTML = prevState.innerHTML;
+    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
+    const newRows = gridElement.querySelectorAll(".row");
+    newRows.forEach((row, index) => {
+      const height = prevState.rowHeights[index.toString()];
+      if (height) {
+        row.setAttribute("data-row-height", height);
+      } else {
+        row.removeAttribute("data-row-height");
+      }
+    });
+    Object.keys(prevState.gridStyles).forEach((key) => {
+      (gridElement.style as any)[key] = prevState.gridStyles[key];
+    });
+  };
+  gridHistoryManager.addHistoryEntry(
+    grid,
+    description,
+    performOperation,
+    undoOperation
+  );
+}

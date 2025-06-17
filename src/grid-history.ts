@@ -65,7 +65,7 @@ class GridHistoryManager {
       return;
     }
 
-    console.info(`GridHistoryManager: Adding history entry - ${description}`);
+    //console.info(`GridHistoryManager: Adding history entry - ${description}`);
     // Capture the state of the grid
 
     const stateBeforeOperation = this.captureGridState(grid);
@@ -87,7 +87,7 @@ class GridHistoryManager {
       if (this.history.length > this.maxHistorySize) {
         this.history.shift();
       }
-      console.info(`GridHistoryManager: Added entry - ${description}`);
+      //console.info(`GridHistoryManager: Added entry - ${description}`);
     } catch (error) {
       console.error(
         "GridHistoryManager: Error during operation execution:",
@@ -97,9 +97,9 @@ class GridHistoryManager {
       // This would require performOperation to be transactional or the restoration logic to be robust.
     } finally {
       this.operationInProgress = false;
-      console.log(
-        `GridHistoryManager: Add entry finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
-      );
+      //console.log(
+      //`GridHistoryManager: Add entry finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
+      //);
       // Dispatch a custom event to notify that an operation has completed and history has been updated
       // Only dispatch if the operation was meant to add a history entry (even if it failed, to update UI)
       // However, we only pushed to history on success.
@@ -131,15 +131,15 @@ class GridHistoryManager {
       return false;
     }
 
-    console.info(`GridHistoryManager: Undoing - ${entry.description}`);
+    //console.info(`GridHistoryManager: Undoing - ${entry.description}`);
     this.operationInProgress = true;
     let undoSuccess = false;
     try {
       entry.undoOperation(grid, entry.state);
       undoSuccess = true;
-      console.info(
-        `GridHistoryManager: Successfully undid - ${entry.description}`
-      );
+      //console.info(
+      //  `GridHistoryManager: Successfully undid - ${entry.description}`
+      //);
     } catch (error) {
       console.error("GridHistoryManager: Error during undo operation:", error);
       // If undo fails, the entry is already popped.
@@ -147,9 +147,9 @@ class GridHistoryManager {
       // For now, it remains popped.
     } finally {
       this.operationInProgress = false;
-      console.log(
-        `GridHistoryManager: Undo operation finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
-      );
+      //console.log(
+      //        `GridHistoryManager: Undo operation finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
+      //    );
       // Dispatch event AFTER operationInProgress is false, regardless of undo success, to update UI
       const event = new CustomEvent("gridHistoryUpdated", {
         detail: {
@@ -165,12 +165,12 @@ class GridHistoryManager {
 
   attachGrid(grid: HTMLElement): void {
     this.attachedGrids.add(grid);
-    console.info("GridHistoryManager: Grid attached.");
+    //console.info("GridHistoryManager: Grid attached.");
   }
 
   detachGrid(grid: HTMLElement): void {
     this.attachedGrids.delete(grid);
-    console.info("GridHistoryManager: Grid detached.");
+    //console.info("GridHistoryManager: Grid detached.");
   }
 
   isAttached(grid: HTMLElement): boolean {
@@ -190,7 +190,7 @@ class GridHistoryManager {
 
   clearHistory(): void {
     this.history = [];
-    console.info("GridHistoryManager: History cleared.");
+    //    console.info("GridHistoryManager: History cleared.");
     // Dispatch a custom event to notify that history has been cleared
     const event = new CustomEvent("gridHistoryUpdated", {
       detail: { operation: "Clear History" },

@@ -36,7 +36,7 @@ export class GridUI {
     gridHistoryManager.attachGrid(div);
 
     // Add event listeners
-    div.addEventListener("mousemove", this.handleMouseMove);
+    div.addEventListener("mousemove", this.updateCursorOnMouseMove);
     div.addEventListener("mousedown", this.handleMouseDown);
     div.addEventListener("mouseleave", this.handleMouseLeave);
 
@@ -57,7 +57,7 @@ export class GridUI {
     gridHistoryManager.detachGrid(div);
 
     // Remove event listeners
-    div.removeEventListener("mousemove", this.handleMouseMove);
+    div.removeEventListener("mousemove", this.updateCursorOnMouseMove);
     div.removeEventListener("mousedown", this.handleMouseDown);
     div.removeEventListener("mouseleave", this.handleMouseLeave);
 
@@ -68,11 +68,11 @@ export class GridUI {
     }
   }
 
-  private handleMouseMove = (event: MouseEvent): void => {
+  // This just handles the cursor. Unfortunately it gets called repeatedly even when we're not doing anything.
+  private updateCursorOnMouseMove = (event: MouseEvent): void => {
     if (this.dragState.isDragging) {
       return; // Don't change cursor while dragging
     }
-
     const target = event.target as HTMLElement;
     const resizeInfo = this.getResizeInfo(target, event);
 
@@ -86,7 +86,7 @@ export class GridUI {
 
   private handleMouseDown = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
-    const resizeInfo = this.getResizeInfo(target, event);
+    const resizeInfo = this.getResizeInfo(target, event, true);
 
     if (resizeInfo) {
       event.preventDefault();
@@ -133,9 +133,9 @@ export class GridUI {
     if (this.dragState.dragType === "column") {
       this.updateColumnWidthPreview(this.dragState.targetElement, deltaX);
     } else if (this.dragState.dragType === "row") {
-      console.info(
-        `handleGlobalMouseMove: Resizing row at index ${this.dragState.targetIndex}`
-      );
+      // console.info(
+      //   `handleGlobalMouseMove: Resizing row at index ${this.dragState.targetIndex}`
+      // );
       this.updateRowHeightPreview(this.dragState.targetElement, deltaY);
     }
   };
@@ -148,16 +148,16 @@ export class GridUI {
     this.resetDragState();
   };
   private commitResizeOperation(): void {
-    console.info("commitResizeOperation: Invoked.");
+    //console.info("commitResizeOperation: Invoked.");
     if (!this.dragState.targetElement || !this.dragState.dragType) {
-      console.info("commitResizeOperation: Missing targetElement or dragType.");
+      //console.info("commitResizeOperation: Missing targetElement or dragType.");
       return;
     }
 
     const grid =
       this.dragState.dragType === "column"
         ? this.dragState.targetElement
-        : this.findParentGrid(this.dragState.targetElement);
+        : this.findParentGrid(this.dragState.targetElement, false);
     if (!grid) {
       console.warn("CommitResizeOperation: Could not find parent grid.");
       return;
@@ -323,23 +323,39 @@ export class GridUI {
 
   private getResizeInfo(
     target: HTMLElement,
-    event: MouseEvent
+    event: MouseEvent,
+    verbose: boolean = false
   ): {
     type: "row" | "column";
     element: HTMLElement;
     currentValue: string;
     index: number;
   } | null {
-    console.info("getResizeInfo: Invoked.");
+    //console.info("getResizeInfo: Invoked.");
     const rect = target.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
     const edgeThreshold = 5; // pixels from edge to trigger resize
 
+    // Check if we're near the bottom edge (row resize)
+    if (y >= rect.height - edgeThreshold && y <= rect.height) {
+      const row = this.findRowOfCell(target, verbose);
+      if (row) {
+        const currentHeight = row.getAttribute("data-row-height") || "fit";
+        const rowIndex = this.getRowIndex(row);
+        return {
+          type: "row",
+          element: row,
+          currentValue: currentHeight,
+          index: rowIndex,
+        };
+      }
+    }
+
     // Check if we're near the right edge (column resize)
     if (x >= rect.width - edgeThreshold && x <= rect.width) {
-      const grid = this.findParentGrid(target);
+      const grid = this.findParentGrid(target, verbose);
       if (grid) {
         const columnIndex = this.getColumnIndex(target);
         const columnWidths = grid.getAttribute("data-column-widths") || "";
@@ -356,57 +372,81 @@ export class GridUI {
       }
     }
 
-    // Check if we're near the bottom edge (row resize)
-    if (y >= rect.height - edgeThreshold && y <= rect.height) {
-      const row = this.findParentRow(target);
-      if (row) {
-        const currentHeight = row.getAttribute("data-row-height") || "fit";
-        const rowIndex = this.getRowIndex(row);
-        return {
-          type: "row",
-          element: row,
-          currentValue: currentHeight,
-          index: rowIndex,
-        };
-      }
-    }
-
     return null;
   }
 
-  private findParentGrid(element: HTMLElement): HTMLElement | null {
+  private tagInfo(element: HTMLElement): string {
+    const siblingElements = element.parentElement?.children || [];
+    const elementIndex = Array.from(siblingElements).indexOf(element);
+
+    const tagName = element.tagName;
+    const id = element.id ? `#${element.id}` : "";
+    const classes = element.classList.length
+      ? "." + Array.from(element.classList).join(".")
+      : "";
+
+    return `${tagName}${id}${classes} child:${1 + elementIndex} ${Array.from(
+      element.attributes
+    )
+      .filter(
+        (attr) =>
+          attr.name !== "class" && attr.name !== "id" && attr.name != "style"
+      ) // Skip class and id attributes
+      .map((attr) => `${attr.name}="${attr.value}"`)
+      .join(", ")}  ${element.innerText.trim().substring(0, 20)}`;
+  }
+
+  private findParentGrid(
+    element: HTMLElement,
+    verbose: boolean
+  ): HTMLElement | null {
     let current = element;
     while (current && current !== document.body) {
-      console.info(
-        `findParentGrid: Checking element ${current.tagName} with classes: ${current.className}`
-      );
+      // print out the contents of the element with all of its attributes but not the children
+      if (verbose) {
+        console.info(`findParentGrid(${this.tagInfo(element)})`);
+      }
       if (current.classList.contains("grid")) {
         // Ensure the grid is not nested within another cell
         const parentCell = current.closest(".cell");
         if (!parentCell || !parentCell.closest(".grid")) {
-          console.info("findParentGrid: Found main grid.");
+          if (verbose) {
+            console.info(`    --> ${this.tagInfo(current)}`);
+          }
           return current;
         } else {
-          console.info("findParentGrid: Skipping nested grid.");
+          if (verbose) console.info("findParentGrid: Skipping nested grid.");
         }
       }
       current = current.parentElement as HTMLElement;
     }
-    console.info("findParentGrid: Could not find main grid.");
+    if (verbose) {
+      console.info("findParentGrid: Could not find main grid.");
+    }
     return null;
   }
 
-  private findParentRow(element: HTMLElement): HTMLElement | null {
-    let current = element;
-    while (current && current !== document.body) {
-      if (current.classList.contains("row")) {
-        console.info(`findParentRow: Found parent row with class 'row'.`);
-        return current;
-      }
-      current = current.parentElement as HTMLElement;
+  private findRowOfCell(
+    element: HTMLElement,
+    verbose: boolean = false
+  ): HTMLElement | null {
+    if (verbose) {
+      console.info(`findRowOfCell(${this.tagInfo(element)})`);
     }
-    console.info("findParentRow: Could not find parent row.");
-    return null;
+    const parent = element.parentElement;
+    // throw an error if the parent is not a row
+    if (!parent || !parent.classList.contains("row")) {
+      if (verbose) {
+        console.warn(
+          `findRowOfCell: Element ${this.tagInfo(element)} is not inside a row.`
+        );
+      }
+      return null;
+    }
+    if (verbose) {
+      console.info(`    --> ${this.tagInfo(parent)}`);
+    }
+    return parent;
   }
 
   private getColumnIndex(element: HTMLElement): number {
@@ -425,35 +465,42 @@ export class GridUI {
     return index;
   }
 
-  private getRowIndex(row: HTMLElement): number {
-    console.info("getRowIndex: Invoked.");
-    const grid = this.findParentGrid(row);
-    if (!grid) {
-      console.info("getRowIndex: Could not find parent grid for row.");
-      return -1;
+  private getRowIndex(row: HTMLElement, verbose: boolean = false): number {
+    if (verbose) {
+      console.info(`getRowIndex(${this.tagInfo(row)})`);
     }
+    // const grid = this.findParentGrid(row, verbose);
+    // if (!grid) {
+    //   if (verbose) {
+    //     console.info("getRowIndex: Could not find parent grid for row.");
+    //   }
+    //   return -1;
+    // }
 
-    // Filter rows that are direct children of the main grid and not nested
-    const rows = Array.from(grid.children).filter((child) => {
-      const isRow = child.classList.contains("row");
-      const isDirectChild = child.parentElement === grid;
-      const isNotNested = !child.closest(".cell .grid");
-      return isRow && isDirectChild && isNotNested;
-    });
+    // // Filter rows that are direct children of the main grid and not nested
+    // const rows = Array.from(grid.children).filter((child) => {
+    //   const isRow = child.classList.contains("row");
+    //   const isDirectChild = child.parentElement === grid;
+    //   const isNotNested = !child.closest(".cell .grid");
+    //   return isRow && isDirectChild && isNotNested;
+    // });
 
-    console.info(
-      `getRowIndex: Direct rows in grid: ${rows
-        .map((r) => r.outerHTML)
-        .join("\n")}`
-    );
+    // // console.info(
+    // //   `getRowIndex: Direct rows in grid: ${rows
+    // //     .map((r) => r.outerHTML)
+    // //     .join("\n")}`
+    // // );
 
-    const index = rows.indexOf(row);
-    if (index === -1) {
-      console.warn("getRowIndex: Row not found in filtered rows.");
-    }
+    // const index = rows.indexOf(row);
+    // if (index === -1) {
+    //   if (verbose) console.warn("getRowIndex: Row not found in filtered rows.");
+    // }
+    // if (verbose) {
+    //   console.info(`    ----> ${index}`);
+    // }
+    // just return the index of this element from its parent
 
-    console.info(`getRowIndex: Calculated row index as ${index}`);
-    return index;
+    return Array.from(row.parentElement!.children).indexOf(row);
   }
 
   private getSpanValue(element: HTMLElement, cssVar: string): number {
