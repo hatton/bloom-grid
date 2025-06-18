@@ -537,3 +537,260 @@ export function getCell(
 
   throw new Error(`Cell at row ${row}, column ${column} not found`);
 }
+
+/**
+ * Adds a column at the specified index position.
+ * @param grid The grid container element
+ * @param index The position to insert the column (0-based). If not provided, adds at the end.
+ * @param skipHistory Whether to skip adding this operation to history
+ */
+export const addColumnAt = (
+  grid: HTMLElement,
+  index?: number,
+  skipHistory = false
+): void => {
+  if (!grid) return;
+
+  const gridInfo = getGridInfo(grid);
+  const actualIndex = index ?? gridInfo.columnCount;
+
+  assert(
+    actualIndex >= 0 && actualIndex <= gridInfo.columnCount,
+    `Column index ${actualIndex} is out of bounds`
+  );
+
+  const description = `Add Column at ${actualIndex}`;
+  const performOperation = () => {
+    const currentColumnWidths = grid.getAttribute("data-column-widths") || "";
+    const columnWidths = currentColumnWidths
+      ? currentColumnWidths.split(",")
+      : [];
+
+    // Insert new column width at the specified index
+    columnWidths.splice(actualIndex, 0, defaultColumnWidth);
+    grid.setAttribute("data-column-widths", columnWidths.join(","));
+
+    const rowHeightsAttr = grid.getAttribute("data-row-heights") || "";
+    const numRows = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
+    if (numRows === 0) return;
+
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    const originalColumnCount = gridInfo.columnCount; // Use the original count for positioning
+
+    // Insert new cells at the appropriate positions
+    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+      const newCell = document.createElement("div");
+      newCell.className = "cell";
+      const contentEditableDiv = document.createElement("div");
+      contentEditableDiv.contentEditable = "true";
+      newCell.appendChild(contentEditableDiv);
+
+      // Calculate where to insert the new cell based on original grid structure
+      const insertPosition =
+        rowIndex * originalColumnCount + actualIndex + rowIndex;
+      const referenceNode = cells[insertPosition] || null;
+      grid.insertBefore(newCell, referenceNode);
+    }
+  };
+
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
+};
+
+/**
+ * Adds a row at the specified index position.
+ * @param grid The grid container element
+ * @param index The position to insert the row (0-based). If not provided, adds at the end.
+ * @param skipHistory Whether to skip adding this operation to history
+ */
+export const addRowAt = (
+  grid: HTMLElement,
+  index?: number,
+  skipHistory = false
+): void => {
+  if (!grid) return;
+
+  const gridInfo = getGridInfo(grid);
+  const actualIndex = index ?? gridInfo.rowCount;
+
+  assert(
+    actualIndex >= 0 && actualIndex <= gridInfo.rowCount,
+    `Row index ${actualIndex} is out of bounds`
+  );
+
+  const description = `Add Row at ${actualIndex}`;
+  const performOperation = () => {
+    const currentRowHeights = grid.getAttribute("data-row-heights") || "";
+    const rowHeights = currentRowHeights ? currentRowHeights.split(",") : [];
+
+    // Insert new row height at the specified index
+    rowHeights.splice(actualIndex, 0, defaultRowHeight);
+    grid.setAttribute("data-row-heights", rowHeights.join(","));
+
+    const numColumns = gridInfo.columnCount;
+    if (numColumns === 0) return;
+
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+
+    // Insert new cells for the entire row
+    for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+      const newCell = document.createElement("div");
+      newCell.className = "cell";
+      newCell.innerHTML = `<div contenteditable="true"></div>`;
+
+      // Calculate where to insert the new cell
+      const insertPosition = actualIndex * numColumns + colIndex;
+      const referenceNode = cells[insertPosition] || null;
+      grid.insertBefore(newCell, referenceNode);
+    }
+  };
+
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
+};
+
+/**
+ * Removes a column at the specified index position, adjusting spans as needed.
+ * @param grid The grid container element
+ * @param index The column index to remove (0-based)
+ */
+export const removeColumnAt = (grid: HTMLElement, index: number): void => {
+  if (!grid) return;
+
+  const gridInfo = getGridInfo(grid);
+
+  assert(gridInfo.columnCount > 1, "Cannot remove the only column");
+  assert(
+    index >= 0 && index < gridInfo.columnCount,
+    `Column index ${index} is out of bounds`
+  );
+  const description = `Remove Column at ${index}`;
+  const performOperation = () => {
+    // Collect all cell information BEFORE making any changes
+    const cells = Array.from(
+      grid.querySelectorAll(":scope > .cell")
+    ) as HTMLElement[];
+    const cellsToRemove: HTMLElement[] = [];
+    const spansToAdjust: { cell: HTMLElement; newSpanX: number }[] = [];
+
+    // Analyze each cell before making changes
+    for (const cell of cells) {
+      const position = getRowAndColumn(grid, cell);
+      const spanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
+
+      const cellStartCol = position.column;
+      const cellEndCol = cellStartCol + spanX - 1;
+
+      if (cellStartCol === index) {
+        // Cell starts at the column being removed
+        if (spanX > 1) {
+          // Reduce span and keep the cell
+          spansToAdjust.push({ cell, newSpanX: spanX - 1 });
+        } else {
+          // Single-column cell at the removed column - remove it
+          cellsToRemove.push(cell);
+        }
+      } else if (cellStartCol < index && cellEndCol >= index) {
+        // Cell spans across the column being removed - reduce span
+        spansToAdjust.push({ cell, newSpanX: spanX - 1 });
+      }
+    }
+
+    // Update column widths
+    const columnWidths = gridInfo.columnWidths;
+    columnWidths.splice(index, 1);
+    grid.setAttribute("data-column-widths", columnWidths.join(","));
+
+    // Apply span adjustments using direct style manipulation to avoid setCellSpan's DOM traversal
+    for (const { cell, newSpanX } of spansToAdjust) {
+      if (newSpanX === 1) {
+        cell.style.removeProperty("--span-x");
+      } else {
+        cell.style.setProperty("--span-x", newSpanX.toString());
+      }
+    }
+
+    // Remove cells that need to be removed
+    for (const cell of cellsToRemove) {
+      grid.removeChild(cell);
+    }
+  };
+
+  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+};
+
+/**
+ * Removes a row at the specified index position, adjusting spans as needed.
+ * @param grid The grid container element
+ * @param index The row index to remove (0-based)
+ */
+export const removeRowAt = (grid: HTMLElement, index: number): void => {
+  if (!grid) return;
+
+  const gridInfo = getGridInfo(grid);
+
+  assert(gridInfo.rowCount > 1, "Cannot remove the only row");
+  assert(
+    index >= 0 && index < gridInfo.rowCount,
+    `Row index ${index} is out of bounds`
+  );
+  const description = `Remove Row at ${index}`;
+  const performOperation = () => {
+    // Collect all cell information BEFORE making any changes
+    const cells = Array.from(
+      grid.querySelectorAll(":scope > .cell")
+    ) as HTMLElement[];
+    const cellsToRemove: HTMLElement[] = [];
+    const spansToAdjust: { cell: HTMLElement; newSpanY: number }[] = [];
+
+    // Analyze each cell before making changes
+    for (const cell of cells) {
+      const position = getRowAndColumn(grid, cell);
+      const spanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+
+      const cellStartRow = position.row;
+      const cellEndRow = cellStartRow + spanY - 1;
+
+      if (cellStartRow === index) {
+        // Cell starts at the row being removed
+        if (spanY > 1) {
+          // Reduce span and keep the cell
+          spansToAdjust.push({ cell, newSpanY: spanY - 1 });
+        } else {
+          // Single-row cell at the removed row - remove it
+          cellsToRemove.push(cell);
+        }
+      } else if (cellStartRow < index && cellEndRow >= index) {
+        // Cell spans across the row being removed - reduce span
+        spansToAdjust.push({ cell, newSpanY: spanY - 1 });
+      }
+    }
+
+    // Update row heights
+    const rowHeights = gridInfo.rowHeights;
+    rowHeights.splice(index, 1);
+    grid.setAttribute("data-row-heights", rowHeights.join(","));
+
+    // Apply span adjustments using direct style manipulation
+    for (const { cell, newSpanY } of spansToAdjust) {
+      if (newSpanY === 1) {
+        cell.style.removeProperty("--span-y");
+      } else {
+        cell.style.setProperty("--span-y", newSpanY.toString());
+      }
+    }
+
+    // Remove cells that need to be removed
+    for (const cell of cellsToRemove) {
+      grid.removeChild(cell);
+    }
+  };
+
+  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+};

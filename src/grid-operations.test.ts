@@ -1,13 +1,17 @@
 import { it, expect, beforeEach, afterEach } from "vitest";
 import {
   addColumn,
+  addColumnAt,
   addRow,
+  addRowAt,
   defaultColumnWidth,
   defaultRowHeight,
   getCell,
   getGridInfo,
+  removeColumnAt,
   removeLastColumn,
   removeLastRow,
+  removeRowAt,
   setCellSpan,
 } from "./grid-operations";
 import { JSDOM } from "jsdom";
@@ -330,4 +334,214 @@ describe("span-related tests", () => {
     // Should throw error when trying to span 3 rows in a 2-row grid
     expect(() => setCellSpan(cellR0C0, 1, 3)).toThrow();
   });
+});
+
+// Basic positional add/remove tests
+it("addColumnAt(0) adds column at start", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addColumnAt(grid, 0);
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount + 1);
+  expect(info.cellCount).toBe(original.cellCount + original.rowCount);
+});
+
+it("addColumnAt(1) adds column in middle", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addColumnAt(grid, 1);
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount + 1);
+  expect(info.cellCount).toBe(original.cellCount + original.rowCount);
+});
+
+it("addRowAt(0) adds row at start", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addRowAt(grid, 0);
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount + 1);
+  expect(info.cellCount).toBe(original.cellCount + original.columnCount);
+});
+
+it("addRowAt(1) adds row in middle", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addRowAt(grid, 1);
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount + 1);
+  expect(info.cellCount).toBe(original.cellCount + original.columnCount);
+});
+
+it("removeColumnAt(0) removes first column", () => {
+  const grid = newGrid();
+  addColumn(grid); // Make sure we have enough columns
+  const original = getGridInfo(grid);
+  removeColumnAt(grid, 0);
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount - 1);
+  expect(info.cellCount).toBe(original.cellCount - original.rowCount);
+});
+
+it("removeRowAt(0) removes first row", () => {
+  const grid = newGrid();
+  addRow(grid); // Make sure we have enough rows
+  const original = getGridInfo(grid);
+  removeRowAt(grid, 0);
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount - 1);
+  expect(info.cellCount).toBe(original.cellCount - original.columnCount);
+});
+
+it("removeColumnAt throws error when removing only column", () => {
+  const grid = newGrid();
+  // Remove all but one column
+  while (getGridInfo(grid).columnCount > 1) {
+    removeLastColumn(grid);
+  }
+  expect(() => removeColumnAt(grid, 0)).toThrow();
+});
+
+it("removeRowAt throws error when removing only row", () => {
+  const grid = newGrid();
+  // Remove all but one row
+  while (getGridInfo(grid).rowCount > 1) {
+    removeLastRow(grid);
+  }
+  expect(() => removeRowAt(grid, 0)).toThrow();
+});
+
+// Test cell positioning after operations
+it("addColumnAt(0) inserts cells at correct positions", () => {
+  const grid = newGrid();
+
+  // Label cells before operation
+  const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+  cells.forEach((cell, index) => {
+    cell.id = `original-${index}`;
+  });
+
+  const originalInfo = getGridInfo(grid);
+  addColumnAt(grid, 0);
+  const newInfo = getGridInfo(grid);
+
+  expect(newInfo.columnCount).toBe(originalInfo.columnCount + 1);
+  expect(newInfo.cellCount).toBe(
+    originalInfo.cellCount + originalInfo.rowCount
+  );
+
+  // Check that original cells can still be found (they moved positions)
+  const originalCells = Array.from(
+    grid.querySelectorAll(":scope > .cell")
+  ).filter((cell) => cell.id.startsWith("original-"));
+  expect(originalCells.length).toBe(originalInfo.cellCount);
+});
+
+it("removeColumnAt(1) removes correct cells", () => {
+  const grid = newGrid();
+  addColumn(grid); // Start with 3 columns
+
+  const originalInfo = getGridInfo(grid);
+  removeColumnAt(grid, 1); // Remove middle column
+  const newInfo = getGridInfo(grid);
+
+  expect(newInfo.columnCount).toBe(originalInfo.columnCount - 1);
+  expect(newInfo.cellCount).toBe(
+    originalInfo.cellCount - originalInfo.rowCount
+  );
+});
+
+// Test span handling during removal
+it("removeColumnAt reduces span when removing column", () => {
+  const grid = newGrid();
+  addColumn(grid); // 3x2 grid
+
+  const cell = getCell(grid, 0, 0);
+  setCellSpan(cell, 3, 1); // Span across all 3 columns
+
+  removeColumnAt(grid, 1); // Remove middle column
+
+  const spanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
+  expect(spanX).toBe(2); // Should be reduced from 3 to 2
+});
+
+it("removeRowAt reduces span when removing row", () => {
+  const grid = newGrid();
+  addRow(grid); // 2x3 grid
+
+  const cell = getCell(grid, 0, 0);
+  setCellSpan(cell, 1, 3); // Span across all 3 rows
+
+  removeRowAt(grid, 1); // Remove middle row
+
+  const spanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+  expect(spanY).toBe(2); // Should be reduced from 3 to 2
+});
+
+// Error handling tests
+it("addColumnAt throws error for invalid index", () => {
+  const grid = newGrid();
+  const info = getGridInfo(grid);
+  expect(() => addColumnAt(grid, -1)).toThrow();
+  expect(() => addColumnAt(grid, info.columnCount + 1)).toThrow();
+});
+
+it("addRowAt throws error for invalid index", () => {
+  const grid = newGrid();
+  const info = getGridInfo(grid);
+  expect(() => addRowAt(grid, -1)).toThrow();
+  expect(() => addRowAt(grid, info.rowCount + 1)).toThrow();
+});
+
+it("removeColumnAt throws error for invalid index", () => {
+  const grid = newGrid();
+  const info = getGridInfo(grid);
+  expect(() => removeColumnAt(grid, -1)).toThrow();
+  expect(() => removeColumnAt(grid, info.columnCount)).toThrow();
+});
+
+it("removeRowAt throws error for invalid index", () => {
+  const grid = newGrid();
+  const info = getGridInfo(grid);
+  expect(() => removeRowAt(grid, -1)).toThrow();
+  expect(() => removeRowAt(grid, info.rowCount)).toThrow();
+});
+
+// Test that operations work correctly at end positions
+it("addColumnAt works when adding at end", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addColumnAt(grid, original.columnCount); // Add at end
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount + 1);
+});
+
+it("addRowAt works when adding at end", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  addRowAt(grid, original.rowCount); // Add at end
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount + 1);
+});
+
+// Complex span scenario
+it("complex span handling: multiple cells affected", () => {
+  const grid = newGrid();
+  addColumn(grid);
+  addColumn(grid); // 4x2 grid
+
+  // Set up multiple spans
+  const cell00 = getCell(grid, 0, 0);
+  const cell01 = getCell(grid, 0, 2);
+  setCellSpan(cell00, 2, 1); // Spans columns 0-1
+  setCellSpan(cell01, 2, 1); // Spans columns 2-3
+
+  removeColumnAt(grid, 1); // Remove column 1
+
+  // Check that spans were adjusted correctly
+  const span00 = parseInt(cell00.style.getPropertyValue("--span-x")) || 1;
+  const span01 = parseInt(cell01.style.getPropertyValue("--span-x")) || 1;
+
+  expect(span00).toBe(1); // Reduced from 2 to 1
+  expect(span01).toBe(2); // Should remain 2 (now spans columns 1-2)
 });
