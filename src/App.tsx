@@ -12,10 +12,8 @@ const App: React.FC = () => {
   const getGridState = (grid: HTMLElement | null) => {
     if (!grid) return { rowCount: 0, columnCount: 0, hasBorders: false };
 
-    const rows = Array.from(grid.children).filter((child) =>
-      child.classList.contains("row")
-    );
-    const rowCount = rows.length;
+    const rowHeightsAttr = grid.getAttribute("data-row-heights");
+    const rowCount = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
 
     const columnWidthsAttr = grid.getAttribute("data-column-widths");
     const columnCount = columnWidthsAttr

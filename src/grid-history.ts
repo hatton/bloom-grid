@@ -1,7 +1,7 @@
 export interface GridState {
   innerHTML: string;
   columnWidths: string;
-  rowHeights: { [key: string]: string };
+  rowHeights: string;
   gridStyles: { [key: string]: string };
 }
 
@@ -19,28 +19,15 @@ class GridHistoryManager {
   private operationInProgress = false; // Prevents nested or concurrent operations
 
   private captureGridState(grid: HTMLElement): GridState {
-    // Capture row heights from all rows
-    const rowHeights: { [key: string]: string } = {};
-    const rows = grid.querySelectorAll(".row");
-    rows.forEach((row, index) => {
-      const height = row.getAttribute("data-row-height");
-      if (height) {
-        rowHeights[index.toString()] = height;
-      }
-    });
-
-    // Capture relevant grid styles
-    const gridStyles: { [key: string]: string } = {};
-    const computedStyle = getComputedStyle(grid);
-    gridStyles["display"] = computedStyle.display;
-    gridStyles["grid-template-columns"] = computedStyle.gridTemplateColumns;
-    gridStyles["grid-template-rows"] = computedStyle.gridTemplateRows;
-
     return {
       innerHTML: grid.innerHTML,
       columnWidths: grid.getAttribute("data-column-widths") || "",
-      rowHeights: rowHeights,
-      gridStyles: gridStyles,
+      rowHeights: grid.getAttribute("data-row-heights") || "",
+      gridStyles: {
+        display: getComputedStyle(grid).display,
+        "grid-template-columns": getComputedStyle(grid).gridTemplateColumns,
+        "grid-template-rows": getComputedStyle(grid).gridTemplateRows,
+      },
     };
   }
   addHistoryEntry(

@@ -13,14 +13,9 @@ const applyColumns = (grid: HTMLElement): void => {
 };
 
 const applyRows = (grid: HTMLElement): void => {
-  const rows = Array.from(grid.children).filter(
-    (e): e is HTMLElement =>
-      e instanceof HTMLElement && e.classList.contains("row")
-  );
-  if (rows.length === 0) return;
-  const template = rows
-    .map((r) => mapToken(r.getAttribute("data-row-height") || "fit"))
-    .join(" ");
+  const spec = grid.getAttribute("data-row-heights");
+  if (!spec) return;
+  const template = spec.split(",").map(mapToken).join(" ");
   grid.style.gridTemplateRows = template;
 };
 
@@ -37,19 +32,14 @@ const initGridObserver = (): void => {
     mutationsList.forEach((mutation) => {
       if (mutation.type === "attributes") {
         const targetElement = mutation.target;
-        if (targetElement instanceof HTMLElement) {
+        if (
+          targetElement instanceof HTMLElement &&
+          targetElement.classList.contains("grid")
+        ) {
           if (mutation.attributeName === "data-column-widths") {
             applyColumns(targetElement);
-          } else if (
-            mutation.attributeName === "data-row-height" &&
-            targetElement.classList.contains("row")
-          ) {
-            // If data-row-height changes on a .row, update its parent .grid
-            const grid =
-              targetElement.parentElement?.closest<HTMLElement>(".grid");
-            if (grid) {
-              applyRows(grid);
-            }
+          } else if (mutation.attributeName === "data-row-heights") {
+            applyRows(targetElement);
           }
         }
       } else if (mutation.type === "childList") {
@@ -58,28 +48,6 @@ const initGridObserver = (): void => {
             // If a new .grid is added, apply styles to it
             if (node.classList.contains("grid")) {
               applyGrid(node);
-            }
-            // If a new .row is added, update its parent .grid
-            else if (node.classList.contains("row")) {
-              const grid = node.parentElement?.closest<HTMLElement>(".grid");
-              if (grid) {
-                applyRows(grid);
-              }
-            }
-          }
-        });
-        mutation.removedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) {
-            // If a .row is removed, update its parent .grid
-            if (node.classList.contains("row")) {
-              // mutation.target is the parent from which the node was removed
-              const parentOfRemovedNode = mutation.target;
-              if (parentOfRemovedNode instanceof HTMLElement) {
-                const grid = parentOfRemovedNode.closest<HTMLElement>(".grid");
-                if (grid) {
-                  applyRows(grid);
-                }
-              }
             }
           }
         });
@@ -91,7 +59,7 @@ const initGridObserver = (): void => {
     childList: true, // Observe direct children additions/removals
     subtree: true, // Observe all descendants
     attributes: true, // Observe attribute changes
-    attributeFilter: ["data-column-widths", "data-row-height"], // Only specific attributes
+    attributeFilter: ["data-column-widths", "data-row-heights"], // Only specific attributes
   });
 };
 

@@ -2,14 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>
-      CSS‑Grid Requirements Demo – three‑tier styl <!-- -------- <!-- ----------
-      Row 4 (default fit) ---------- --> <div class="row"> <div class="cell">
-      <div contenteditable="true">Papa i salim mama smapim lip.</div> </div>
-      </div>ow 4 (default fit) ---------- --> <div class="row"> <div
-      class="cell"> Final row spanning the full width </div> </div>efaults →
-      grid → cell)
-    </title>
+    <title>CSS-Grid Requirements Demo</title>
 
     <style>
       /* ---------- Global defaults (tier‑1) ---------- */
@@ -38,10 +31,6 @@
         background: var(--bg, transparent);
 
         /* grid-template-columns and -rows injected by JS */
-      }
-
-      .row {
-        display: contents;
       }
 
       .cell {
@@ -84,6 +73,7 @@
         id="main-grid"
         class="grid"
         data-column-widths="fill"
+        data-row-heights="fit,fit,fit,fit"
         style="
           height: 100%;
           --bg: #ffffff; /* if we see this, it means our cell counts are off */
@@ -96,76 +86,68 @@
           /*--cell-border-color: #ecf0f6;*/
         "
       >
-        <div class="row">
-          <div class="cell">
-            <div contenteditable="true">
-              <h1>A heading</h1>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor
-                in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-                nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-                sunt in culpa qui officia deserunt mollit anim id est laborum.
-              </p>
-            </div>
+        <!-- ---------- Row 1 ---------- -->
+        <div class="cell">
+          <div contenteditable="true">
+            <h1>A heading</h1>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+              enim ad minim veniam, quis nostrud exercitation ullamco laboris
+              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+              reprehenderit in voluptate velit esse cillum dolore eu fugiat
+              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+              sunt in culpa qui officia deserunt mollit anim id est laborum.
+            </p>
           </div>
         </div>
 
-        <div class="row">
-          <div class="cell">
-            <div
-              class="grid"
-              data-column-widths="fill,fill"
-              style="--border-color: green; --cell-border-width: 1px"
-            >
-              <div class="row">
-                <div class="cell"><div contenteditable="true">A</div></div>
-                <div class="cell"><div contenteditable="true">B</div></div>
-              </div>
-              <div class="row">
-                <div class="cell" style="--span-x: 2">
-                  <div contenteditable="true">Spanning nested cell</div>
-                </div>
-              </div>
+        <!-- ---------- Row 2 ---------- -->
+        <div class="cell">
+          <div
+            class="grid"
+            data-column-widths="fill,fill"
+            data-row-heights="fit,fit"
+            style="--border-color: green; --cell-border-width: 1px"
+          >
+            <!-- Row 2.1 -->
+            <div class="cell"><div contenteditable="true">A</div></div>
+            <div class="cell"><div contenteditable="true">B</div></div>
+            <!-- Row 2.2 -->
+            <div class="cell" style="--span-x: 2">
+              <div contenteditable="true">Spanning nested cell</div>
             </div>
           </div>
         </div>
 
         <!-- ---------- Row 3 (fill) ---------- -->
-        <div class="row" data-row-height="fit">
-          <div class="cell">
-            <div
-              class="grid"
-              data-column-widths="fit,fit,fit"
-              style="
-                --cell-border-color: black;
-                --cell-border-width: 1px;
-                margin-left: auto;
-                margin-right: auto;
-                width: fit-content;
-              "
-            >
-              <div class="row">
-                <div class="cell"><div contenteditable="true">l</div></div>
-                <div class="cell"><div contenteditable="true">a</div></div>
-                <div class="cell"><div contenteditable="true">m</div></div>
-              </div>
-              <div class="row">
-                <div class="cell"><div contenteditable="true">i</div></div>
-                <div class="cell"><div contenteditable="true">p</div></div>
-                <div class="cell"><div contenteditable="true">i</div></div>
-              </div>
-            </div>
+        <div class="cell">
+          <div
+            class="grid"
+            data-column-widths="fit,fit,fit"
+            data-row-heights="fit,fit"
+            style="
+              --cell-border-color: black;
+              --cell-border-width: 1px;
+              margin-left: auto;
+              margin-right: auto;
+              width: fit-content;
+            "
+          >
+            <!-- Row 3.1 -->
+            <div class="cell"><div contenteditable="true">l</div></div>
+            <div class="cell"><div contenteditable="true">a</div></div>
+            <div class="cell"><div contenteditable="true">m</div></div>
+            <!-- Row 3.2 -->
+            <div class="cell"><div contenteditable="true">i</div></div>
+            <div class="cell"><div contenteditable="true">p</div></div>
+            <div class="cell"><div contenteditable="true">i</div></div>
           </div>
         </div>
 
         <!-- ---------- Row 4 (default fit) ---------- -->
-        <div class="row">
-          <div class="cell">
-            <div contenteditable="true">Papa i salim mama smapim lip.</div>
-          </div>
+        <div class="cell">
+          <div contenteditable="true">Papa i salim mama smapim lip.</div>
         </div>
       </div>
     </div>
