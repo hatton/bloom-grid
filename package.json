@@ -14,7 +14,7 @@
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "yarn vitest"
+    "test": "vitest run"
   },
   "keywords": [
     "grid",

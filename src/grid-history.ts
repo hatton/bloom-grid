@@ -22,12 +22,13 @@ class GridHistoryManager {
     this.attachedGrids = new Set();
     this.operationInProgress = false;
   }
-
   private captureGridState(grid: HTMLElement): GridState {
     return {
       innerHTML: grid.innerHTML,
       attributes: Array.from(grid.attributes).reduce((acc, attr) => {
-        acc[attr.name] = attr.value;
+        if (attr && attr.name) {
+          acc[attr.name] = attr.value;
+        }
         return acc;
       }, {} as Record<string, string>),
     };
@@ -166,11 +167,16 @@ class GridHistoryManager {
     });
     document.dispatchEvent(event);
   }
-
   private defaultUndoOperation(grid: HTMLElement, prevState: GridState): void {
     // First, remove all existing attributes
     while (grid.attributes.length > 0) {
-      grid.removeAttribute(grid.attributes[0].name);
+      const firstAttr = grid.attributes[0];
+      if (firstAttr && firstAttr.name) {
+        grid.removeAttribute(firstAttr.name);
+      } else {
+        // If we can't access the attribute properly, break to avoid infinite loop
+        break;
+      }
     }
 
     // Then restore the previous attributes
