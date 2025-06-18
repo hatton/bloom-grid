@@ -1,5 +1,8 @@
 import { gridHistoryManager } from "./grid-history";
 
+export const defaultColumnWidth = "fit";
+export const defaultRowHeight = "fit";
+
 export const getTargetGrid = (): HTMLElement | null => {
   // Start from the currently focused element
   let currentElement = document.activeElement as HTMLElement | null;
@@ -12,7 +15,7 @@ export const getTargetGrid = (): HTMLElement | null => {
   return currentElement.closest<HTMLElement>(".grid") || null;
 };
 
-export const addRow = (grid: HTMLElement): void => {
+export const addRow = (grid: HTMLElement, skipHistory = false): void => {
   if (!grid) return;
 
   const description = "Add Row";
@@ -24,8 +27,8 @@ export const addRow = (grid: HTMLElement): void => {
 
     const currentRowHeights = grid.getAttribute("data-row-heights") || "";
     const newRowHeights = currentRowHeights
-      ? `${currentRowHeights},fit`
-      : "fit";
+      ? `${currentRowHeights},${defaultRowHeight}`
+      : defaultRowHeight;
     grid.setAttribute("data-row-heights", newRowHeights);
 
     for (let i = 0; i < numColumns; i++) {
@@ -36,25 +39,11 @@ export const addRow = (grid: HTMLElement): void => {
     }
   };
 
-  const undoOperation = (
-    gridElement: HTMLElement,
-    prevState: import("./grid-history").GridState
-  ) => {
-    // Restore the entire grid state from before the row was added.
-    gridElement.innerHTML = prevState.innerHTML;
-    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
-    gridElement.setAttribute("data-row-heights", prevState.rowHeights);
-    Object.keys(prevState.gridStyles).forEach((key) => {
-      (gridElement.style as any)[key] = prevState.gridStyles[key];
-    });
-  };
-
-  gridHistoryManager.addHistoryEntry(
-    grid,
-    description,
-    performOperation,
-    undoOperation
-  );
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
 };
 
 export const removeLastRow = (grid: HTMLElement): void => {
@@ -81,28 +70,10 @@ export const removeLastRow = (grid: HTMLElement): void => {
     cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
 
-  const undoOperation = (
-    gridElement: HTMLElement,
-    prevState: import("./grid-history").GridState
-  ) => {
-    // Restore the entire grid state from before the row was removed.
-    gridElement.innerHTML = prevState.innerHTML;
-    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
-    gridElement.setAttribute("data-row-heights", prevState.rowHeights);
-    Object.keys(prevState.gridStyles).forEach((key) => {
-      (gridElement.style as any)[key] = prevState.gridStyles[key];
-    });
-  };
-
-  gridHistoryManager.addHistoryEntry(
-    grid,
-    description,
-    performOperation,
-    undoOperation
-  );
+  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
 };
 
-export const addColumn = (grid: HTMLElement): void => {
+export const addColumn = (grid: HTMLElement, skipHistory = false): void => {
   if (!grid) return;
 
   const description = "Add Column";
@@ -112,8 +83,8 @@ export const addColumn = (grid: HTMLElement): void => {
       ? currentColumnWidths.split(",").length
       : 0;
     const newColumnWidths = currentColumnWidths
-      ? `${currentColumnWidths},fit`
-      : "fit";
+      ? `${currentColumnWidths},${defaultColumnWidth}`
+      : defaultColumnWidth;
     grid.setAttribute("data-column-widths", newColumnWidths);
 
     const rowHeightsAttr = grid.getAttribute("data-row-heights") || "";
@@ -122,38 +93,27 @@ export const addColumn = (grid: HTMLElement): void => {
 
     const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
 
-    for (let i = numRows - 1; i >= 0; i--) {
+    for (let i = 0; i < numRows; i++) {
       const newCell = document.createElement("div");
       newCell.className = "cell";
       // add a contenteditable div to the new cell
       const contentEditableDiv = document.createElement("div");
       contentEditableDiv.contentEditable = "true";
-
       newCell.appendChild(contentEditableDiv);
-      const referenceNode = cells[(i + 1) * numColumns];
-      grid.insertBefore(newCell, referenceNode || null);
+
+      // Calculate the position where the new cell should be inserted
+      // For each row, we want to insert after the last cell of that row
+      const insertPosition = i * numColumns + numColumns;
+      const referenceNode = cells[insertPosition] || null;
+      grid.insertBefore(newCell, referenceNode);
     }
   };
 
-  const undoOperation = (
-    gridElement: HTMLElement,
-    prevState: import("./grid-history").GridState
-  ) => {
-    // Restore the entire grid state from before the column was added.
-    gridElement.innerHTML = prevState.innerHTML;
-    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
-    gridElement.setAttribute("data-row-heights", prevState.rowHeights);
-    Object.keys(prevState.gridStyles).forEach((key) => {
-      (gridElement.style as any)[key] = prevState.gridStyles[key];
-    });
-  };
-
-  gridHistoryManager.addHistoryEntry(
-    grid,
-    description,
-    performOperation,
-    undoOperation
-  );
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
 };
 
 export const undoLastOperation = (grid: HTMLElement): boolean => {
@@ -201,22 +161,30 @@ export function removeLastColumn(grid: HTMLElement) {
       }
     }
   };
-  const undoOperation = (
-    gridElement: HTMLElement,
-    prevState: import("./grid-history").GridState
-  ) => {
-    // Restore the entire grid state from before the column was removed.
-    gridElement.innerHTML = prevState.innerHTML;
-    gridElement.setAttribute("data-column-widths", prevState.columnWidths);
-    gridElement.setAttribute("data-row-heights", prevState.rowHeights);
-    Object.keys(prevState.gridStyles).forEach((key) => {
-      (gridElement.style as any)[key] = prevState.gridStyles[key];
-    });
+
+  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+}
+
+export function getGridInfo(grid: HTMLElement): {
+  columnCount: number;
+  rowCount: number;
+  columnWidths: string[];
+  rowHeights: string[];
+  cellCount: number;
+} {
+  const columnWidths = (grid.getAttribute("data-column-widths") || "")
+    .split(",")
+    .filter((width) => width.trim() !== "");
+  const rowHeights = (grid.getAttribute("data-row-heights") || "")
+    .split(",")
+    .filter((height) => height.trim() !== "");
+  const cellCount = grid.querySelectorAll(":scope > .cell").length;
+
+  return {
+    columnWidths,
+    rowHeights,
+    cellCount,
+    columnCount: columnWidths.length,
+    rowCount: rowHeights.length,
   };
-  gridHistoryManager.addHistoryEntry(
-    grid,
-    description,
-    performOperation,
-    undoOperation
-  );
 }

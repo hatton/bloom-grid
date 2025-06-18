@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import * as GridUtils from "./grid-operations";
+import * as GridOps from "./grid-operations";
 import { dragToResize } from "./drag-to-resize";
+import { attachGrid } from "./grid-attach";
 
 const App: React.FC = () => {
   const [canUndo, setCanUndo] = useState(false);
@@ -30,17 +31,17 @@ const App: React.FC = () => {
 
   // Update all UI state based on current grid
   const updateUIState = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     const { rowCount, columnCount, hasBorders } = getGridState(grid);
 
-    setCanUndo(GridUtils.canUndo());
+    setCanUndo(GridOps.canUndo());
     setCanRemoveRow(rowCount > 1);
     setCanRemoveColumn(columnCount > 1);
     setShowBorders(hasBorders);
   };
   // Handle border toggle
   const handleBorderToggle = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (!grid) {
       console.warn("Target grid not found for updating border visibility.");
       return;
@@ -62,7 +63,7 @@ const App: React.FC = () => {
     // get it from the body
     const mainGrid = document.querySelector("#main-grid");
     if (mainGrid) {
-      dragToResize.attach(mainGrid! as HTMLElement);
+      attachGrid(mainGrid! as HTMLElement);
       // Set initial border state based on current grid
       updateUIState();
     }
@@ -96,9 +97,9 @@ const App: React.FC = () => {
     };
   }, []);
   const handleAddRow = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (grid) {
-      GridUtils.addRow(grid);
+      GridOps.addRow(grid);
       updateUIState();
     } else {
       console.warn("Target grid not found for adding a row.");
@@ -106,9 +107,9 @@ const App: React.FC = () => {
   };
 
   const handleRemoveRow = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (grid) {
-      GridUtils.removeLastRow(grid);
+      GridOps.removeLastRow(grid);
       updateUIState();
     } else {
       console.warn("Target grid not found for removing a row.");
@@ -116,9 +117,9 @@ const App: React.FC = () => {
   };
 
   const handleAddColumn = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (grid) {
-      GridUtils.addColumn(grid);
+      GridOps.addColumn(grid);
       updateUIState();
     } else {
       console.warn("Target grid not found for adding a column.");
@@ -126,9 +127,9 @@ const App: React.FC = () => {
   };
 
   const handleRemoveColumn = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (grid) {
-      GridUtils.removeLastColumn(grid);
+      GridOps.removeLastColumn(grid);
       updateUIState();
     } else {
       console.warn("Target grid not found for removing a column.");
@@ -136,9 +137,9 @@ const App: React.FC = () => {
   };
 
   const handleUndo = () => {
-    const grid = GridUtils.getTargetGrid();
+    const grid = GridOps.getTargetGrid();
     if (grid) {
-      const success = GridUtils.undoLastOperation(grid);
+      const success = GridOps.undoLastOperation(grid);
       updateUIState();
       if (!success) {
         console.warn("No operations to undo or undo failed.");

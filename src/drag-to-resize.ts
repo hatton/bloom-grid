@@ -35,7 +35,7 @@ export class DragToResize {
     }
 
     this.attachedGrids.add(div);
-    gridHistoryManager.attachGrid(div); // Add event listeners
+
     div.addEventListener("mousemove", this.updateCursorOnMouseMove);
     div.addEventListener("mousedown", this.handleMouseDown);
     div.addEventListener("dblclick", this.handleDoubleClick);
@@ -399,7 +399,7 @@ export class DragToResize {
 
   private findParentGrid(
     row: HTMLElement,
-    verbose: boolean
+    _verbose: boolean
   ): HTMLElement | null {
     return row.closest<HTMLElement>(".grid") || null;
   }
@@ -570,45 +570,6 @@ export class DragToResize {
       );
     }
   };
-
-  private calculateActualColumnWidth(
-    grid: HTMLElement,
-    columnIndex: number
-  ): number {
-    // Try to find a cell in the specified column to measure its width
-    const rows = grid.querySelectorAll(".row");
-
-    for (const row of rows) {
-      const cells = row.querySelectorAll('.cell, [class*="cell"]');
-      if (columnIndex < cells.length) {
-        const cell = cells[columnIndex] as HTMLElement;
-        const rect = cell.getBoundingClientRect();
-        return Math.round(rect.width);
-      }
-    }
-
-    // Fallback: try to calculate based on grid template columns if available
-    const computedStyle = window.getComputedStyle(grid);
-    const gridTemplateColumns = computedStyle.gridTemplateColumns;
-
-    if (gridTemplateColumns && gridTemplateColumns !== "none") {
-      const columns = gridTemplateColumns.split(" ");
-      if (columnIndex < columns.length) {
-        const columnValue = columns[columnIndex];
-        // If it's a pixel value, extract it
-        const match = columnValue.match(/(\d+(?:\.\d+)?)px/);
-        if (match) {
-          return parseFloat(match[1]);
-        }
-        // If it's a fractional unit or other value, estimate based on grid width
-        const gridRect = grid.getBoundingClientRect();
-        return Math.round(gridRect.width / columns.length);
-      }
-    }
-
-    // Ultimate fallback
-    return 200;
-  }
 
   private getColumnLeftEdge(grid: HTMLElement, columnIndex: number): number {
     // Force layout to ensure we get current measurements

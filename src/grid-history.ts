@@ -1,15 +1,13 @@
 export interface GridState {
   innerHTML: string;
-  columnWidths: string;
-  rowHeights: string;
-  gridStyles: { [key: string]: string };
+  attributes?: Record<string, string>;
 }
 
 export interface HistoryEntry {
   state: GridState; // The state *before* the operation was performed
   timestamp: number;
   description: string;
-  undoOperation: (grid: HTMLElement, prevState: GridState) => void;
+  undoOperation?: (grid: HTMLElement, prevState: GridState) => void;
 }
 
 class GridHistoryManager {
@@ -18,16 +16,20 @@ class GridHistoryManager {
   private attachedGrids = new Set<HTMLElement>();
   private operationInProgress = false; // Prevents nested or concurrent operations
 
+  // For testing purposes only
+  reset(): void {
+    this.history = [];
+    this.attachedGrids = new Set();
+    this.operationInProgress = false;
+  }
+
   private captureGridState(grid: HTMLElement): GridState {
     return {
       innerHTML: grid.innerHTML,
-      columnWidths: grid.getAttribute("data-column-widths") || "",
-      rowHeights: grid.getAttribute("data-row-heights") || "",
-      gridStyles: {
-        display: getComputedStyle(grid).display,
-        "grid-template-columns": getComputedStyle(grid).gridTemplateColumns,
-        "grid-template-rows": getComputedStyle(grid).gridTemplateRows,
-      },
+      attributes: Array.from(grid.attributes).reduce((acc, attr) => {
+        acc[attr.name] = attr.value;
+        return acc;
+      }, {} as Record<string, string>),
     };
   }
   addHistoryEntry(
@@ -36,7 +38,7 @@ class GridHistoryManager {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     performOperation: () => void, // The function that actually performs the DOM change
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    undoOperation: (grid: HTMLElement, prevState: GridState) => void
+    undoOperation?: (grid: HTMLElement, prevState: GridState) => void
   ): void {
     // Find the top-level grid - we may have been handed a child grid, but our history is for the top-level grid
     const topLevelGrid = this.findTopLevelGrid(grid);
@@ -54,9 +56,7 @@ class GridHistoryManager {
       return;
     }
 
-    //console.info(`GridHistoryManager: Adding history entry - ${description}`);
     // Capture the state of the grid
-
     const stateBeforeOperation = this.captureGridState(topLevelGrid);
 
     this.operationInProgress = true;
@@ -70,30 +70,22 @@ class GridHistoryManager {
         state: stateBeforeOperation,
         timestamp: Date.now(),
         description,
-        undoOperation,
+        undoOperation:
+          undoOperation ||
+          ((grid, state) => this.defaultUndoOperation(grid, state)),
       };
       this.history.push(entry);
       if (this.history.length > this.maxHistorySize) {
         this.history.shift();
       }
-      //console.info(`GridHistoryManager: Added entry - ${description}`);
     } catch (error) {
       console.error(
         "GridHistoryManager: Error during operation execution:",
         error
       );
-      // Optionally, try to restore the previous state if performOperation fails mid-way
-      // This would require performOperation to be transactional or the restoration logic to be robust.
     } finally {
       this.operationInProgress = false;
-      //console.log(
-      //`GridHistoryManager: Add entry finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
-      //);
-      // Dispatch a custom event to notify that an operation has completed and history has been updated
-      // Only dispatch if the operation was meant to add a history entry (even if it failed, to update UI)
-      // However, we only pushed to history on success.
       if (operationSuccess) {
-        // Only dispatch if entry was actually added
         const event = new CustomEvent("gridHistoryUpdated", {
           detail: { operation: description, canUndo: this.canUndo() },
         });
@@ -104,8 +96,6 @@ class GridHistoryManager {
 
   undo(grid: HTMLElement): boolean {
     if (!this.canUndo()) {
-      // This console.warn is already inside canUndo if it's due to operationInProgress
-      // but good to have a specific one for the undo action itself.
       console.warn(
         "GridHistoryManager: Cannot undo. Either history is empty or an operation is in progress."
       );
@@ -114,32 +104,22 @@ class GridHistoryManager {
 
     const entry = this.history.pop();
     if (!entry) {
-      // This case should ideally be caught by this.history.length > 0 in canUndo,
-      // but as a safeguard:
       console.warn("GridHistoryManager: History is empty, cannot undo.");
       return false;
     }
 
-    //console.info(`GridHistoryManager: Undoing - ${entry.description}`);
     this.operationInProgress = true;
     let undoSuccess = false;
     try {
-      entry.undoOperation(grid, entry.state);
+      const undoOp =
+        entry.undoOperation ||
+        ((grid, state) => this.defaultUndoOperation(grid, state));
+      undoOp(grid, entry.state);
       undoSuccess = true;
-      //console.info(
-      //  `GridHistoryManager: Successfully undid - ${entry.description}`
-      //);
     } catch (error) {
       console.error("GridHistoryManager: Error during undo operation:", error);
-      // If undo fails, the entry is already popped.
-      // Depending on desired behavior, could re-add it or log for manual recovery.
-      // For now, it remains popped.
     } finally {
       this.operationInProgress = false;
-      //console.log(
-      //        `GridHistoryManager: Undo operation finished. operationInProgress: ${this.operationInProgress}. Dispatching event.`
-      //    );
-      // Dispatch event AFTER operationInProgress is false, regardless of undo success, to update UI
       const event = new CustomEvent("gridHistoryUpdated", {
         detail: {
           operation: `Undo ${entry.description}`,
@@ -185,6 +165,23 @@ class GridHistoryManager {
       detail: { operation: "Clear History" },
     });
     document.dispatchEvent(event);
+  }
+
+  private defaultUndoOperation(grid: HTMLElement, prevState: GridState): void {
+    // First, remove all existing attributes
+    while (grid.attributes.length > 0) {
+      grid.removeAttribute(grid.attributes[0].name);
+    }
+
+    // Then restore the previous attributes
+    if (prevState.attributes) {
+      Object.entries(prevState.attributes).forEach(([name, value]) => {
+        grid.setAttribute(name, value);
+      });
+    }
+
+    // Finally, restore the innerHTML
+    grid.innerHTML = prevState.innerHTML;
   }
 
   private findTopLevelGrid(grid: HTMLElement): HTMLElement {
