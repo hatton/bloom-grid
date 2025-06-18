@@ -5,6 +5,8 @@ import {
   defaultColumnWidth,
   defaultRowHeight,
   getGridInfo,
+  removeLastColumn,
+  removeLastRow,
 } from "./grid-operations";
 import { JSDOM } from "jsdom";
 import { gridHistoryManager } from "./grid-history";
@@ -78,4 +80,61 @@ it("addRow adds heights", () => {
   expect(grid.getAttribute("data-row-heights")).toBe(
     `50px,100px,${defaultRowHeight}`
   );
+});
+it("removeLastRow removes the last row of cells", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  removeLastRow(grid);
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount - 1);
+  expect(info.cellCount).toBe(original.cellCount - original.columnCount);
+});
+
+it("removeLastRow updates row heights", () => {
+  const grid = newGrid();
+  grid.setAttribute("data-column-widths", "100px,200px");
+  grid.setAttribute("data-row-heights", "50px,100px");
+
+  removeLastRow(grid);
+
+  expect(grid.getAttribute("data-row-heights")).toBe("50px");
+});
+
+it("removeLastRow does nothing if no rows exist", () => {
+  const grid = newGrid();
+  grid.setAttribute("data-row-heights", "");
+  const original = getGridInfo(grid);
+  removeLastRow(grid);
+  const info = getGridInfo(grid);
+  expect(info.rowCount).toBe(original.rowCount);
+  expect(info.cellCount).toBe(original.cellCount);
+});
+
+it("removeLastColumn removes the last column of cells", () => {
+  const grid = newGrid();
+  const original = getGridInfo(grid);
+  removeLastColumn(grid);
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount - 1);
+  expect(info.cellCount).toBe(original.cellCount - original.rowCount);
+});
+
+it("removeLastColumn updates column widths", () => {
+  const grid = newGrid();
+  grid.setAttribute("data-column-widths", "100px,200px");
+  grid.setAttribute("data-row-heights", "50px,100px");
+
+  removeLastColumn(grid);
+
+  expect(grid.getAttribute("data-column-widths")).toBe("100px");
+});
+
+it("removeLastColumn does nothing if no columns exist", () => {
+  const grid = newGrid();
+  grid.setAttribute("data-column-widths", "");
+  const original = getGridInfo(grid);
+  removeLastColumn(grid);
+  const info = getGridInfo(grid);
+  expect(info.columnCount).toBe(original.columnCount);
+  expect(info.cellCount).toBe(original.cellCount);
 });
