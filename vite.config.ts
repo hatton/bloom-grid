@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import dts from "vite-plugin-dts";
 import react from "@vitejs/plugin-react";
+import fs from "fs";
+import path from "path";
 
 export default defineConfig(({ command }) => {
   const isProduction = command === "build";
@@ -12,6 +14,21 @@ export default defineConfig(({ command }) => {
       dts({
         insertTypesEntry: true,
       }),
+      // Custom plugin to copy CSS file to dist folder
+      {
+        name: "copy-css-file",
+        writeBundle() {
+          if (fs.existsSync("bloom-grid.css")) {
+            if (!fs.existsSync("dist")) {
+              fs.mkdirSync("dist");
+            }
+            fs.copyFileSync(
+              "bloom-grid.css",
+              path.join("dist", "bloom-grid.css")
+            );
+          }
+        },
+      },
     ],
     // Development server configuration
     server: {

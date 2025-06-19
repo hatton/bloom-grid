@@ -3,17 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <title>CSS-Grid Requirements Demo</title>
+    <link rel="stylesheet" href="bloom-grid.css" />
 
     <style>
-      /* ---------- Global defaults (tier‑1) ---------- */
-      :root {
-        /* default look for every <div class="cell"> unless overridden */
-        --cell-bg: #fff; /* white background */
-        --cell-padding: 8px 10px; /* roomy text padding */
-        --cell-border-width: 1px; /* 1 px hairlines */
-        --cell-border-color: #444; /* dark grey stroke */
-      }
-
       /* ---------------- Base page styling ---------------- */
       body {
         font-family: Arial, sans-serif;
@@ -22,41 +14,6 @@
       h1 {
         font-size: 1.35rem;
         margin-bottom: 1rem;
-      }
-
-      /* ---------- Core layout utilities (value‑agnostic) ---------- */
-      .grid {
-        display: grid;
-        gap: var(--gap, 0);
-        background: var(--bg, transparent);
-
-        /* grid-template-columns and -rows injected by JS */
-      }
-
-      .cell {
-        /* Tier‑2: inherit (or override) from the parent .grid */
-        background: var(--cell-bg);
-        padding: var(--cell-padding);
-        outline: var(--cell-border-width) solid var(--cell-border-color);
-
-        /* Tier‑3: this individual cell can override via inline vars */
-        background: var(--this-bg, var(--cell-bg));
-        padding: var(--this-padding, var(--cell-padding));
-
-        grid-column: span var(--span-x, 1);
-        grid-row: span var(--span-y, 1);
-      }
-
-      /* --- NEW RULE --- */
-      /* A skipped cell is one that is logically "covered" by
-         a previous cell's row or column span. We hide it
-         completely so the grid layout ignores it. */
-      .cell.skip {
-        display: none;
-      }
-
-      [contenteditable]:focus {
-        outline: none; /* Removes the border completely */
       }
     </style>
   </head>
