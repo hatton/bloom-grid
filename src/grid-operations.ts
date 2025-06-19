@@ -5,7 +5,7 @@
  *
  * ## Grid Representation
  *
- * Grids are represented using a simple but flexible HTML structure:
+ * Grids are represented using this HTML structure:
  *
  * ### HTML Structure:
  * ```html
@@ -36,14 +36,19 @@
  * - A cell spanning 2 rows will "cover" the cell below it
  *
  * ### Spanning Behavior:
- * - When a cell spans multiple columns/rows, the covered cells are REMOVED from the DOM
- * - Only cells in the direct span path are removed (not diagonal cells)
- * - Example: cell[0,0] spanning 2x2 removes cell[0,1] and cell[1,0] but NOT cell[1,1]
+ * - When a cell spans multiple columns/rows, the covered cells are preserved in the DOM,
+ * but they get a "skip" class to indicate they are not active.
+ * - A cell spanning multiple columns and rows covers a rectangular area.
+ * - Example: cell[0,0] spanning 2x2 in a 2x2 grid causes cell[0,1], cell[1,0], and cell[1,1] to be marked as skipped.
  *
  * ### Size Values:
  * - "fit": CSS Grid minmax(max-content,max-content) - size to content
  * - "fill": CSS Grid minmax(0,1fr) - expand to fill available space
  * - Standard CSS units: "100px", "2rem", "50%", etc.
+ *
+ * # Warning:
+ * Be careful with querySelectorAll with advanced selectors like ":scope > .cell". because the unit tests
+ * use happy-dom, which do not support this selector properly. There may be other selectors that also do not work.
  */
 
 import { gridHistoryManager } from "./grid-history";
@@ -61,6 +66,50 @@ function assert(condition: boolean, message: string): asserts condition {
   if (!condition) {
     throw new Error(`Assertion failed: ${message}`);
   }
+}
+
+/**
+ * Gets all direct child cells of a grid element.
+ * This is more reliable than using ":scope > .cell" selector which can fail in some environments.
+ */
+function getDirectGridCells(grid: HTMLElement): HTMLElement[] {
+  return Array.from(grid.children).filter((child) =>
+    child.classList.contains("cell")
+  ) as HTMLElement[];
+}
+
+/**
+ * Gets all cell elements from a grid, including those marked as "skip".
+ * This is the canonical way to get cells from a grid that handles the grid structure properly.
+ *
+ * @param grid The grid container element
+ * @returns Array of all cell elements in DOM order
+ */
+export function getGridCells(grid: HTMLElement): HTMLElement[] {
+  assert(
+    grid.classList.contains("grid"),
+    "grid parameter must have 'grid' class"
+  );
+
+  const cells: HTMLElement[] = [];
+  Array.from(grid.children).forEach((element) => {
+    if (element.classList.contains("cell")) {
+      cells.push(element as HTMLElement);
+    } else {
+      console.debug(`Element ${element.tagName} is not a cell, skipping.`);
+    }
+  });
+
+  // in both js-dom and happy-dom v15, the querySelectorAll gives "0" when "":scope > selector" is used
+  // const cellsViaSelector = Array.from(
+  //   grid.querySelectorAll<HTMLElement>(":scope > .cell")
+  // );
+  // if (cellsViaSelector.length !== cells.length) {
+  //   console.warn(
+  //     `getGridCells: Mismatch in cell count. DOM children: ${cells.length}, querySelectorAll: ${cellsViaSelector.length}`
+  //   );
+  // }
+  return cells;
 }
 
 export const defaultColumnWidth = "fit";
@@ -133,8 +182,7 @@ export const removeLastRow = (grid: HTMLElement): void => {
     if (rowHeights.length === 0) return;
     rowHeights.pop();
     grid.setAttribute("data-row-heights", rowHeights.join(","));
-
-    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    const cells = getGridCells(grid);
     const cellsToRemove = cells.slice(-numColumns);
     cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
@@ -159,8 +207,7 @@ export const addColumn = (grid: HTMLElement, skipHistory = false): void => {
     const rowHeightsAttr = grid.getAttribute("data-row-heights") || "";
     const numRows = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
     if (numRows === 0) return;
-
-    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    const cells = getGridCells(grid);
 
     for (let i = 0; i < numRows; i++) {
       const newCell = document.createElement("div");
@@ -219,8 +266,7 @@ export function removeLastColumn(grid: HTMLElement) {
     const rowHeightsAttr = grid.getAttribute("data-row-heights") || "";
     const numRows = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
     if (numRows === 0) return;
-
-    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    const cells = getGridCells(grid);
 
     // Remove the last cell from each row
     for (let i = numRows - 1; i >= 0; i--) {
@@ -261,9 +307,8 @@ export function getGridInfo(grid: HTMLElement): {
   // Parse row heights from data attribute, filtering out empty values
   const rowHeights = (grid.getAttribute("data-row-heights") || "")
     .split(",")
-    .filter((height) => height.trim() !== "");
-  // Count actual cell elements in the DOM (may differ from expected due to spans)
-  const cellCount = grid.querySelectorAll(":scope > .cell").length;
+    .filter((height) => height.trim() !== ""); // Count actual cell elements in the DOM (may differ from expected due to spans)
+  const cellCount = getGridCells(grid).length;
 
   return {
     columnWidths,
@@ -277,15 +322,12 @@ export function getGridInfo(grid: HTMLElement): {
 /**
  * Sets the horizontal and vertical span of a cell, which determines how many columns and rows it covers.
  * This function modifies the cell's CSS custom properties (--span-x, --span-y) and removes or adds
- * DOM elements as needed to maintain grid structure.
+ * the "skip" class from covered cells as needed to maintain grid structure.
  *
- * Important: Only cells directly in the span path are removed:
- * - For horizontal spans: removes cells to the right in the same row
- * - For vertical spans: removes cells below in the same column
- * - For combined spans: removes both horizontal and vertical cells (but NOT diagonal cells)
+ * Important: When a cell spans, it covers a rectangular area. All cells within that area,
+ * except for the spanning cell itself, get the "skip" class to indicate they are not active.
  *
- * Example: In a 2x2 grid, setCellSpan(cell(0,0), 2, 2) will remove cell(0,1) and cell(1,0)
- * but will NOT remove cell(1,1) since it's diagonal to the spanning cell.
+ * Example: In a 2x2 grid, setCellSpan(cell(0,0), 2, 2) will mark cell(0,1), cell(1,0), and cell(1,1) as skipped.
  *
  * @param cell The cell element to apply the span to
  * @param newHorizontalSpan Number of columns the cell should span (1 = no span)
@@ -297,126 +339,63 @@ export function setCellSpan(
   newHorizontalSpan: number,
   newVerticalSpan: number
 ) {
-  // cells have a css properties in their style attribute that defines their span
-  // the properties are "--span-x" and "--span-y", e.g.  <div class="cell" style="--span-x: 2">
-  // We need to first see what the current values are,
-  // then add or remove cells to the right or below as needed,
-  // then set the new values.
-  // We should throw if the span would exceed the grid bounds.
   const grid = cell.closest<HTMLElement>(".grid");
-  assert(!!grid, "Cell must be inside a grid element"); // Get current span values from CSS custom properties, defaulting to 1 if not set
+  assert(!!grid, "Cell must be inside a grid element");
+
   const currentSpanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
   const currentSpanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
 
-  // Calculate the new span values (for clarity - could be simplified)
-  const newSpanX = newHorizontalSpan;
-  const newSpanY = newVerticalSpan;
+  if (newHorizontalSpan === currentSpanX && newVerticalSpan === currentSpanY) {
+    return;
+  }
 
-  // Validate that the new span won't exceed grid boundaries
-  const location = getRowAndColumn(grid, cell);
   const gridInfo = getGridInfo(grid);
-  const maxColumn = gridInfo.columnCount - location.column;
-  const maxRow = gridInfo.rowCount - location.row;
+  const { row, column } = getRowAndColumn(grid, cell);
+
+  // Check bounds - ensure the span doesn't exceed grid boundaries
   assert(
-    newSpanX <= maxColumn,
-    `New horizontal span (${newSpanX}) exceeds grid bounds (${maxColumn})`
+    column + newHorizontalSpan <= gridInfo.columnCount,
+    `Horizontal span ${newHorizontalSpan} from column ${column} would exceed grid bounds (${gridInfo.columnCount} columns)`
   );
   assert(
-    newSpanY <= maxRow,
-    `New vertical span (${newSpanY}) exceeds grid bounds (${maxRow})`
+    row + newVerticalSpan <= gridInfo.rowCount,
+    `Vertical span ${newVerticalSpan} from row ${row} would exceed grid bounds (${gridInfo.rowCount} rows)`
   );
-  // Update CSS custom properties for the new span values
-  // Remove the property if span is 1 (default), otherwise set the value
-  if (newSpanX == 1) cell.style.removeProperty("--span-x");
-  else cell.style.setProperty("--span-x", newSpanX.toString());
 
-  if (newSpanY == 1) cell.style.removeProperty("--span-y");
-  else cell.style.setProperty("--span-y", newSpanY.toString()); // If the span increases, we need to remove cells that are now covered by the expanded span.
-  // If the span decreases, we need to add cells that are no longer covered by the reduced span.  // If the span increases, we need to remove cells that are now covered by the expanded span.
-  // If the span decreases, we need to add cells that are no longer covered by the reduced span.
-  // CRITICAL: Collect all cells to remove BEFORE removing any of them!
-  // This prevents DOM traversal issues when removing multiple cells
-  // (removing one cell changes the DOM structure for subsequent removals)
-  const cellsToRemove: HTMLElement[] = [];
-
-  // Handle horizontal span changes (left-to-right spanning)
-  if (newSpanX > currentSpanX) {
-    // Span increased horizontally - collect cells to the right using DOM traversal
-    // We use nextElementSibling because cells are arranged left-to-right in DOM order
-    let currentCell = cell;
-    for (let i = currentSpanX; i < newSpanX; i++) {
-      const cellToRemove = currentCell.nextElementSibling as HTMLElement;
-      if (cellToRemove && cellToRemove.classList.contains("cell")) {
-        cellsToRemove.push(cellToRemove);
-        currentCell = cellToRemove; // Move to next for next iteration
-      }
+  // First, unmark all cells that were previously covered by this cell's span
+  for (let r = row; r < row + currentSpanY; r++) {
+    for (let c = column; c < column + currentSpanX; c++) {
+      if (r === row && c === column) continue; // Skip the spanning cell itself
+      const coveredCell = getCell(grid, r, c);
+      coveredCell.classList.remove("skip");
     }
   }
 
-  // Handle vertical span changes (top-to-bottom spanning)
-  if (newSpanY > currentSpanY) {
-    // Span increased vertically - collect cells below using calculated indices
-    // For vertical spans, we can't use nextElementSibling because cells below
-    // are separated by other cells in the same row
-    const gridInfo = getGridInfo(grid);
-    const columnsPerRow = gridInfo.columnCount;
-
-    for (let i = currentSpanY; i < newSpanY; i++) {
-      // Calculate the linear index of the cell to remove
-      // Formula: (targetRow * columnsPerRow) + targetColumn
-      const targetRow = location.row + i;
-      const cellIndex = targetRow * columnsPerRow + location.column;
-
-      const allCells = Array.from(
-        grid.querySelectorAll(":scope > .cell")
-      ) as HTMLElement[];
-      if (cellIndex < allCells.length) {
-        const cellToRemove = allCells[cellIndex];
-        // Avoid duplicates (important for combined horizontal+vertical spans)
-        if (!cellsToRemove.includes(cellToRemove)) {
-          cellsToRemove.push(cellToRemove);
-        }
-      }
-    }
+  // Set the new span values on the cell
+  if (newHorizontalSpan > 1) {
+    cell.style.setProperty("--span-x", newHorizontalSpan.toString());
+  } else {
+    cell.style.removeProperty("--span-x");
   }
 
-  // Remove all collected cells at once (safe because we collected them first)
-  cellsToRemove.forEach((cellToRemove) => {
-    grid.removeChild(cellToRemove);
-  });
-  // Handle adding cells back when span decreases (opposite operations)
-  if (newSpanX < currentSpanX) {
-    // Span decreased horizontally - add new cells to the right
-    for (let i = newSpanX; i < currentSpanX; i++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      // Insert immediately after the spanning cell
-      cell.insertAdjacentElement("afterend", newCell);
-    }
+  if (newVerticalSpan > 1) {
+    cell.style.setProperty("--span-y", newVerticalSpan.toString());
+  } else {
+    cell.style.removeProperty("--span-y");
   }
 
-  if (newSpanY < currentSpanY) {
-    // Span decreased vertically - add new cells below
-    // TODO: This currently just appends cells, which may not preserve correct grid order
-    // For proper implementation, we'd need to calculate correct insertion positions
-    for (let i = newSpanY; i < currentSpanY; i++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      grid.appendChild(newCell);
+  // Now mark all cells that are covered by the new span
+  for (let r = row; r < row + newVerticalSpan; r++) {
+    for (let c = column; c < column + newHorizontalSpan; c++) {
+      if (r === row && c === column) continue; // Skip the spanning cell itself
+      const coveredCell = getCell(grid, r, c);
+      coveredCell.classList.add("skip");
     }
   }
 }
 
 /**
  * Calculates the logical row and column position of a cell within the grid.
- * This is complex because cells can have spans, so we need to traverse all cells
- * and account for their spans to determine actual positions.
- *
- * The algorithm:
- * 1. Walk through all cells in DOM order (left-to-right, top-to-bottom)
- * 2. For each cell, check its span values (--span-x, --span-y)
- * 3. Advance the current position by the span amount
- * 4. When we exceed column count, wrap to next row
  *
  * @param grid The grid container element
  * @param cell The cell whose position we want to find
@@ -435,45 +414,26 @@ function getRowAndColumn(
     cell.classList.contains("cell"),
     "cell parameter must have 'cell' class"
   );
+
   const gridInfo = getGridInfo(grid);
+  const cells = getGridCells(grid);
+  const cellIndex = cells.indexOf(cell);
+  assert(
+    cellIndex !== -1,
+    "Cell not found in the grid. Ensure it is a direct child of the grid."
+  );
   const columnCount = gridInfo.columnCount;
-
-  if (columnCount === 0) {
-    throw new Error("Grid has no columns defined");
-  }
-
-  // Get all cells in DOM order (this is the order they appear in the HTML)
-  const cells = Array.from(
-    grid.querySelectorAll(":scope > .cell")
-  ) as HTMLElement[];
-
-  // Track our current logical position as we traverse cells
-  let currentColumn = 0;
-  let currentRow = 0;
-
-  for (const currentCell of cells) {
-    // Check if this is the target cell we're looking for
-    if (currentCell === cell) {
-      return { row: currentRow, column: currentColumn };
-    }
-
-    // Get the span of the current cell (defaults to 1 if not set)
-    const spanX = parseInt(currentCell.style.getPropertyValue("--span-x")) || 1;
-    const spanY = parseInt(currentCell.style.getPropertyValue("--span-y")) || 1;
-
-    // Advance our position by the cell's horizontal span
-    currentColumn += spanX;
-
-    // If we've exceeded the column count, wrap to the next row
-    // and advance by the cell's vertical span
-    if (currentColumn >= columnCount) {
-      currentColumn = 0;
-      currentRow += spanY;
-    }
-  }
-
-  // If we reach here, the cell was not found in the grid
-  throw new Error("Cell not found in the specified grid");
+  const row = Math.floor(cellIndex / columnCount);
+  const column = cellIndex % columnCount;
+  assert(
+    row >= 0 && row < gridInfo.rowCount,
+    `Row index ${row} is out of bounds`
+  );
+  assert(
+    column >= 0 && column < gridInfo.columnCount,
+    `Column index ${column} is out of bounds`
+  );
+  return { row, column };
 }
 
 /**
@@ -510,32 +470,18 @@ export function getCell(
   assert(
     column >= 0 && column < gridInfo.columnCount,
     `Column index ${column} would be out of bounds`
+  ); // Calculate the linear index in the DOM based on row and column
+  const cellIndex = row * gridInfo.columnCount + column;
+  const cells = getGridCells(grid);
+
+  assert(
+    cellIndex < cells.length,
+    `Cell at row ${row}, column ${column} not found in DOM (cellIndex=${cellIndex}, cells.length=${
+      cells.length
+    }, gridInfo=${JSON.stringify(gridInfo)})`
   );
 
-  const cells = Array.from(
-    grid.querySelectorAll(":scope > .cell")
-  ) as HTMLElement[];
-
-  let currentRow = 0;
-  let currentColumn = 0;
-
-  for (const cell of cells) {
-    const spanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
-    const spanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
-
-    if (currentRow === row && currentColumn === column) {
-      return cell;
-    }
-
-    currentColumn += spanX;
-
-    if (currentColumn >= gridInfo.columnCount) {
-      currentColumn = 0;
-      currentRow += spanY;
-    }
-  }
-
-  throw new Error(`Cell at row ${row}, column ${column} not found`);
+  return cells[cellIndex] as HTMLElement;
 }
 
 /**
@@ -558,9 +504,24 @@ export const addColumnAt = (
     actualIndex >= 0 && actualIndex <= gridInfo.columnCount,
     `Column index ${actualIndex} is out of bounds`
   );
-
   const description = `Add Column at ${actualIndex}`;
   const performOperation = () => {
+    const numRows = gridInfo.rowCount;
+    if (numRows === 0) return;
+
+    // Collect reference nodes BEFORE changing the grid structure
+    const referenceNodes: (HTMLElement | null)[] = [];
+    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+      // Find reference node for insertion. If adding at the end, it's null.
+      // Otherwise, it's the cell at the insertion index for the current row.
+      const referenceNode =
+        actualIndex < gridInfo.columnCount
+          ? getCell(grid, rowIndex, actualIndex)
+          : null;
+      referenceNodes.push(referenceNode);
+    }
+
+    // Now update the grid structure
     const currentColumnWidths = grid.getAttribute("data-column-widths") || "";
     const columnWidths = currentColumnWidths
       ? currentColumnWidths.split(",")
@@ -570,23 +531,15 @@ export const addColumnAt = (
     columnWidths.splice(actualIndex, 0, defaultColumnWidth);
     grid.setAttribute("data-column-widths", columnWidths.join(","));
 
-    const rowHeightsAttr = grid.getAttribute("data-row-heights") || "";
-    const numRows = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
-    if (numRows === 0) return;
-
-    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
-    const originalColumnCount = gridInfo.columnCount; // Use the original count for positioning
-
     // Insert new cells at the appropriate positions
     for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
       const newCell = document.createElement("div");
       newCell.className = "cell";
       const contentEditableDiv = document.createElement("div");
       contentEditableDiv.contentEditable = "true";
-      newCell.appendChild(contentEditableDiv); // Calculate where to insert the new cell based on original grid structure
-      const insertPosition = rowIndex * originalColumnCount + actualIndex;
-      const referenceNode = cells[insertPosition] || null;
-      grid.insertBefore(newCell, referenceNode);
+      newCell.appendChild(contentEditableDiv);
+
+      grid.insertBefore(newCell, referenceNodes[rowIndex]);
     }
   };
 
@@ -617,9 +570,18 @@ export const addRowAt = (
     actualIndex >= 0 && actualIndex <= gridInfo.rowCount,
     `Row index ${actualIndex} is out of bounds`
   );
-
   const description = `Add Row at ${actualIndex}`;
   const performOperation = () => {
+    const numColumns = gridInfo.columnCount;
+    if (numColumns === 0) return;
+
+    // Find the reference node for insertion BEFORE changing the grid structure
+    // If adding at the end, referenceNode is null.
+    // Otherwise, it's the first cell of the row at the insertion index.
+    const referenceNode =
+      actualIndex < gridInfo.rowCount ? getCell(grid, actualIndex, 0) : null;
+
+    // Now update the grid structure
     const currentRowHeights = grid.getAttribute("data-row-heights") || "";
     const rowHeights = currentRowHeights ? currentRowHeights.split(",") : [];
 
@@ -627,20 +589,11 @@ export const addRowAt = (
     rowHeights.splice(actualIndex, 0, defaultRowHeight);
     grid.setAttribute("data-row-heights", rowHeights.join(","));
 
-    const numColumns = gridInfo.columnCount;
-    if (numColumns === 0) return;
-
-    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
-
     // Insert new cells for the entire row
     for (let colIndex = 0; colIndex < numColumns; colIndex++) {
       const newCell = document.createElement("div");
       newCell.className = "cell";
       newCell.innerHTML = `<div contenteditable="true"></div>`;
-
-      // Calculate where to insert the new cell
-      const insertPosition = actualIndex * numColumns + colIndex;
-      const referenceNode = cells[insertPosition] || null;
       grid.insertBefore(newCell, referenceNode);
     }
   };
@@ -669,54 +622,38 @@ export const removeColumnAt = (grid: HTMLElement, index: number): void => {
   );
   const description = `Remove Column at ${index}`;
   const performOperation = () => {
-    // Collect all cell information BEFORE making any changes
-    const cells = Array.from(
-      grid.querySelectorAll(":scope > .cell")
-    ) as HTMLElement[];
+    // Collect cells to remove BEFORE changing the grid structure
     const cellsToRemove: HTMLElement[] = [];
-    const spansToAdjust: { cell: HTMLElement; newSpanX: number }[] = [];
+    for (let rowIndex = 0; rowIndex < gridInfo.rowCount; rowIndex++) {
+      cellsToRemove.push(getCell(grid, rowIndex, index));
+    } // First adjust spans of cells that were affected by the removal
+    const cells = getGridCells(grid);
+    cells.forEach((cell) => {
+      const htmlCell = cell as HTMLElement;
+      const { column: cellColumn } = getRowAndColumn(grid, htmlCell);
+      const spanX = parseInt(htmlCell.style.getPropertyValue("--span-x")) || 1;
 
-    // Analyze each cell before making changes
-    for (const cell of cells) {
-      const position = getRowAndColumn(grid, cell);
-      const spanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
-
-      const cellStartCol = position.column;
-      const cellEndCol = cellStartCol + spanX - 1;
-
-      if (cellStartCol === index) {
-        // Cell starts at the column being removed
-        if (spanX > 1) {
-          // Reduce span and keep the cell
-          spansToAdjust.push({ cell, newSpanX: spanX - 1 });
+      // If this cell's span extended beyond the column to be removed, reduce its span
+      if (cellColumn < index && cellColumn + spanX > index) {
+        const newSpanX = spanX - 1;
+        if (newSpanX > 1) {
+          htmlCell.style.setProperty("--span-x", newSpanX.toString());
         } else {
-          // Single-column cell at the removed column - remove it
-          cellsToRemove.push(cell);
+          htmlCell.style.removeProperty("--span-x");
         }
-      } else if (cellStartCol < index && cellEndCol >= index) {
-        // Cell spans across the column being removed - reduce span
-        spansToAdjust.push({ cell, newSpanX: spanX - 1 });
       }
-    }
+    });
 
-    // Update column widths
-    const columnWidths = gridInfo.columnWidths;
+    // Update column widths attribute
+    const currentColumnWidths = grid.getAttribute("data-column-widths") || "";
+    const columnWidths = currentColumnWidths
+      ? currentColumnWidths.split(",")
+      : [];
     columnWidths.splice(index, 1);
     grid.setAttribute("data-column-widths", columnWidths.join(","));
 
-    // Apply span adjustments using direct style manipulation to avoid setCellSpan's DOM traversal
-    for (const { cell, newSpanX } of spansToAdjust) {
-      if (newSpanX === 1) {
-        cell.style.removeProperty("--span-x");
-      } else {
-        cell.style.setProperty("--span-x", newSpanX.toString());
-      }
-    }
-
-    // Remove cells that need to be removed
-    for (const cell of cellsToRemove) {
-      grid.removeChild(cell);
-    }
+    // Remove the collected cells
+    cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
 
   gridHistoryManager.addHistoryEntry(grid, description, performOperation);
@@ -739,54 +676,40 @@ export const removeRowAt = (grid: HTMLElement, index: number): void => {
   );
   const description = `Remove Row at ${index}`;
   const performOperation = () => {
-    // Collect all cell information BEFORE making any changes
-    const cells = Array.from(
-      grid.querySelectorAll(":scope > .cell")
-    ) as HTMLElement[];
+    // Collect cells to remove BEFORE changing the grid structure
     const cellsToRemove: HTMLElement[] = [];
-    const spansToAdjust: { cell: HTMLElement; newSpanY: number }[] = [];
+    for (
+      let columnIndex = 0;
+      columnIndex < gridInfo.columnCount;
+      columnIndex++
+    ) {
+      cellsToRemove.push(getCell(grid, index, columnIndex));
+    } // First adjust spans of cells that were affected by the removal
+    const cells = getGridCells(grid);
+    cells.forEach((cell) => {
+      const htmlCell = cell as HTMLElement;
+      const { row: cellRow } = getRowAndColumn(grid, htmlCell);
+      const spanY = parseInt(htmlCell.style.getPropertyValue("--span-y")) || 1;
 
-    // Analyze each cell before making changes
-    for (const cell of cells) {
-      const position = getRowAndColumn(grid, cell);
-      const spanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
-
-      const cellStartRow = position.row;
-      const cellEndRow = cellStartRow + spanY - 1;
-
-      if (cellStartRow === index) {
-        // Cell starts at the row being removed
-        if (spanY > 1) {
-          // Reduce span and keep the cell
-          spansToAdjust.push({ cell, newSpanY: spanY - 1 });
+      // If this cell's span extended beyond the removed row, reduce its span
+      if (cellRow < index && cellRow + spanY > index) {
+        const newSpanY = spanY - 1;
+        if (newSpanY > 1) {
+          htmlCell.style.setProperty("--span-y", newSpanY.toString());
         } else {
-          // Single-row cell at the removed row - remove it
-          cellsToRemove.push(cell);
+          htmlCell.style.removeProperty("--span-y");
         }
-      } else if (cellStartRow < index && cellEndRow >= index) {
-        // Cell spans across the row being removed - reduce span
-        spansToAdjust.push({ cell, newSpanY: spanY - 1 });
       }
-    }
+    });
 
-    // Update row heights
-    const rowHeights = gridInfo.rowHeights;
+    // Update row heights attribute
+    const currentRowHeights = grid.getAttribute("data-row-heights") || "";
+    const rowHeights = currentRowHeights ? currentRowHeights.split(",") : [];
     rowHeights.splice(index, 1);
     grid.setAttribute("data-row-heights", rowHeights.join(","));
 
-    // Apply span adjustments using direct style manipulation
-    for (const { cell, newSpanY } of spansToAdjust) {
-      if (newSpanY === 1) {
-        cell.style.removeProperty("--span-y");
-      } else {
-        cell.style.setProperty("--span-y", newSpanY.toString());
-      }
-    }
-
-    // Remove cells that need to be removed
-    for (const cell of cellsToRemove) {
-      grid.removeChild(cell);
-    }
+    // Remove the collected cells
+    cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
 
   gridHistoryManager.addHistoryEntry(grid, description, performOperation);

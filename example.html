@@ -47,6 +47,14 @@
         grid-row: span var(--span-y, 1);
       }
 
+      /* --- NEW RULE --- */
+      /* A skipped cell is one that is logically "covered" by
+         a previous cell's row or column span. We hide it
+         completely so the grid layout ignores it. */
+      .cell.skip {
+        display: none;
+      }
+
       [contenteditable]:focus {
         outline: none; /* Removes the border completely */
       }
@@ -117,6 +125,9 @@
             <div class="cell" style="--span-x: 2">
               <div contenteditable="true">Spanning nested cell</div>
             </div>
+            <!-- This cell is present in the DOM for logical consistency,
+                 but hidden from layout because the cell to the left of it spans 2 columns. -->
+            <div class="cell skip"><div contenteditable="true"></div></div>
           </div>
         </div>
 
