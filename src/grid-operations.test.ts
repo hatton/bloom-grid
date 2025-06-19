@@ -545,3 +545,540 @@ it("complex span handling: multiple cells affected", () => {
   expect(span00).toBe(1); // Reduced from 2 to 1
   expect(span01).toBe(2); // Should remain 2 (now spans columns 1-2)
 });
+
+// Comprehensive span handling tests
+describe("Span handling during column/row removal", () => {
+  it("removeColumnAt: cell starting at removed column with span>1 reduces span", () => {
+    const grid = newGrid();
+    addColumn(grid); // 3x2 grid
+
+    // Cell at (0,1) spans 2 columns (covers columns 1-2)
+    const cell = getCell(grid, 0, 1);
+    cell.id = "spanning-cell";
+    setCellSpan(cell, 2, 1);
+
+    const originalSpan = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
+    expect(originalSpan).toBe(2);
+
+    // Remove column 1 (the starting column of the span)
+    removeColumnAt(grid, 1);
+
+    // Cell should still exist but with reduced span
+    const existingCell = document.getElementById("spanning-cell");
+    expect(existingCell).toBeTruthy();
+    const newSpan =
+      parseInt(existingCell!.style.getPropertyValue("--span-x")) || 1;
+    expect(newSpan).toBe(1);
+  });
+
+  it("removeColumnAt: cell starting at removed column with span=1 is removed", () => {
+    const grid = newGrid();
+    addColumn(grid); // 3x2 grid
+
+    // Cell at (0,1) with no span (span=1)
+    const cell = getCell(grid, 0, 1);
+    cell.id = "single-cell";
+
+    const originalCellCount = getGridInfo(grid).cellCount;
+    expect(document.getElementById("single-cell")).toBeTruthy();
+
+    // Remove column 1
+    removeColumnAt(grid, 1);
+
+    // Cell should be removed
+    expect(document.getElementById("single-cell")).toBeNull();
+    const newCellCount = getGridInfo(grid).cellCount;
+    expect(newCellCount).toBe(originalCellCount - 2); // 2 cells removed (one from each row)
+  });
+
+  it("removeColumnAt: cell spanning across removed column reduces span", () => {
+    const grid = newGrid();
+    addColumn(grid);
+    addColumn(grid); // 4x2 grid
+
+    // Cell at (0,0) spans 3 columns (covers columns 0-2)
+    const cell = getCell(grid, 0, 0);
+    cell.id = "wide-spanning-cell";
+    setCellSpan(cell, 3, 1);
+
+    const originalSpan = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
+    expect(originalSpan).toBe(3);
+
+    // Remove column 1 (middle of the span)
+    removeColumnAt(grid, 1);
+
+    // Cell should still exist but with reduced span
+    const existingCell = document.getElementById("wide-spanning-cell");
+    expect(existingCell).toBeTruthy();
+    const newSpan =
+      parseInt(existingCell!.style.getPropertyValue("--span-x")) || 1;
+    expect(newSpan).toBe(2); // Reduced from 3 to 2
+  });
+
+  it("removeRowAt: cell starting at removed row with span>1 reduces span", () => {
+    const grid = newGrid();
+    addRow(grid); // 2x3 grid
+
+    // Cell at (1,0) spans 2 rows (covers rows 1-2)
+    const cell = getCell(grid, 1, 0);
+    cell.id = "tall-spanning-cell";
+    setCellSpan(cell, 1, 2);
+
+    const originalSpan = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+    expect(originalSpan).toBe(2);
+
+    // Remove row 1 (the starting row of the span)
+    removeRowAt(grid, 1);
+
+    // Cell should still exist but with reduced span
+    const existingCell = document.getElementById("tall-spanning-cell");
+    expect(existingCell).toBeTruthy();
+    const newSpan =
+      parseInt(existingCell!.style.getPropertyValue("--span-y")) || 1;
+    expect(newSpan).toBe(1);
+  });
+
+  it("removeRowAt: cell starting at removed row with span=1 is removed", () => {
+    const grid = newGrid();
+    addRow(grid); // 2x3 grid
+
+    // Cell at (1,0) with no span (span=1)
+    const cell = getCell(grid, 1, 0);
+    cell.id = "single-row-cell";
+
+    const originalCellCount = getGridInfo(grid).cellCount;
+    expect(document.getElementById("single-row-cell")).toBeTruthy();
+
+    // Remove row 1
+    removeRowAt(grid, 1);
+
+    // Cell should be removed
+    expect(document.getElementById("single-row-cell")).toBeNull();
+    const newCellCount = getGridInfo(grid).cellCount;
+    expect(newCellCount).toBe(originalCellCount - 2); // 2 cells removed (one from each column)
+  });
+
+  it("removeRowAt: cell spanning across removed row reduces span", () => {
+    const grid = newGrid();
+    addRow(grid);
+    addRow(grid); // 2x4 grid
+
+    // Cell at (0,0) spans 3 rows (covers rows 0-2)
+    const cell = getCell(grid, 0, 0);
+    cell.id = "tall-wide-spanning-cell";
+    setCellSpan(cell, 1, 3);
+
+    const originalSpan = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+    expect(originalSpan).toBe(3);
+
+    // Remove row 1 (middle of the span)
+    removeRowAt(grid, 1);
+
+    // Cell should still exist but with reduced span
+    const existingCell = document.getElementById("tall-wide-spanning-cell");
+    expect(existingCell).toBeTruthy();
+    const newSpan =
+      parseInt(existingCell!.style.getPropertyValue("--span-y")) || 1;
+    expect(newSpan).toBe(2); // Reduced from 3 to 2
+  });
+
+  it("removeColumnAt: multiple cells with different span behaviors", () => {
+    const grid = newGrid();
+    addColumn(grid);
+    addColumn(grid);
+    addColumn(grid); // 5x2 grid
+
+    // Set up various cells with different spans
+    const cell00 = getCell(grid, 0, 0);
+    cell00.id = "cell-00";
+    setCellSpan(cell00, 2, 1); // Spans columns 0-1
+
+    const cell02 = getCell(grid, 0, 2);
+    cell02.id = "cell-02";
+    // This cell has span=1, starts at column 2
+
+    const cell03 = getCell(grid, 0, 3);
+    cell03.id = "cell-03";
+    setCellSpan(cell03, 2, 1); // Spans columns 3-4
+
+    const cell10 = getCell(grid, 1, 0);
+    cell10.id = "cell-10";
+    setCellSpan(cell10, 3, 1); // Spans columns 0-2
+
+    // Remove column 2
+    removeColumnAt(grid, 2);
+
+    // Check results:
+    // cell00 (spans 0-1): should be unaffected
+    expect(document.getElementById("cell-00")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-00")!.style.getPropertyValue("--span-x")
+      ) || 1
+    ).toBe(2);
+
+    // cell02 (single cell at column 2): should be removed
+    expect(document.getElementById("cell-02")).toBeNull();
+
+    // cell03 (spans 3-4, now 2-3): should be unaffected
+    expect(document.getElementById("cell-03")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-03")!.style.getPropertyValue("--span-x")
+      ) || 1
+    ).toBe(2);
+
+    // cell10 (spans 0-2): should have span reduced from 3 to 2
+    expect(document.getElementById("cell-10")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-10")!.style.getPropertyValue("--span-x")
+      ) || 1
+    ).toBe(2);
+  });
+
+  it("removeRowAt: multiple cells with different span behaviors", () => {
+    const grid = newGrid();
+    addRow(grid);
+    addRow(grid);
+    addRow(grid); // 2x5 grid
+
+    // Set up various cells with different spans
+    const cell00 = getCell(grid, 0, 0);
+    cell00.id = "cell-00";
+    setCellSpan(cell00, 1, 2); // Spans rows 0-1
+
+    const cell20 = getCell(grid, 2, 0);
+    cell20.id = "cell-20";
+    // This cell has span=1, starts at row 2
+
+    const cell30 = getCell(grid, 3, 0);
+    cell30.id = "cell-30";
+    setCellSpan(cell30, 1, 2); // Spans rows 3-4
+
+    const cell01 = getCell(grid, 0, 1);
+    cell01.id = "cell-01";
+    setCellSpan(cell01, 1, 3); // Spans rows 0-2
+
+    // Remove row 2
+    removeRowAt(grid, 2);
+
+    // Check results:
+    // cell00 (spans 0-1): should be unaffected
+    expect(document.getElementById("cell-00")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-00")!.style.getPropertyValue("--span-y")
+      ) || 1
+    ).toBe(2);
+
+    // cell20 (single cell at row 2): should be removed
+    expect(document.getElementById("cell-20")).toBeNull();
+
+    // cell30 (spans 3-4, now 2-3): should be unaffected
+    expect(document.getElementById("cell-30")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-30")!.style.getPropertyValue("--span-y")
+      ) || 1
+    ).toBe(2);
+
+    // cell01 (spans 0-2): should have span reduced from 3 to 2
+    expect(document.getElementById("cell-01")).toBeTruthy();
+    expect(
+      parseInt(
+        document.getElementById("cell-01")!.style.getPropertyValue("--span-y")
+      ) || 1
+    ).toBe(2);
+  });
+});
+
+// Tests for proper cell positioning and content preservation
+describe("Cell positioning and content preservation", () => {
+  it("addColumnAt(0) preserves cell content and positions correctly", () => {
+    const grid = newGrid();
+
+    // Add content to cells to verify they're preserved
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    cells.forEach((cell, index) => {
+      const div = cell.querySelector("div");
+      if (div) div.textContent = `Original-${index}`;
+      cell.id = `orig-${index}`;
+    });
+
+    const originalInfo = getGridInfo(grid);
+    addColumnAt(grid, 0);
+    const newInfo = getGridInfo(grid);
+
+    // Check structure
+    expect(newInfo.columnCount).toBe(originalInfo.columnCount + 1);
+    expect(newInfo.cellCount).toBe(
+      originalInfo.cellCount + originalInfo.rowCount
+    );
+
+    // Check that original cells still exist with their content
+    const originalCells = Array.from(
+      grid.querySelectorAll(":scope > .cell")
+    ).filter((cell) => cell.id.startsWith("orig-"));
+    expect(originalCells.length).toBe(originalInfo.cellCount);
+
+    // Verify content is preserved
+    originalCells.forEach((cell) => {
+      const div = cell.querySelector("div");
+      expect(div?.textContent).toMatch(/^Original-\d+$/);
+    });
+  });
+
+  it("addRowAt(0) preserves cell content and positions correctly", () => {
+    const grid = newGrid();
+
+    // Add content to cells to verify they're preserved
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    cells.forEach((cell, index) => {
+      const div = cell.querySelector("div");
+      if (div) div.textContent = `Original-${index}`;
+      cell.id = `orig-${index}`;
+    });
+
+    const originalInfo = getGridInfo(grid);
+    addRowAt(grid, 0);
+    const newInfo = getGridInfo(grid);
+
+    // Check structure
+    expect(newInfo.rowCount).toBe(originalInfo.rowCount + 1);
+    expect(newInfo.cellCount).toBe(
+      originalInfo.cellCount + originalInfo.columnCount
+    );
+
+    // Check that original cells still exist with their content
+    const originalCells = Array.from(
+      grid.querySelectorAll(":scope > .cell")
+    ).filter((cell) => cell.id.startsWith("orig-"));
+    expect(originalCells.length).toBe(originalInfo.cellCount);
+
+    // Verify content is preserved
+    originalCells.forEach((cell) => {
+      const div = cell.querySelector("div");
+      expect(div?.textContent).toMatch(/^Original-\d+$/);
+    });
+  });
+
+  it("removeColumnAt preserves unaffected cell content", () => {
+    const grid = newGrid();
+    addColumn(grid); // 3x2 grid
+
+    // Add content to cells
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    cells.forEach((cell, index) => {
+      const div = cell.querySelector("div");
+      if (div) div.textContent = `Cell-${index}`;
+      cell.id = `cell-${index}`;
+    });
+
+    // Remove middle column
+    removeColumnAt(grid, 1);
+
+    // Cells at positions that weren't removed should still exist
+    // In a 3x2 grid, removing column 1 should remove cells at (0,1) and (1,1)
+    // Original cells: (0,0)=0, (0,1)=1, (0,2)=2, (1,0)=3, (1,1)=4, (1,2)=5
+    // After removing column 1: cells 1 and 4 should be gone
+    expect(document.getElementById("cell-0")).toBeTruthy(); // (0,0)
+    expect(document.getElementById("cell-1")).toBeNull(); // (0,1) - removed
+    expect(document.getElementById("cell-2")).toBeTruthy(); // (0,2)
+    expect(document.getElementById("cell-3")).toBeTruthy(); // (1,0)
+    expect(document.getElementById("cell-4")).toBeNull(); // (1,1) - removed
+    expect(document.getElementById("cell-5")).toBeTruthy(); // (1,2)
+
+    // Verify remaining cells have their content
+    expect(
+      document.getElementById("cell-0")?.querySelector("div")?.textContent
+    ).toBe("Cell-0");
+    expect(
+      document.getElementById("cell-2")?.querySelector("div")?.textContent
+    ).toBe("Cell-2");
+    expect(
+      document.getElementById("cell-3")?.querySelector("div")?.textContent
+    ).toBe("Cell-3");
+    expect(
+      document.getElementById("cell-5")?.querySelector("div")?.textContent
+    ).toBe("Cell-5");
+  });
+
+  it("removeRowAt preserves unaffected cell content", () => {
+    const grid = newGrid();
+    addRow(grid); // 2x3 grid
+
+    // Add content to cells
+    const cells = Array.from(grid.querySelectorAll(":scope > .cell"));
+    cells.forEach((cell, index) => {
+      const div = cell.querySelector("div");
+      if (div) div.textContent = `Cell-${index}`;
+      cell.id = `cell-${index}`;
+    });
+
+    // Remove middle row
+    removeRowAt(grid, 1);
+
+    // Cells at positions that weren't removed should still exist
+    // In a 2x3 grid, removing row 1 should remove cells at (1,0) and (1,1)
+    // Original cells: (0,0)=0, (0,1)=1, (1,0)=2, (1,1)=3, (2,0)=4, (2,1)=5
+    // After removing row 1: cells 2 and 3 should be gone
+    expect(document.getElementById("cell-0")).toBeTruthy(); // (0,0)
+    expect(document.getElementById("cell-1")).toBeTruthy(); // (0,1)
+    expect(document.getElementById("cell-2")).toBeNull(); // (1,0) - removed
+    expect(document.getElementById("cell-3")).toBeNull(); // (1,1) - removed
+    expect(document.getElementById("cell-4")).toBeTruthy(); // (2,0)
+    expect(document.getElementById("cell-5")).toBeTruthy(); // (2,1)
+
+    // Verify remaining cells have their content
+    expect(
+      document.getElementById("cell-0")?.querySelector("div")?.textContent
+    ).toBe("Cell-0");
+    expect(
+      document.getElementById("cell-1")?.querySelector("div")?.textContent
+    ).toBe("Cell-1");
+    expect(
+      document.getElementById("cell-4")?.querySelector("div")?.textContent
+    ).toBe("Cell-4");
+    expect(
+      document.getElementById("cell-5")?.querySelector("div")?.textContent
+    ).toBe("Cell-5");
+  });
+});
+
+// Edge case tests
+describe("Edge cases for add/remove operations", () => {
+  it("addColumnAt and removeColumnAt work correctly at start, middle, and end", () => {
+    const grid = newGrid();
+    addColumn(grid);
+    addColumn(grid); // 4x2 grid
+
+    // Test adding at start
+    const startInfo = getGridInfo(grid);
+    addColumnAt(grid, 0);
+    expect(getGridInfo(grid).columnCount).toBe(startInfo.columnCount + 1);
+
+    // Test adding in middle
+    const midInfo = getGridInfo(grid);
+    addColumnAt(grid, 2);
+    expect(getGridInfo(grid).columnCount).toBe(midInfo.columnCount + 1);
+
+    // Test adding at end
+    const endInfo = getGridInfo(grid);
+    addColumnAt(grid, endInfo.columnCount);
+    expect(getGridInfo(grid).columnCount).toBe(endInfo.columnCount + 1);
+
+    // Now test removing from different positions
+    const beforeRemove = getGridInfo(grid);
+
+    // Remove from end
+    removeColumnAt(grid, beforeRemove.columnCount - 1);
+    expect(getGridInfo(grid).columnCount).toBe(beforeRemove.columnCount - 1);
+
+    // Remove from middle
+    const midRemove = getGridInfo(grid);
+    removeColumnAt(grid, Math.floor(midRemove.columnCount / 2));
+    expect(getGridInfo(grid).columnCount).toBe(midRemove.columnCount - 1);
+
+    // Remove from start
+    const startRemove = getGridInfo(grid);
+    removeColumnAt(grid, 0);
+    expect(getGridInfo(grid).columnCount).toBe(startRemove.columnCount - 1);
+  });
+
+  it("addRowAt and removeRowAt work correctly at start, middle, and end", () => {
+    const grid = newGrid();
+    addRow(grid);
+    addRow(grid); // 2x4 grid
+
+    // Test adding at start
+    const startInfo = getGridInfo(grid);
+    addRowAt(grid, 0);
+    expect(getGridInfo(grid).rowCount).toBe(startInfo.rowCount + 1);
+
+    // Test adding in middle
+    const midInfo = getGridInfo(grid);
+    addRowAt(grid, 2);
+    expect(getGridInfo(grid).rowCount).toBe(midInfo.rowCount + 1);
+
+    // Test adding at end
+    const endInfo = getGridInfo(grid);
+    addRowAt(grid, endInfo.rowCount);
+    expect(getGridInfo(grid).rowCount).toBe(endInfo.rowCount + 1);
+
+    // Now test removing from different positions
+    const beforeRemove = getGridInfo(grid);
+
+    // Remove from end
+    removeRowAt(grid, beforeRemove.rowCount - 1);
+    expect(getGridInfo(grid).rowCount).toBe(beforeRemove.rowCount - 1);
+
+    // Remove from middle
+    const midRemove = getGridInfo(grid);
+    removeRowAt(grid, Math.floor(midRemove.rowCount / 2));
+    expect(getGridInfo(grid).rowCount).toBe(midRemove.rowCount - 1);
+
+    // Remove from start
+    const startRemove = getGridInfo(grid);
+    removeRowAt(grid, 0);
+    expect(getGridInfo(grid).rowCount).toBe(startRemove.rowCount - 1);
+  });
+
+  it("complex scenario: spans with add/remove operations", () => {
+    const grid = newGrid();
+    addColumn(grid);
+    addColumn(grid);
+    addRow(grid); // 4x3 grid
+
+    // Create a complex span pattern
+    const cell00 = getCell(grid, 0, 0);
+    cell00.id = "spanning-cell";
+    setCellSpan(cell00, 2, 2); // Spans 2x2
+
+    const cell02 = getCell(grid, 0, 2);
+    cell02.id = "single-cell";
+
+    const cell13 = getCell(grid, 1, 3);
+    cell13.id = "corner-cell";
+
+    // Add a column in the middle
+    addColumnAt(grid, 2);
+
+    // The spanning cell should still work
+    expect(document.getElementById("spanning-cell")).toBeTruthy();
+    expect(
+      parseInt(
+        document
+          .getElementById("spanning-cell")!
+          .style.getPropertyValue("--span-x")
+      ) || 1
+    ).toBe(2);
+    expect(
+      parseInt(
+        document
+          .getElementById("spanning-cell")!
+          .style.getPropertyValue("--span-y")
+      ) || 1
+    ).toBe(2);
+
+    // Remove a column that affects the span
+    removeColumnAt(grid, 1);
+
+    // The spanning cell should have reduced horizontal span
+    expect(document.getElementById("spanning-cell")).toBeTruthy();
+    expect(
+      parseInt(
+        document
+          .getElementById("spanning-cell")!
+          .style.getPropertyValue("--span-x")
+      ) || 1
+    ).toBe(1);
+    expect(
+      parseInt(
+        document
+          .getElementById("spanning-cell")!
+          .style.getPropertyValue("--span-y")
+      ) || 1
+    ).toBe(2);
+  });
+});

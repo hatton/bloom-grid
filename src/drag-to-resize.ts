@@ -385,13 +385,16 @@ export class DragToResize {
     const classes = element.classList.length
       ? "." + Array.from(element.classList).join(".")
       : "";
-
     return `${tagName}${id}${classes} child:${1 + elementIndex} ${Array.from(
       element.attributes
     )
       .filter(
         (attr) =>
-          attr.name !== "class" && attr.name !== "id" && attr.name != "style"
+          attr &&
+          attr.name &&
+          attr.name !== "class" &&
+          attr.name !== "id" &&
+          attr.name !== "style"
       ) // Skip class and id attributes
       .map((attr) => `${attr.name}="${attr.value}"`)
       .join(", ")}  ${element.innerText.trim().substring(0, 20)}`;

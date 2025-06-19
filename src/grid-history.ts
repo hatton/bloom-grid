@@ -23,14 +23,21 @@ class GridHistoryManager {
     this.operationInProgress = false;
   }
   private captureGridState(grid: HTMLElement): GridState {
+    const attributes: Record<string, string> = {};
+
+    // Safely iterate through attributes
+    if (grid.attributes) {
+      for (let i = 0; i < grid.attributes.length; i++) {
+        const attr = grid.attributes[i];
+        if (attr && attr.name) {
+          attributes[attr.name] = attr.value || "";
+        }
+      }
+    }
+
     return {
       innerHTML: grid.innerHTML,
-      attributes: Array.from(grid.attributes).reduce((acc, attr) => {
-        if (attr && attr.name) {
-          acc[attr.name] = attr.value;
-        }
-        return acc;
-      }, {} as Record<string, string>),
+      attributes,
     };
   }
   addHistoryEntry(
@@ -169,15 +176,18 @@ class GridHistoryManager {
   }
   private defaultUndoOperation(grid: HTMLElement, prevState: GridState): void {
     // First, remove all existing attributes
-    while (grid.attributes.length > 0) {
-      const firstAttr = grid.attributes[0];
-      if (firstAttr && firstAttr.name) {
-        grid.removeAttribute(firstAttr.name);
-      } else {
-        // If we can't access the attribute properly, break to avoid infinite loop
-        break;
+    const attributesToRemove: string[] = [];
+    for (let i = 0; i < grid.attributes.length; i++) {
+      const attr = grid.attributes[i];
+      if (attr && attr.name) {
+        attributesToRemove.push(attr.name);
       }
     }
+
+    // Remove attributes
+    attributesToRemove.forEach((name) => {
+      grid.removeAttribute(name);
+    });
 
     // Then restore the previous attributes
     if (prevState.attributes) {

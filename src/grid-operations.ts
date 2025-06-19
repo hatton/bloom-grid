@@ -583,11 +583,8 @@ export const addColumnAt = (
       newCell.className = "cell";
       const contentEditableDiv = document.createElement("div");
       contentEditableDiv.contentEditable = "true";
-      newCell.appendChild(contentEditableDiv);
-
-      // Calculate where to insert the new cell based on original grid structure
-      const insertPosition =
-        rowIndex * originalColumnCount + actualIndex + rowIndex;
+      newCell.appendChild(contentEditableDiv); // Calculate where to insert the new cell based on original grid structure
+      const insertPosition = rowIndex * originalColumnCount + actualIndex;
       const referenceNode = cells[insertPosition] || null;
       grid.insertBefore(newCell, referenceNode);
     }
