@@ -1,31 +1,24 @@
-const mapToken = (t?: string | null): string => {
-  t = (t || "").trim();
-  if (t === "fit") return "minmax(max-content,max-content)";
-  if (t === "fill") return "minmax(0,1fr)";
-  return t; // assume %, px, fr, rem, etc.
-};
-
-const applyColumns = (grid: HTMLElement): void => {
-  const spec = grid.getAttribute("data-column-widths");
-  if (!spec) return;
-  const template = spec.split(",").map(mapToken).join(" ");
-  grid.style.gridTemplateColumns = template;
-};
-
-const applyRows = (grid: HTMLElement): void => {
-  const spec = grid.getAttribute("data-row-heights");
-  if (!spec) return;
-  const template = spec.split(",").map(mapToken).join(" ");
-  grid.style.gridTemplateRows = template;
-};
-
-const applyGrid = (grid: HTMLElement): void => {
-  applyColumns(grid);
-  applyRows(grid);
-};
-
 // Store observer instances for each grid
 const observers = new Map<HTMLElement, MutationObserver>();
+
+/**
+ * Finds all nested grids within a given grid element, recursively
+ * @param grid The grid element to search within
+ * @returns Array of all nested grid elements found
+ */
+function findNestedGrids(grid: HTMLElement): HTMLElement[] {
+  const nestedGrids: HTMLElement[] = [];
+
+  // Find all .grid elements that are descendants of this grid
+  const allGrids = grid.querySelectorAll<HTMLElement>(".grid");
+
+  // Add them to our list
+  allGrids.forEach((nestedGrid) => {
+    nestedGrids.push(nestedGrid);
+  });
+
+  return nestedGrids;
+}
 
 /**
  * Attaches a grid observer to a specific grid element
@@ -39,6 +32,12 @@ export function attach(grid: HTMLElement): void {
 
   // Apply initial styles to the grid
   applyGrid(grid);
+
+  // Also apply styles to any existing nested grids
+  const nestedGrids = findNestedGrids(grid);
+  nestedGrids.forEach((nestedGrid) => {
+    applyGrid(nestedGrid);
+  });
 
   // Create a new observer for this grid
   const observer = new MutationObserver((mutationsList) => {
@@ -90,4 +89,30 @@ export function detach(grid: HTMLElement): void {
     observer.disconnect();
     observers.delete(grid);
   }
+}
+
+function mapToken(t?: string | null): string {
+  t = (t || "").trim();
+  if (t === "fit") return "minmax(max-content,max-content)";
+  if (t === "fill") return "minmax(0,1fr)";
+  return t; // assume %, px, fr, rem, etc.
+}
+
+function applyColumns(grid: HTMLElement): void {
+  const spec = grid.getAttribute("data-column-widths");
+  if (!spec) return;
+  const template = spec.split(",").map(mapToken).join(" ");
+  grid.style.gridTemplateColumns = template;
+}
+
+function applyRows(grid: HTMLElement): void {
+  const spec = grid.getAttribute("data-row-heights");
+  if (!spec) return;
+  const template = spec.split(",").map(mapToken).join(" ");
+  grid.style.gridTemplateRows = template;
+}
+
+function applyGrid(grid: HTMLElement): void {
+  applyColumns(grid);
+  applyRows(grid);
 }
