@@ -6,6 +6,8 @@ const App: React.FC = () => {
   const [showBorders, setShowBorders] = useState(true);
   const [canRemoveRow, setCanRemoveRow] = useState(true);
   const [canRemoveColumn, setCanRemoveColumn] = useState(true);
+  const [canAddRow, setCanAddRow] = useState(true);
+  const [canAddColumn, setCanAddColumn] = useState(true);
 
   // Helper function to get grid state information
   const getGridState = (grid: HTMLElement | null) => {
@@ -36,6 +38,9 @@ const App: React.FC = () => {
     setCanRemoveRow(rowCount > 1);
     setCanRemoveColumn(columnCount > 1);
     setShowBorders(hasBorders);
+    // we can always add rows/columns if we have the focus is in a grid
+    setCanAddColumn(!!grid);
+    setCanAddRow(!!grid);
   };
   // Handle border toggle
   const handleBorderToggle = () => {
@@ -152,6 +157,7 @@ const App: React.FC = () => {
       <div className="flex flex-wrap space-x-0 sm:space-x-4 space-y-2 sm:space-y-0 justify-center">
         <button
           onClick={handleAddRow}
+          disabled={!canAddRow}
           onMouseDown={(e) => e.preventDefault()}
           tabIndex={-1}
           className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
@@ -176,6 +182,7 @@ const App: React.FC = () => {
         <button
           onClick={handleAddColumn}
           onMouseDown={(e) => e.preventDefault()}
+          disabled={!canAddColumn}
           tabIndex={-1}
           className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Add a new column to the right of the main grid"
