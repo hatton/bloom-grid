@@ -208,8 +208,11 @@ describe("span-related tests", () => {
     cellR0C1.id = "cell-R0C1";
     const cellR1C0 = getCell(grid, 1, 0);
     cellR1C0.id = "cell-R1C0";
+    const cellR1C1 = getCell(grid, 1, 1);
+    cellR1C1.id = "cell-R1C1";
     expect(document.getElementById("cell-R0C1")).toBeTruthy();
     expect(document.getElementById("cell-R1C0")).toBeTruthy();
+    expect(document.getElementById("cell-R1C1")).toBeTruthy();
 
     // Set span for the first cell to be two columns wide and two rows tall
     const cellR0C0 = getCell(grid, 0, 0);
@@ -222,11 +225,12 @@ describe("span-related tests", () => {
     expect(styleString).toContain("--span-x: 2");
     expect(styleString).toContain("--span-y: 2");
 
-    // now we expect to have two less cells
-    expect(info.cellCount).toBe(original.cellCount - 2);
+    // now we expect to have three less cells
+    expect(info.cellCount).toBe(original.cellCount - 3);
     // there should be no cells with those ids
     expect(document.getElementById("cell-R0C1")).toBeNull();
     expect(document.getElementById("cell-R1C0")).toBeNull();
+    expect(document.getElementById("cell-R1C1")).toBeNull();
   });
 
   it("reducing span from (2,1) to (1,1) adds cell back", () => {
@@ -281,7 +285,7 @@ describe("span-related tests", () => {
     const cellR0C0 = getCell(grid, 0, 0);
     setCellSpan(cellR0C0, 2, 2);
     let info = getGridInfo(grid);
-    expect(info.cellCount).toBe(original.cellCount - 2);
+    expect(info.cellCount).toBe(original.cellCount - 3);
 
     // Now reduce the span back to 1x1 - should add cells back
     setCellSpan(cellR0C0, 1, 1);
