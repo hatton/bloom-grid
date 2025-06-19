@@ -1,24 +1,9 @@
+// Our html grid model uses CSS Grid layout, but also needs to control the structure of the grid declaratively
+// via attributes on the div.grid. I.e, whenever the attributes change, we need to update the CSS style on that element.
+// This module observes changes to grid elements and updates their styles accordingly.
+
 // Store observer instances for each grid
 const observers = new Map<HTMLElement, MutationObserver>();
-
-/**
- * Finds all nested grids within a given grid element, recursively
- * @param grid The grid element to search within
- * @returns Array of all nested grid elements found
- */
-function findNestedGrids(grid: HTMLElement): HTMLElement[] {
-  const nestedGrids: HTMLElement[] = [];
-
-  // Find all .grid elements that are descendants of this grid
-  const allGrids = grid.querySelectorAll<HTMLElement>(".grid");
-
-  // Add them to our list
-  allGrids.forEach((nestedGrid) => {
-    nestedGrids.push(nestedGrid);
-  });
-
-  return nestedGrids;
-}
 
 /**
  * Attaches a grid observer to a specific grid element
@@ -115,4 +100,23 @@ function applyRows(grid: HTMLElement): void {
 function applyGrid(grid: HTMLElement): void {
   applyColumns(grid);
   applyRows(grid);
+}
+
+/**
+ * Finds all nested grids within a given grid element, recursively
+ * @param grid The grid element to search within
+ * @returns Array of all nested grid elements found
+ */
+function findNestedGrids(grid: HTMLElement): HTMLElement[] {
+  const nestedGrids: HTMLElement[] = [];
+
+  // Find all .grid elements that are descendants of this grid
+  const allGrids = grid.querySelectorAll<HTMLElement>(".grid");
+
+  // Add them to our list
+  allGrids.forEach((nestedGrid) => {
+    nestedGrids.push(nestedGrid);
+  });
+
+  return nestedGrids;
 }

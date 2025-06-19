@@ -20,19 +20,19 @@ export {
   addRowAt,
   removeColumnAt,
   removeRowAt,
-} from "./grid-operations";
+} from "./structure";
 
 // Drag-to-resize
 export { dragToResize } from "./drag-to-resize";
 
 // Grid attach/detach
-export { attachGrid, detachGrid } from "./grid-attach";
+export { attachGrid, detachGrid } from "./attach";
 
 // Grid history manager (if needed for advanced use)
-export { gridHistoryManager } from "./grid-history";
+export { gridHistoryManager } from "./history";
 
 // Grid observer (optional, if you want to expose it)
 export {
   attach as attachGridObserver,
   detach as detachGridObserver,
-} from "./grid-observer";
+} from "./cssGrid-style-updater";

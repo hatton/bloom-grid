@@ -1,4 +1,4 @@
-import { gridHistoryManager } from "./grid-history";
+import { gridHistoryManager } from "./history";
 
 interface DragState {
   isDragging: boolean;
@@ -190,7 +190,7 @@ export class DragToResize {
     let performOperation: () => void;
     let undoOperation: (
       gridElement: HTMLElement,
-      prevState: import("./grid-history").GridState
+      prevState: import("./history").GridState
     ) => void;
 
     if (operationType === "column") {

@@ -14,10 +14,10 @@ import {
   removeLastRow,
   removeRowAt,
   setCellSpan,
-} from "./grid-operations";
+} from "./structure";
 
-import { gridHistoryManager } from "./grid-history";
-import { attachGrid } from "./grid-attach";
+import { gridHistoryManager } from "./history";
+import { attachGrid } from "./attach";
 
 beforeEach(() => {
   // Reset the DOM for each test

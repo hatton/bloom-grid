@@ -51,7 +51,7 @@
  * use happy-dom, which do not support this selector properly. There may be other selectors that also do not work.
  */
 
-import { gridHistoryManager } from "./grid-history";
+import { gridHistoryManager } from "./history";
 
 /**
  * Runtime assertion function that throws an error if the condition is false.
@@ -66,16 +66,6 @@ function assert(condition: boolean, message: string): asserts condition {
   if (!condition) {
     throw new Error(`Assertion failed: ${message}`);
   }
-}
-
-/**
- * Gets all direct child cells of a grid element.
- * This is more reliable than using ":scope > .cell" selector which can fail in some environments.
- */
-function getDirectGridCells(grid: HTMLElement): HTMLElement[] {
-  return Array.from(grid.children).filter((child) =>
-    child.classList.contains("cell")
-  ) as HTMLElement[];
 }
 
 /**

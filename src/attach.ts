@@ -1,7 +1,7 @@
 import { dragToResize } from "./drag-to-resize";
-import { gridHistoryManager } from "./grid-history";
-import { addColumn, addRow } from "./grid-operations";
-import * as gridObserver from "./grid-observer";
+import { gridHistoryManager } from "./history";
+import { addColumn, addRow } from "./structure";
+import * as cssGridStyleUpdater from "./cssGrid-style-updater";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
@@ -27,7 +27,7 @@ export function attachGrid(gridDiv: HTMLElement): void {
   // Attach resize handlers
   dragToResize.attach(gridDiv);
   // Attach grid observer
-  gridObserver.attach(gridDiv);
+  cssGridStyleUpdater.attach(gridDiv);
 }
 
 export function detachGrid(gridDiv: HTMLElement): void {
@@ -38,5 +38,5 @@ export function detachGrid(gridDiv: HTMLElement): void {
   // Detach resize handlers
   dragToResize.detach(gridDiv);
   // Detach grid observer
-  gridObserver.detach(gridDiv);
+  cssGridStyleUpdater.detach(gridDiv);
 }

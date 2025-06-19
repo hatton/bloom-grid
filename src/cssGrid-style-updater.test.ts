@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { attach } from "./grid-observer";
+import { attach } from "./cssGrid-style-updater";
 
 describe("Nested Grid Support", () => {
   beforeEach(() => {
