@@ -4,13 +4,14 @@
   "description": "A TypeScript library for editing tables/grids in pure html",
   "main": "dist/bloom-grid.umd.js",
   "module": "dist/bloom-grid.es.js",
-  "types": "dist/index.d.ts",  "files": [
+  "types": "dist/index.d.ts",
+  "files": [
     "dist",
     "bloom-grid.css"
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite --open /example.html",
+    "dev": "vite --open /demo/example.html",
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",

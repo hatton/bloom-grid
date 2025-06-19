@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
     <meta charset="UTF-8" />
     <title>CSS-Grid Requirements Demo</title>
-    <link rel="stylesheet" href="bloom-grid.css" />
-
+    <link rel="stylesheet" href="../bloom-grid.css" />
     <style>
       /* ---------------- Base page styling ---------------- */
       body {
@@ -35,7 +33,7 @@
           --border-color: red; /* no border on the main grid */
 
           --gap: 1px;
-          /* Tier‑2: give all outer‑grid cells a light orange bg & tighter padding */
+          /* Tier: give all outergrid cells a light orange bg & tighter padding */
           --cell-bg: transparent;
           --cell-padding: 6px 8px; /* slightly tighter */
           /*--cell-border-color: #ecf0f6;*/
@@ -78,7 +76,7 @@
           </div>
         </div>
 
-        <!-- ---------- Row 3 (fill) ---------- -->
+        <!-- ---------- Row (fill) ---------- -->
         <div class="cell">
           <div
             class="grid"
@@ -103,13 +101,13 @@
           </div>
         </div>
 
-        <!-- ---------- Row 4 (default fit) ---------- -->
+        <!-- ---------- Row (default fit) ---------- -->
         <div class="cell">
           <div contenteditable="true">Papa i salim mama smapim lip.</div>
         </div>
       </div>
     </div>
 
-    <script type="module" src="/src/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
