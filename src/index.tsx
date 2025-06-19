@@ -22,6 +22,7 @@ export {
   removeRowAt,
 } from "./structure";
 
+export * from "./types";
 // Drag-to-resize
 export { dragToResize } from "./drag-to-resize";
 
