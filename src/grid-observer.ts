@@ -24,10 +24,23 @@ const applyGrid = (grid: HTMLElement): void => {
   applyRows(grid);
 };
 
-const initGridObserver = (): void => {
-  // Apply initial styles to all grids present on the page
-  document.querySelectorAll<HTMLElement>(".grid").forEach(applyGrid);
+// Store observer instances for each grid
+const observers = new Map<HTMLElement, MutationObserver>();
 
+/**
+ * Attaches a grid observer to a specific grid element
+ * @param grid The grid element to observe
+ */
+export function attach(grid: HTMLElement): void {
+  if (observers.has(grid)) {
+    // Observer already attached to this grid
+    return;
+  }
+
+  // Apply initial styles to the grid
+  applyGrid(grid);
+
+  // Create a new observer for this grid
   const observer = new MutationObserver((mutationsList) => {
     mutationsList.forEach((mutation) => {
       if (mutation.type === "attributes") {
@@ -55,17 +68,26 @@ const initGridObserver = (): void => {
     });
   });
 
-  observer.observe(document.body, {
+  // Observe the grid and its children
+  observer.observe(grid, {
     childList: true, // Observe direct children additions/removals
     subtree: true, // Observe all descendants
     attributes: true, // Observe attribute changes
     attributeFilter: ["data-column-widths", "data-row-heights"], // Only specific attributes
   });
-};
 
-// Initialize the observer script
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initGridObserver);
-} else {
-  initGridObserver();
+  // Store the observer
+  observers.set(grid, observer);
+}
+
+/**
+ * Detaches the grid observer from a specific grid element
+ * @param grid The grid element to stop observing
+ */
+export function detach(grid: HTMLElement): void {
+  const observer = observers.get(grid);
+  if (observer) {
+    observer.disconnect();
+    observers.delete(grid);
+  }
 }

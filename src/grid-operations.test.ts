@@ -18,7 +18,6 @@ import {
 
 import { gridHistoryManager } from "./grid-history";
 import { attachGrid } from "./grid-attach";
-import { get } from "http";
 
 beforeEach(() => {
   // Reset the DOM for each test
