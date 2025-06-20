@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as Grid from "../src";
 import GridMenu from "../src/components/GridMenu";
 import SelectedCellInfo from "../src/components/SelectedCellInfo";
 
-const App: React.FC = () => {
+const App: React.FC<{}> = () => {
   const [canUndo, setCanUndo] = useState(false);
   const [showBorders, setShowBorders] = useState(true);
   const [canRemoveRow, setCanRemoveRow] = useState(true);
@@ -11,6 +11,11 @@ const App: React.FC = () => {
   const [canAddRow, setCanAddRow] = useState(true);
   const [canAddColumn, setCanAddColumn] = useState(true);
   const [selectionUpdateTrigger, setSelectionUpdateTrigger] = useState(0);
+  const [cellSelected, setCellSelected] = useState(false);
+  // Reference to the currently selected cell
+  const selectedCellRef = useRef<HTMLElement | null>(null);
+  // Store the grid reference
+  const gridRef = useRef<HTMLElement | null>(null);
 
   // Helper function to get grid state information
   const getGridState = (grid: HTMLElement | null) => {
@@ -30,11 +35,10 @@ const App: React.FC = () => {
     const hasBorders = borderWidth !== "0px" && borderWidth !== "0";
 
     return { rowCount, columnCount, hasBorders };
-  };
-
-  // Update all UI state based on current grid
+  }; // Update all UI state based on current grid
   const updateUIState = () => {
     const grid = Grid.getTargetGrid();
+    gridRef.current = grid;
     const { rowCount, columnCount, hasBorders } = getGridState(grid);
 
     setCanUndo(Grid.canUndo());
@@ -44,8 +48,42 @@ const App: React.FC = () => {
     // we can always add rows/columns if we have the focus is in a grid
     setCanAddColumn(!!grid);
     setCanAddRow(!!grid);
+
+    // Check if a cell is selected and update our stored reference
+    const currentlyFocusedCell = document.activeElement?.closest(
+      ".cell"
+    ) as HTMLElement;
+
+    // Only update the stored reference if we actually have a focused cell
+    // This preserves the last selected cell when focus moves to menu items
+    if (currentlyFocusedCell) {
+      selectedCellRef.current = currentlyFocusedCell;
+    }
+
+    // A cell is considered "selected" if we have a stored reference,
+    // regardless of current focus
+    setCellSelected(!!selectedCellRef.current);
+
     // Trigger an update for the selected cell info component
     setSelectionUpdateTrigger((prev) => prev + 1);
+  }; // Function to restore focus to the previously selected cell
+  const restoreCellFocus = () => {
+    if (selectedCellRef.current) {
+      selectedCellRef.current.focus();
+    }
+  };
+
+  // Function to clear selected cell when focus moves outside the grid
+  const clearSelectedCellIfNeeded = () => {
+    // const currentFocus = document.activeElement;
+    // const isInGrid =
+    //   currentFocus?.closest(".grid") || currentFocus?.closest(".cell");
+    // const isInMenu = currentFocus?.closest(".grid-menu");
+    // // Only clear if focus is not in grid and not in menu
+    // if (!isInGrid && !isInMenu) {
+    //   selectedCellRef.current = null;
+    //   setCellSelected(false);
+    // }
   };
   // Handle border toggle
   const handleBorderToggle = () => {
@@ -64,6 +102,9 @@ const App: React.FC = () => {
 
     // Update UI state to reflect the change
     updateUIState();
+
+    // Restore focus to the previously selected cell
+    restoreCellFocus();
   };
   useEffect(() => {
     updateUIState();
@@ -88,11 +129,11 @@ const App: React.FC = () => {
     };
 
     // Try to attach immediately
-    attachGridWhenReady();
-
-    // Listen for focus changes to update UI state
+    attachGridWhenReady(); // Listen for focus changes to update UI state
     const handleFocusChange = () => {
       updateUIState();
+      // Also check if we should clear the selected cell
+      setTimeout(clearSelectedCellIfNeeded, 10); // Small delay to ensure focus has settled
     };
 
     // Listen for history updates to refresh UI state
@@ -127,11 +168,14 @@ const App: React.FC = () => {
       );
     };
   }, []);
+
   const handleAddRow = () => {
     const grid = Grid.getTargetGrid();
     if (grid) {
       Grid.addRow(grid);
       updateUIState();
+      // Restore focus to the previously selected cell
+      restoreCellFocus();
     } else {
       console.warn("Target grid not found for adding a row.");
     }
@@ -142,6 +186,8 @@ const App: React.FC = () => {
     if (grid) {
       Grid.removeLastRow(grid);
       updateUIState();
+      // Restore focus to the previously selected cell
+      restoreCellFocus();
     } else {
       console.warn("Target grid not found for removing a row.");
     }
@@ -152,6 +198,8 @@ const App: React.FC = () => {
     if (grid) {
       Grid.addColumn(grid);
       updateUIState();
+      // Restore focus to the previously selected cell
+      restoreCellFocus();
     } else {
       console.warn("Target grid not found for adding a column.");
     }
@@ -162,6 +210,8 @@ const App: React.FC = () => {
     if (grid) {
       Grid.removeLastColumn(grid);
       updateUIState();
+      // Restore focus to the previously selected cell
+      restoreCellFocus();
     } else {
       console.warn("Target grid not found for removing a column.");
     }
@@ -172,6 +222,8 @@ const App: React.FC = () => {
     if (grid) {
       const success = Grid.undoLastOperation(grid);
       updateUIState();
+      // Restore focus to the previously selected cell
+      restoreCellFocus();
       if (!success) {
         console.warn("No operations to undo or undo failed.");
       }
@@ -182,11 +234,15 @@ const App: React.FC = () => {
   return (
     <>
       {/* Cell Information UI */}
-      <SelectedCellInfo updateTrigger={selectionUpdateTrigger} />
-
-      {/* Grid Menu UI */}
-      <GridMenu updateUIState={updateUIState} showBorders={showBorders} />
-
+      <SelectedCellInfo updateTrigger={selectionUpdateTrigger} />{" "}
+      {/* Grid Menu UI - only show when a cell is selected */}
+      {cellSelected && (
+        <GridMenu
+          updateUIState={updateUIState}
+          showBorders={showBorders}
+          selectedCellRef={selectedCellRef}
+        />
+      )}
       {/* Keep this div to maintain layout structure, but it can be empty */}
       <div className="space-y-4"></div>
     </>
