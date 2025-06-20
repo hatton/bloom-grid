@@ -1,7 +1,6 @@
 // The users of the library decide what contents are possible in a cell, and what the default content is when a cell is created.
 // This file defines the default cell contents and provides a way to customize them.
 
-import { assert } from "console";
 import { CellContentType } from "./types";
 
 export const defaultCellContents: CellContentType[] = [
