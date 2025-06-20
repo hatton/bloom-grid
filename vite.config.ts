@@ -14,6 +14,41 @@ export default defineConfig(({ command }) => {
       dts({
         insertTypesEntry: true,
       }),
+      // Custom plugin to serve API endpoints during development
+      {
+        name: "demo-api-server",
+        configureServer(server) {
+          server.middlewares.use("/api/examples", (req, res, next) => {
+            if (req.method === "GET") {
+              try {
+                const demoDir = path.join(__dirname, "demo");
+                const files = fs.readdirSync(demoDir);
+                const htmlFiles = files
+                  .filter(
+                    (file) => file.endsWith(".html") && file !== "index.html"
+                  )
+                  .map((file) => ({
+                    name: file
+                      .replace(".html", "")
+                      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capitals
+                      .replace(/^\w/, (c) => c.toUpperCase()) // Capitalize first letter
+                      .replace(/\d+/, (match) => ` ${match}`), // Add space before numbers
+                    file: file,
+                  }));
+
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.end(JSON.stringify(htmlFiles));
+              } catch (error) {
+                res.statusCode = 500;
+                res.end(JSON.stringify({ error: "Failed to read directory" }));
+              }
+            } else {
+              next();
+            }
+          });
+        },
+      },
       // Custom plugin to copy CSS file to dist folder
       {
         name: "copy-css-file",

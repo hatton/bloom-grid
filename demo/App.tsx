@@ -63,13 +63,27 @@ const App: React.FC = () => {
   useEffect(() => {
     updateUIState();
 
-    // get it from the body
-    const mainGrid = document.querySelector("#main-grid");
-    if (mainGrid) {
-      Grid.attachGrid(mainGrid! as HTMLElement);
-      // Set initial border state based on current grid
-      updateUIState();
-    }
+    // Function to attach grid when content is loaded
+    const attachGridWhenReady = () => {
+      const mainGrid = document.querySelector("#main-grid");
+      if (mainGrid) {
+        Grid.attachGrid(mainGrid as HTMLElement);
+        updateUIState();
+        return true;
+      }
+      return false;
+    };
+
+    // Listen for custom event when example content is loaded
+    const handleExampleContentLoaded = () => {
+      // Small delay to ensure DOM is fully updated
+      setTimeout(() => {
+        attachGridWhenReady();
+      }, 100);
+    };
+
+    // Try to attach immediately
+    attachGridWhenReady();
 
     // Listen for focus changes to update UI state
     const handleFocusChange = () => {
@@ -81,13 +95,18 @@ const App: React.FC = () => {
       updateUIState();
     };
 
-    // Add focus and blur listeners to detect when focus changes to different grids
+    // Add event listeners
     document.addEventListener("focusin", handleFocusChange);
     document.addEventListener("focusout", handleFocusChange);
     document.addEventListener("gridHistoryUpdated", handleGridHistoryUpdated);
+    document.addEventListener(
+      "exampleContentLoaded",
+      handleExampleContentLoaded
+    );
 
     // Cleanup on unmount
     return () => {
+      const mainGrid = document.querySelector("#main-grid");
       if (mainGrid) {
         Grid.dragToResize.detach(mainGrid as HTMLElement);
       }
@@ -96,6 +115,10 @@ const App: React.FC = () => {
       document.removeEventListener(
         "gridHistoryUpdated",
         handleGridHistoryUpdated
+      );
+      document.removeEventListener(
+        "exampleContentLoaded",
+        handleExampleContentLoaded
       );
     };
   }, []);
@@ -152,25 +175,25 @@ const App: React.FC = () => {
     }
   };
   return (
-    <div className="p-6 bg-gray-50 rounded-lg shadow">
-      {" "}
-      <div className="flex flex-wrap space-x-0 sm:space-x-4 space-y-2 sm:space-y-0 justify-center">
+    <div className="space-y-4">
+      <div className="space-y-3">
         <button
           onClick={handleAddRow}
           disabled={!canAddRow}
           onMouseDown={(e) => e.preventDefault()}
           tabIndex={-1}
-          className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
+          className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Add a new row to the bottom of the main grid"
         >
           + Row
-        </button>{" "}
+        </button>
+
         <button
           onClick={handleRemoveRow}
           onMouseDown={(e) => e.preventDefault()}
           disabled={!canRemoveRow}
           tabIndex={-1}
-          className={`w-full sm:w-auto font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
+          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
             canRemoveRow
               ? "bg-red-500 hover:bg-red-600 text-white focus:ring-red-400 focus:ring-opacity-50"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -179,23 +202,24 @@ const App: React.FC = () => {
         >
           - Row
         </button>
+
         <button
           onClick={handleAddColumn}
           onMouseDown={(e) => e.preventDefault()}
           disabled={!canAddColumn}
           tabIndex={-1}
-          className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
+          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
           aria-label="Add a new column to the right of the main grid"
         >
           + Column
         </button>
-        {/* - Column */}{" "}
+
         <button
           onClick={handleRemoveColumn}
           onMouseDown={(e) => e.preventDefault()}
           disabled={!canRemoveColumn}
           tabIndex={-1}
-          className={`w-full sm:w-auto font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
+          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
             canRemoveColumn
               ? "bg-red-500 hover:bg-red-600 text-white focus:ring-red-400 focus:ring-opacity-50"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -204,12 +228,13 @@ const App: React.FC = () => {
         >
           - Column
         </button>
+
         <button
           onClick={handleUndo}
           onMouseDown={(e) => e.preventDefault()}
           disabled={!canUndo}
           tabIndex={-1}
-          className={`w-full sm:w-auto font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
+          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
             canUndo
               ? "bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-400 focus:ring-opacity-50"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -217,9 +242,10 @@ const App: React.FC = () => {
           aria-label="Undo the last grid operation"
         >
           Undo
-        </button>{" "}
+        </button>
+
         <label
-          className="flex items-center space-x-2 w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 cursor-pointer transition duration-150 ease-in-out"
+          className="flex items-center space-x-2 w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 cursor-pointer transition duration-150 ease-in-out"
           onMouseDown={(e) => e.preventDefault()}
         >
           <input
