@@ -392,7 +392,7 @@ export function setCellSpan(
  * @returns Object with row and column (0-based indices)
  * @throws {Error} If the cell is not found in the grid
  */
-function getRowAndColumn(
+export function getRowAndColumn(
   grid: HTMLElement,
   cell: HTMLElement
 ): { row: number; column: number } {

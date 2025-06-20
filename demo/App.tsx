@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as Grid from "../src";
+import GridMenu from "../src/components/GridMenu";
+import SelectedCellInfo from "../src/components/SelectedCellInfo";
 
 const App: React.FC = () => {
   const [canUndo, setCanUndo] = useState(false);
@@ -8,6 +10,7 @@ const App: React.FC = () => {
   const [canRemoveColumn, setCanRemoveColumn] = useState(true);
   const [canAddRow, setCanAddRow] = useState(true);
   const [canAddColumn, setCanAddColumn] = useState(true);
+  const [selectionUpdateTrigger, setSelectionUpdateTrigger] = useState(0);
 
   // Helper function to get grid state information
   const getGridState = (grid: HTMLElement | null) => {
@@ -41,6 +44,8 @@ const App: React.FC = () => {
     // we can always add rows/columns if we have the focus is in a grid
     setCanAddColumn(!!grid);
     setCanAddRow(!!grid);
+    // Trigger an update for the selected cell info component
+    setSelectionUpdateTrigger((prev) => prev + 1);
   };
   // Handle border toggle
   const handleBorderToggle = () => {
@@ -175,92 +180,16 @@ const App: React.FC = () => {
     }
   };
   return (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        <button
-          onClick={handleAddRow}
-          disabled={!canAddRow}
-          onMouseDown={(e) => e.preventDefault()}
-          tabIndex={-1}
-          className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
-          aria-label="Add a new row to the bottom of the main grid"
-        >
-          + Row
-        </button>
+    <>
+      {/* Cell Information UI */}
+      <SelectedCellInfo updateTrigger={selectionUpdateTrigger} />
 
-        <button
-          onClick={handleRemoveRow}
-          onMouseDown={(e) => e.preventDefault()}
-          disabled={!canRemoveRow}
-          tabIndex={-1}
-          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
-            canRemoveRow
-              ? "bg-red-500 hover:bg-red-600 text-white focus:ring-red-400 focus:ring-opacity-50"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-          aria-label="Remove the last row from the main grid"
-        >
-          - Row
-        </button>
+      {/* Grid Menu UI */}
+      <GridMenu updateUIState={updateUIState} showBorders={showBorders} />
 
-        <button
-          onClick={handleAddColumn}
-          onMouseDown={(e) => e.preventDefault()}
-          disabled={!canAddColumn}
-          tabIndex={-1}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
-          aria-label="Add a new column to the right of the main grid"
-        >
-          + Column
-        </button>
-
-        <button
-          onClick={handleRemoveColumn}
-          onMouseDown={(e) => e.preventDefault()}
-          disabled={!canRemoveColumn}
-          tabIndex={-1}
-          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
-            canRemoveColumn
-              ? "bg-red-500 hover:bg-red-600 text-white focus:ring-red-400 focus:ring-opacity-50"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-          aria-label="Remove the last column from the main grid"
-        >
-          - Column
-        </button>
-
-        <button
-          onClick={handleUndo}
-          onMouseDown={(e) => e.preventDefault()}
-          disabled={!canUndo}
-          tabIndex={-1}
-          className={`w-full font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 transition duration-150 ease-in-out ${
-            canUndo
-              ? "bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-400 focus:ring-opacity-50"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-          aria-label="Undo the last grid operation"
-        >
-          Undo
-        </button>
-
-        <label
-          className="flex items-center space-x-2 w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-gray-300 cursor-pointer transition duration-150 ease-in-out"
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <input
-            type="checkbox"
-            checked={showBorders}
-            onChange={handleBorderToggle}
-            onMouseDown={(e) => e.preventDefault()}
-            tabIndex={-1}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-            aria-label="Toggle grid cell borders"
-          />
-          <span>Show Borders</span>
-        </label>
-      </div>
-    </div>
+      {/* Keep this div to maintain layout structure, but it can be empty */}
+      <div className="space-y-4"></div>
+    </>
   );
 };
 

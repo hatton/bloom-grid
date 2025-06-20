@@ -16,6 +16,7 @@ export {
   getGridInfo,
   setCellSpan,
   getCell,
+  getRowAndColumn,
   addColumnAt,
   addRowAt,
   removeColumnAt,
