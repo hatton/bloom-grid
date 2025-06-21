@@ -3,255 +3,80 @@ import * as Grid from "../";
 import { setupContentsOfCell } from "../cell-contents";
 import { defaultCellContents } from "../cell-contents";
 
-interface GridMenuProps {
-  updateUIState: () => void;
-  showBorders: boolean;
-  selectedCellRef?: React.RefObject<HTMLElement | null>;
-}
+import { changeCellSpan } from "../structure";
 
-const GridMenu: React.FC<GridMenuProps> = ({
-  updateUIState,
-  showBorders,
-  selectedCellRef,
-}) => {
-  console.log(
-    "🎨 GridMenu render - selectedCellRef?.current:",
-    selectedCellRef?.current
-  );
-  console.log(
-    "🎨 GridMenu render - document.activeElement:",
-    document.activeElement
-  );
-
+const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
+  props
+) => {
   const cellContentTypes = defaultCellContents;
-  // Helper function to restore focus to the selected cell
-  const restoreCellFocus = () => {
-    console.log("🔄 restoreCellFocus called");
-    console.log("📍 selectedCellRef?.current:", selectedCellRef?.current);
-    if (selectedCellRef?.current) {
-      console.log("✅ Restoring focus to cell:", selectedCellRef.current);
-      selectedCellRef.current.focus();
-      console.log(
-        "📍 document.activeElement after focus:",
-        document.activeElement
-      );
-    } else {
-      console.log("❌ No selectedCellRef.current to focus");
-    }
-  }; // Helper to get grid from selected cell or fallback to getTargetGrid
-  const getTargetGridFromSelection = (): HTMLElement | null => {
-    // Try to find grid from selectedCellRef first
-    if (selectedCellRef?.current) {
-      const grid = selectedCellRef.current.closest<HTMLElement>(".grid");
-      if (grid) return grid;
-    }
+  console.log("GridMenu props", JSON.stringify(props, null, 2));
 
-    // Fallback to the original method
-    return Grid.getTargetGrid();
+  const getTargetGridFromSelection = (): HTMLElement => {
+    const focusedElement = document.activeElement as HTMLElement;
+    const grid = focusedElement.closest(".grid") as HTMLElement;
+
+    return grid;
   };
 
-  // Helper to get cell info when a cell is selected
-  const getSelectedCellInfo = () => {
-    console.log("🔍 getSelectedCellInfo called");
-    const grid = Grid.getTargetGrid();
-    if (!grid) {
-      console.log("❌ No grid found");
-      return null;
-    }
-
-    // Prioritize the selected cell reference since it's more reliable
-    console.log("📍 selectedCellRef?.current:", selectedCellRef?.current);
-    console.log("📍 document.activeElement:", document.activeElement);
-
-    let selectedCell = selectedCellRef?.current;
-
-    // Only fallback to document.activeElement if selectedCellRef is not available
-    if (!selectedCell) {
-      console.log(
-        "📍 document.activeElement.closest('.cell'):",
-        document.activeElement?.closest(".cell")
-      );
-      selectedCell = document.activeElement?.closest(".cell") as HTMLElement;
-    }
-
-    if (!selectedCell) {
-      console.log("❌ No selected cell found");
-      return null;
-    }
-
-    console.log("✅ Selected cell found:", selectedCell);
-
-    // Use the now exported getRowAndColumn function
-    const { row, column } = Grid.getRowAndColumn(grid, selectedCell);
-    const spanX =
-      parseInt(selectedCell.style.getPropertyValue("--span-x")) || 1;
-    const spanY =
-      parseInt(selectedCell.style.getPropertyValue("--span-y")) || 1;
-
-    console.log(
-      `📊 Cell info - Row: ${row}, Column: ${column}, SpanX: ${spanX}, SpanY: ${spanY}`
-    );
-    return { grid, cell: selectedCell, row, column, spanX, spanY };
-  };
-  // Cell operations
   const handleSetCellContentType = (contentTypeId: string) => {
-    const info = getSelectedCellInfo();
-    if (!info) throw new Error("No cell selected");
-
-    setupContentsOfCell(info.cell, contentTypeId);
-    updateUIState();
-    restoreCellFocus();
+    assert(!!props.currentCell, "No cell selected");
+    setupContentsOfCell(props.currentCell!, contentTypeId);
   };
 
   const handleExtendCell = () => {
-    const info = getSelectedCellInfo();
-    if (!info) throw new Error("No cell selected");
+    assert(!!props.currentCell, "No cell selected");
 
     // Increase horizontal span by 1
-    const newSpanX = info.spanX + 1;
-    info.cell.style.setProperty("--span-x", newSpanX.toString());
-    updateUIState();
-    restoreCellFocus();
+    // const newSpanX = info.spanX + 1;
+    // info.cell.style.setProperty("--span-x", newSpanX.toString());
   };
 
   const handleContractCell = () => {
-    const info = getSelectedCellInfo();
-    if (!info || info.spanX <= 1) throw "could not do it";
-
-    // Decrease horizontal span by 1
-    const newSpanX = info.spanX - 1;
-    if (newSpanX > 1) {
-      info.cell.style.setProperty("--span-x", newSpanX.toString());
-    } else {
-      info.cell.style.removeProperty("--span-x");
-    }
-    updateUIState();
-    restoreCellFocus();
-  }; // Row operations
+    changeCellSpan(props.currentCell!, -1, 0);
+  };
   const handleInsertRowAbove = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      Grid.addRow(grid);
-    } else {
-      Grid.addRowAt(grid, info.row);
-    }
-    updateUIState();
-    restoreCellFocus();
+    const rowIndex = Grid.getRowIndex(props.currentCell!);
+    Grid.addRowAt(grid, rowIndex);
   };
   const handleInsertRowBelow = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
-    console.log("🚀 handleInsertRowBelow called");
-    console.log("📍 Event target:", event.target);
-    console.log("📍 Event currentTarget:", event.currentTarget);
-    console.log("📍 document.activeElement at start:", document.activeElement);
-
-    // prevent taking focus away from the cell
-    event.preventDefault();
-    event.stopPropagation();
-
-    console.log(
-      "📍 document.activeElement after preventDefault:",
-      document.activeElement
-    );
-    console.log("📍 selectedCellRef?.current:", selectedCellRef?.current);
-
     const grid = getTargetGridFromSelection();
-    console.log("🎯 Grid found:", grid);
-
-    if (!grid) {
-      console.log("❌ No grid identified");
-      throw "no grid identified";
-    }
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      console.log("⚠️ No cell info, adding row at end");
-      Grid.addRow(grid);
-    } else {
-      console.log(
-        "✅ Cell info found, adding row below at position:",
-        info.row + info.spanY
-      );
-      Grid.addRowAt(grid, info.row + info.spanY);
-    }
-    updateUIState();
-    restoreCellFocus();
+    const rowIndex = Grid.getRowIndex(props.currentCell!);
+    Grid.addRowAt(grid, rowIndex + 1);
   };
   const handleDeleteRow = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    const gridInfo = Grid.getGridInfo(grid);
-    if (gridInfo.rowCount <= 1) throw "could not do it"; // Prevent deleting the last row
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      Grid.removeLastRow(grid);
-    } else {
-      Grid.removeRowAt(grid, info.row);
-    }
-    updateUIState();
-    restoreCellFocus();
-  }; // Column operations
+    const rowIndex = Grid.getRowIndex(props.currentCell!);
+    Grid.removeRowAt(grid, rowIndex);
+  };
   const handleInsertColumnLeft = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      Grid.addColumn(grid);
-    } else {
-      Grid.addColumnAt(grid, info.column);
-    }
-    updateUIState();
-    restoreCellFocus();
+    const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
+    Grid.addColumnAt(grid, columnIndex - 1);
   };
 
   const handleInsertColumnRight = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      Grid.addColumn(grid);
-    } else {
-      Grid.addColumnAt(grid, info.column + info.spanX);
-    }
-    updateUIState();
-    restoreCellFocus();
+    const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
+    Grid.addColumnAt(grid, columnIndex);
   };
 
   const handleDeleteColumn = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    const gridInfo = Grid.getGridInfo(grid);
-    if (gridInfo.columnCount <= 1) throw "could not do it"; // Prevent deleting the last column
-
-    const info = getSelectedCellInfo();
-    if (!info) {
-      Grid.removeLastColumn(grid);
-    } else {
-      Grid.removeColumnAt(grid, info.column);
-    }
-    updateUIState();
-    restoreCellFocus();
+    const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
+    Grid.removeColumnAt(grid, columnIndex);
   }; // Grid operations
   const handleToggleOutsideBorder = () => {
     const grid = getTargetGridFromSelection();
-    if (!grid) throw "no grid identified";
-
-    if (!showBorders) {
+    const haveBorders =
+      grid.style.getPropertyValue("--cell-border-width") === "1px";
+    if (!haveBorders) {
       grid.style.setProperty("--cell-border-width", "1px");
     } else {
       grid.style.setProperty("--cell-border-width", "0px");
     }
-    updateUIState();
-    restoreCellFocus();
   };
 
   const handleToggleInsideBorders = () => {
@@ -265,7 +90,16 @@ const GridMenu: React.FC<GridMenuProps> = ({
   const sectionTitleStyle = "text-gray-500 px-4 py-2 text-lg font-medium";
 
   return (
-    <div className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 fixed right-4 top-4 z-10">
+    <div
+      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 fixed right-4 top-4 z-10"
+      /* if haveSelectedCell is false, dim/disable the menu */
+      style={{
+        opacity: !!props.currentCell ? 1 : 0.5,
+        pointerEvents: !!props.currentCell ? "auto" : "none",
+      }}
+      onMouseDown={(e) => e.preventDefault()} //leave the cursor in the grid
+    >
+      {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
       {/* Cell section */}
       <div className={sectionStyle}>
         <h2 className={sectionTitleStyle}>Cell</h2>
@@ -290,7 +124,13 @@ const GridMenu: React.FC<GridMenuProps> = ({
             </button>
           </div>
         </div>
-        <div className={menuItemStyle} onClick={handleExtendCell}>
+
+        <div
+          className={menuItemStyle}
+          onClick={(e) => {
+            handleExtendCell();
+          }}
+        >
           <span className="text-xl">↔</span>
           <span>Extend Cell</span>
         </div>
@@ -309,7 +149,9 @@ const GridMenu: React.FC<GridMenuProps> = ({
         </div>
         <div
           className={menuItemStyle}
-          onClick={(event) => handleInsertRowBelow(event)}
+          onClick={(event) => {
+            handleInsertRowBelow(event);
+          }}
         >
           <span className="text-2xl">↓</span>
           <span>Insert Row Below</span>
@@ -340,7 +182,12 @@ const GridMenu: React.FC<GridMenuProps> = ({
       {/* Grid section */}
       <div>
         <h2 className={sectionTitleStyle}>Grid</h2>
-        <div className={menuItemStyle} onClick={handleToggleOutsideBorder}>
+        <div
+          className={menuItemStyle}
+          onClick={(event) => {
+            handleToggleOutsideBorder();
+          }}
+        >
           <span className="text-xl">◰</span>
           <span>Show Outside Border</span>
         </div>
@@ -353,4 +200,79 @@ const GridMenu: React.FC<GridMenuProps> = ({
   );
 };
 
+function assert(condition: boolean, message: string): asserts condition {
+  if (!condition) {
+    throw new Error(`Assertion failed: ${message}`);
+  }
+}
+
+/* 
+const [canUndo, setCanUndo] = useState(false);
+  const [showBorders, setShowBorders] = useState(true);
+  const [canRemoveRow, setCanRemoveRow] = useState(true);
+  const [canRemoveColumn, setCanRemoveColumn] = useState(true);
+  const [canAddRow, setCanAddRow] = useState(true);
+  const [canAddColumn, setCanAddColumn] = useState(true);
+  const [selectionUpdateTrigger, setSelectionUpdateTrigger] = useState(0);
+  const [cellSelected, setCellSelected] = useState(false);
+  // Reference to the currently selected cell
+  const selectedCellRef = useRef<HTMLElement | null>(null);
+  // Store the grid reference
+  const gridRef = useRef<HTMLElement | null>(null);
+
+  // Helper function to get grid state information
+  const getGridState = (grid: HTMLElement | null) => {
+    if (!grid) return { rowCount: 0, columnCount: 0, hasBorders: false };
+
+    const rowHeightsAttr = grid.getAttribute("data-row-heights");
+    const rowCount = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
+
+    const columnWidthsAttr = grid.getAttribute("data-column-widths");
+    const columnCount = columnWidthsAttr
+      ? columnWidthsAttr.split(",").length
+      : 0;
+
+    const borderWidth =
+      grid.style.getPropertyValue("--cell-border-width") ||
+      getComputedStyle(grid).getPropertyValue("--cell-border-width");
+    const hasBorders = borderWidth !== "0px" && borderWidth !== "0";
+
+    return { rowCount, columnCount, hasBorders };
+  }; // Update all UI state based on current grid
+  const updateUIState = () => {
+    const grid = Grid.getTargetGrid();
+    gridRef.current = grid;
+    const { rowCount, columnCount, hasBorders } = getGridState(grid);
+
+    setCanUndo(Grid.canUndo());
+    setCanRemoveRow(rowCount > 1);
+    setCanRemoveColumn(columnCount > 1);
+    setShowBorders(hasBorders);
+    // we can always add rows/columns if we have the focus is in a grid
+    setCanAddColumn(!!grid);
+    setCanAddRow(!!grid);
+
+    // Check if a cell is selected and update our stored reference
+    const currentlyFocusedCell = document.activeElement?.closest(
+      ".cell"
+    ) as HTMLElement;
+
+    // Only update the stored reference if we actually have a focused cell
+    // This preserves the last selected cell when focus moves to menu items
+    if (currentlyFocusedCell) {
+      selectedCellRef.current = currentlyFocusedCell;
+    }
+
+    // A cell is considered "selected" if we have a stored reference,
+    // regardless of current focus
+    setCellSelected(!!selectedCellRef.current);
+
+    // Trigger an update for the selected cell info component
+    setSelectionUpdateTrigger((prev) => prev + 1);
+  }; // Function to restore focus to the previously selected cell
+  const restoreCellFocus = () => {
+    if (selectedCellRef.current) {
+      selectedCellRef.current.focus();
+    }
+  };*/
 export default GridMenu;

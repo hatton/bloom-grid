@@ -3,6 +3,7 @@ console.log("Script starting to load...");
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { attachGrid } from "../src";
 
 console.log("React, ReactDOM, and App imported successfully");
 
@@ -15,7 +16,6 @@ async function fetchExampleFiles(): Promise<void> {
     const response = await fetch("/api/examples");
     if (response.ok) {
       exampleFiles = await response.json();
-      console.log("Fetched example files from API:", exampleFiles);
     } else {
       console.error(
         "Failed to fetch example files from API, status:",
@@ -52,7 +52,7 @@ function displayExample(content: string) {
   const container = document.getElementById("example-container");
   if (container) {
     container.innerHTML = content;
-
+    attachGrid(container);
     // Dispatch a custom event to notify React components that new content has been loaded
     const event = new CustomEvent("exampleContentLoaded", {
       detail: { container },

@@ -17,7 +17,7 @@
   </head>  <body >
     <div
       id="page"
-      style="background: white; padding: 10mm; height: 210mm; width: 148mm"
+      style="background: white; padding: 10mm; height: 210mm; width: 148mm; position: relative;"
     >
       <div
         id="main-grid"
@@ -25,7 +25,7 @@
         data-column-widths="fill"
         data-row-heights="fit,fit,fit"
         style="
-          height: 100%;
+         
           --bg: #ffffff; /* if we see this, it means our cell counts are off */
           --border-color: red; /* no border on the main grid */
 
@@ -87,7 +87,20 @@
         <!-- ---------- Row (default fit) ---------- -->
         <div class="cell">
           <div contenteditable="true">Papa i salim mama smapim lip.</div>
-        </div>      </div>
+        </div>       
+      </div>
+      <!-- editable page number  in center-->
+    <div
+      style="
+        position: absolute;
+        bottom: 0;
+        text-align: center;
+        width: 100%;
+        height: 2em;
+      "
+    >
+      <span contenteditable="true">Page 1</span></div>
     </div>
+    
   </body>
 </html>

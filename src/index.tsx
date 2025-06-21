@@ -1,27 +1,7 @@
 // Library entry point: export only the public API for consumers.
 
 // Grid operations
-export {
-  getGridCells,
-  defaultColumnWidth,
-  defaultRowHeight,
-  getTargetGrid,
-  addRow,
-  removeLastRow,
-  addColumn,
-  undoLastOperation,
-  canUndo,
-  getLastOperation,
-  removeLastColumn,
-  getGridInfo,
-  setCellSpan,
-  getCell,
-  getRowAndColumn,
-  addColumnAt,
-  addRowAt,
-  removeColumnAt,
-  removeRowAt,
-} from "./structure";
+export * from "./structure";
 
 export * from "./types";
 // Drag-to-resize

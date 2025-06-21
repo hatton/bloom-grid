@@ -10,19 +10,19 @@ const observers = new Map<HTMLElement, MutationObserver>();
  * @param grid The grid element to observe
  */
 export function attach(grid: HTMLElement): void {
-  if (observers.has(grid)) {
-    // Observer already attached to this grid
-    return;
-  }
-
   // Apply initial styles to the grid
-  applyGrid(grid);
+  updateStyleRulesForGrid(grid);
 
   // Also apply styles to any existing nested grids
   const nestedGrids = findNestedGrids(grid);
   nestedGrids.forEach((nestedGrid) => {
-    applyGrid(nestedGrid);
+    updateStyleRulesForGrid(nestedGrid);
   });
+
+  if (observers.has(grid)) {
+    // Observer already attached to this grid
+    return;
+  }
 
   // Create a new observer for this grid
   const observer = new MutationObserver((mutationsList) => {
@@ -34,9 +34,9 @@ export function attach(grid: HTMLElement): void {
           targetElement.classList.contains("grid")
         ) {
           if (mutation.attributeName === "data-column-widths") {
-            applyColumns(targetElement);
+            updateStyleRulesForColumns(targetElement);
           } else if (mutation.attributeName === "data-row-heights") {
-            applyRows(targetElement);
+            updateStyleRulesForRows(targetElement);
           }
         }
       } else if (mutation.type === "childList") {
@@ -44,7 +44,7 @@ export function attach(grid: HTMLElement): void {
           if (node instanceof HTMLElement) {
             // If a new .grid is added, apply styles to it
             if (node.classList.contains("grid")) {
-              applyGrid(node);
+              updateStyleRulesForGrid(node);
             }
           }
         });
@@ -76,30 +76,30 @@ export function detach(grid: HTMLElement): void {
   }
 }
 
-function mapToken(t?: string | null): string {
+function makeGridRule(t?: string | null): string {
   t = (t || "").trim();
   if (t === "fit") return "minmax(max-content,max-content)";
   if (t === "fill") return "minmax(0,1fr)";
   return t; // assume %, px, fr, rem, etc.
 }
 
-function applyColumns(grid: HTMLElement): void {
+function updateStyleRulesForColumns(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-column-widths");
   if (!spec) return;
-  const template = spec.split(",").map(mapToken).join(" ");
+  const template = spec.split(",").map(makeGridRule).join(" ");
   grid.style.gridTemplateColumns = template;
 }
 
-function applyRows(grid: HTMLElement): void {
+function updateStyleRulesForRows(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-row-heights");
   if (!spec) return;
-  const template = spec.split(",").map(mapToken).join(" ");
+  const template = spec.split(",").map(makeGridRule).join(" ");
   grid.style.gridTemplateRows = template;
 }
 
-function applyGrid(grid: HTMLElement): void {
-  applyColumns(grid);
-  applyRows(grid);
+function updateStyleRulesForGrid(grid: HTMLElement): void {
+  updateStyleRulesForColumns(grid);
+  updateStyleRulesForRows(grid);
 }
 
 /**

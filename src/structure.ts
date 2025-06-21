@@ -309,6 +309,22 @@ export function getGridInfo(grid: HTMLElement): {
   };
 }
 
+export function changeCellSpan(
+  cell: HTMLElement,
+  xChange: number,
+  yChange: number
+): void {
+  const currentSpanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
+  const currentSpanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+
+  // Calculate new span values
+  const newHorizontalSpan = Math.max(1, currentSpanX + xChange);
+  const newVerticalSpan = Math.max(1, currentSpanY + yChange);
+
+  // Set the new span values
+  setCellSpan(cell, newHorizontalSpan, newVerticalSpan);
+}
+
 /**
  * Sets the horizontal and vertical span of a cell, which determines how many columns and rows it covers.
  * This function modifies the cell's CSS custom properties (--span-x, --span-y) and removes or adds
@@ -704,3 +720,11 @@ export const removeRowAt = (grid: HTMLElement, index: number): void => {
 
   gridHistoryManager.addHistoryEntry(grid, description, performOperation);
 };
+
+export function getRowIndex(cell: HTMLElement) {
+  const grid = cell.closest<HTMLElement>(".grid");
+  assert(!!grid, "Cell must be inside a grid element");
+
+  const { row } = getRowAndColumn(grid, cell);
+  return row;
+}
