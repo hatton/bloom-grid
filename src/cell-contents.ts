@@ -3,16 +3,22 @@
 
 import { CellContentType } from "./types";
 
-export const defaultCellContents: CellContentType[] = [
+export function contentTypeOptions(): { id: string; englishName: string }[] {
+  return defaultCellContentsForEachType.map((content) => ({
+    id: content.id,
+    englishName: content.englishName,
+  }));
+}
+export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "text",
-    localizedName: "Text",
+    englishName: "Text",
     templateHtml: "<div contenteditable='true'></div>",
     regexToIdentify: /<div[^>]*contenteditable=['"]true['"][^>]*>/,
   },
   {
     id: "grid",
-    localizedName: "Grid",
+    englishName: "Grid",
     templateHtml: `<div class='grid' data-column-widths='fit,fit' data-row-heights='fit,fit'>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>
@@ -23,7 +29,7 @@ export const defaultCellContents: CellContentType[] = [
   },
   {
     id: "image",
-    localizedName: "Image",
+    englishName: "Image",
     templateHtml: `<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Green_parrot_on_branch_with_yellow_head.svg/195px-Green_parrot_on_branch_with_yellow_head.svg.png' alt='Placeholder Image' />`,
     regexToIdentify: /<img/,
   },
@@ -31,6 +37,15 @@ export const defaultCellContents: CellContentType[] = [
 
 let defaultCellContentTypeId: string = "text";
 
+export function getCurrentContentTypeId(cell: HTMLElement): string | undefined {
+  return (
+    cell.dataset.contentType /* use regex to identify */ ||
+    defaultCellContentsForEachType.find((c) =>
+      c.regexToIdentify.test(cell.innerHTML)
+    )?.id ||
+    defaultCellContentTypeId
+  );
+}
 export function setupContentsOfCell(
   cell: HTMLElement,
   targetType?: string
@@ -39,7 +54,7 @@ export function setupContentsOfCell(
   let existingContentType = cell.dataset.contentType;
   if (existingContentType === undefined && cell.children.length > 0) {
     // see if we can identify the content type from the cell's contents
-    const content = defaultCellContents.find((c) =>
+    const content = defaultCellContentsForEachType.find((c) =>
       c.regexToIdentify.test(cell.innerHTML)
     );
     if (content) {
@@ -62,12 +77,12 @@ export function setupContentsOfCell(
     return (cell.firstChild as HTMLElement) || null;
   }
 
-  const content = defaultCellContents.find(
+  const content = defaultCellContentsForEachType.find(
     (c) => c.id === targetType || c.id === cell.dataset.contentType
   );
   if (!content) {
     throw new Error(
-      `Unknown content type: ${targetType}. Available types are: ${defaultCellContents
+      `Unknown content type: ${targetType}. Available types are: ${defaultCellContentsForEachType
         .map((c) => c.id)
         .join(", ")}`
     );

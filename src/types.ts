@@ -1,6 +1,6 @@
 export type CellContentType = {
   id: string;
-  localizedName: string;
+  englishName: string;
   templateHtml: string;
   regexToIdentify: RegExp;
 };

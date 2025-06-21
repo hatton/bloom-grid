@@ -1,2 +1,5 @@
 // Export the cell contents utils
-export { defaultCellContents, setupContentsOfCell } from "./cell-contents";
+export {
+  defaultCellContentsForEachType as defaultCellContents,
+  setupContentsOfCell,
+} from "./cell-contents";

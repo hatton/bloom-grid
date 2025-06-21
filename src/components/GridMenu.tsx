@@ -1,16 +1,13 @@
 import React from "react";
 import * as Grid from "../";
 import { setupContentsOfCell } from "../cell-contents";
-import { defaultCellContents } from "../cell-contents";
+import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
 
 import { changeCellSpan } from "../structure";
 
 const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   props
 ) => {
-  const cellContentTypes = defaultCellContents;
-  console.log("GridMenu props", JSON.stringify(props, null, 2));
-
   const getTargetGridFromSelection = (): HTMLElement => {
     const focusedElement = document.activeElement as HTMLElement;
     const grid = focusedElement.closest(".grid") as HTMLElement;
@@ -97,32 +94,31 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
         opacity: !!props.currentCell ? 1 : 0.5,
         pointerEvents: !!props.currentCell ? "auto" : "none",
       }}
-      onMouseDown={(e) => e.preventDefault()} //leave the cursor in the grid
+
+      // onMouseDown, store the current document selection in a react state. Then onMouseUp, restore the selection.
+      // TODO
     >
       {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
       {/* Cell section */}
       <div className={sectionStyle}>
         <h2 className={sectionTitleStyle}>Cell</h2>
-        <div className="flex items-center justify-between px-4 py-2">
-          <div>
-            {cellContentTypes?.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => handleSetCellContentType(type.id)}
-                className="mr-2"
-              >
-                {type.localizedName}
-              </button>
-            ))}
-          </div>
-          <div className="flex-shrink-0">
-            <button
-              className="focus:outline-none"
-              aria-label="Show content options"
+        {/* a submenu named "Content Type" that has options from contentTypeOptions(). 
+        The one with id matching getCurrentContentTypeId() should be checked.*/}
+        <div className={menuItemStyle}>
+          <span>Content Type</span>
+          {props.currentCell && (
+            <select
+              className="ml-2"
+              value={getCurrentContentTypeId(props.currentCell!)}
+              onChange={(e) => handleSetCellContentType(e.target.value)}
             >
-              ▶
-            </button>
-          </div>
+              {contentTypeOptions().map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.englishName}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div
