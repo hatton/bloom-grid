@@ -3,12 +3,16 @@
   --cell-padding: 8px 10px;
   --cell-border-width: 1px;
   --cell-border-color: #444;
+  --grid-border-width: 1px;
 }
 
 .grid {
   display: grid;
+  width: 100%;
+  height: 100%;
   gap: var(--gap, 0);
   background: var(--bg, transparent);
+  outline: var(--grid-border-width, 0) solid black;
 }
 
 .cell {
@@ -21,6 +25,10 @@
 
   grid-column: span var(--span-x, 1);
   grid-row: span var(--span-y, 1);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* A skipped cell is one that is logically "covered" by

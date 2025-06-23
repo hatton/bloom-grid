@@ -86,15 +86,19 @@ function makeGridRule(t?: string | null): string {
 function updateStyleRulesForColumns(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-column-widths");
   if (!spec) return;
-  const template = spec.split(",").map(makeGridRule).join(" ");
+  const columns = spec.split(",");
+  const template = columns.map(makeGridRule).join(" ");
   grid.style.gridTemplateColumns = template;
+  grid.style.setProperty("--grid-column-count", columns.length.toString());
 }
 
 function updateStyleRulesForRows(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-row-heights");
   if (!spec) return;
-  const template = spec.split(",").map(makeGridRule).join(" ");
+  const rows = spec.split(",");
+  const template = rows.map(makeGridRule).join(" ");
   grid.style.gridTemplateRows = template;
+  grid.style.setProperty("--grid-row-count", rows.length.toString());
 }
 
 function updateStyleRulesForGrid(grid: HTMLElement): void {

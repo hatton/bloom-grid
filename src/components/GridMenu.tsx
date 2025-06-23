@@ -23,9 +23,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const handleExtendCell = () => {
     assert(!!props.currentCell, "No cell selected");
 
-    // Increase horizontal span by 1
-    // const newSpanX = info.spanX + 1;
-    // info.cell.style.setProperty("--span-x", newSpanX.toString());
+    changeCellSpan(props.currentCell!, 1, 0);
   };
 
   const handleContractCell = () => {
@@ -51,34 +49,44 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const handleInsertColumnLeft = () => {
     const grid = getTargetGridFromSelection();
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
-    Grid.addColumnAt(grid, columnIndex - 1);
+    Grid.addColumnAt(grid, columnIndex);
   };
 
   const handleInsertColumnRight = () => {
     const grid = getTargetGridFromSelection();
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
-    Grid.addColumnAt(grid, columnIndex);
+    Grid.addColumnAt(grid, columnIndex + 1);
   };
 
   const handleDeleteColumn = () => {
     const grid = getTargetGridFromSelection();
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
     Grid.removeColumnAt(grid, columnIndex);
-  }; // Grid operations
+  };
   const handleToggleOutsideBorder = () => {
     const grid = getTargetGridFromSelection();
     const haveBorders =
-      grid.style.getPropertyValue("--cell-border-width") === "1px";
+      !grid.style ||
+      !grid.style.getPropertyValue("--grid-border-width") ||
+      grid.style.getPropertyValue("--grid-border-width") === "1px";
+    if (!haveBorders) {
+      grid.style.setProperty("--grid-border-width", "1px");
+    } else {
+      grid.style.setProperty("--grid-border-width", "0px");
+    }
+  };
+
+  const handleToggleInsideBorders = () => {
+    const grid = getTargetGridFromSelection();
+    const haveBorders =
+      !grid.style ||
+      !grid.style.getPropertyValue("--cell-border-width") ||
+      grid.style?.getPropertyValue("--cell-border-width") === "1px";
     if (!haveBorders) {
       grid.style.setProperty("--cell-border-width", "1px");
     } else {
       grid.style.setProperty("--cell-border-width", "0px");
     }
-  };
-
-  const handleToggleInsideBorders = () => {
-    // This could be implemented if needed for different border styles
-    handleToggleOutsideBorder(); // For now, just toggle all borders
   };
 
   const menuItemStyle =
@@ -88,6 +96,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
 
   return (
     <div
+      onMouseDown={(e) => e.preventDefault()}
       className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 fixed right-4 top-4 z-10"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
@@ -104,8 +113,9 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
         <h2 className={sectionTitleStyle}>Cell</h2>
         {/* a submenu named "Content Type" that has options from contentTypeOptions(). 
         The one with id matching getCurrentContentTypeId() should be checked.*/}
+
         <div className={menuItemStyle}>
-          <span>Content Type</span>
+          {/* not using select because I can't get it to work without losing focus on the cell
           {props.currentCell && (
             <select
               className="ml-2"
@@ -118,7 +128,26 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
                 </option>
               ))}
             </select>
-          )}
+          )} */}
+          {/* a row of buttons, one for each type, with the current type selected. i.e. radio button behavior */}
+
+          <div className="flex flex-wrap gap-2 ml-2">
+            {props.currentCell &&
+              contentTypeOptions().map((option) => (
+                <button
+                  key={option.id}
+                  className={`px-2 py-1 rounded-md text-sm ${
+                    getCurrentContentTypeId(props.currentCell!) === option.id
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent default to avoid losing focus
+                  onClick={() => handleSetCellContentType(option.id)}
+                >
+                  {option.englishName}
+                </button>
+              ))}
+          </div>
         </div>
 
         <div
@@ -127,11 +156,11 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
             handleExtendCell();
           }}
         >
-          <span className="text-xl">↔</span>
+          <span className="text-xl">↦</span>
           <span>Extend Cell</span>
         </div>
         <div className={menuItemStyle} onClick={handleContractCell}>
-          <span className="text-xl">↕</span>
+          <span className="text-xl">⭰</span>
           <span>Contract Cell</span>
         </div>
       </div>
@@ -162,11 +191,11 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       <div className={sectionStyle}>
         <h2 className={sectionTitleStyle}>Column</h2>
         <div className={menuItemStyle} onClick={handleInsertColumnLeft}>
-          <span className="text-2xl">←</span>
+          <span className="text-2xl">_←</span>
           <span>Insert Column Left</span>
         </div>
         <div className={menuItemStyle} onClick={handleInsertColumnRight}>
-          <span className="text-2xl">→</span>
+          <span className="text-2xl">→_</span>
           <span>Insert Column Right</span>
         </div>
         <div className={menuItemStyle} onClick={handleDeleteColumn}>

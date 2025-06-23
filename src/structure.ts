@@ -314,6 +314,9 @@ export function changeCellSpan(
   xChange: number,
   yChange: number
 ): void {
+  const grid = cell.closest<HTMLElement>(".grid");
+  assert(!!grid, "Cell must be inside a grid element");
+
   const currentSpanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
   const currentSpanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
 
@@ -321,8 +324,19 @@ export function changeCellSpan(
   const newHorizontalSpan = Math.max(1, currentSpanX + xChange);
   const newVerticalSpan = Math.max(1, currentSpanY + yChange);
 
-  // Set the new span values
-  setCellSpan(cell, newHorizontalSpan, newVerticalSpan);
+  // Only proceed if there's an actual change
+  if (newHorizontalSpan === currentSpanX && newVerticalSpan === currentSpanY) {
+    return;
+  }
+
+  const description = `Change Cell Span (${
+    xChange > 0 ? "+" : ""
+  }${xChange}x, ${yChange > 0 ? "+" : ""}${yChange}y)`;
+  const performOperation = () => {
+    setCellSpan(cell, newHorizontalSpan, newVerticalSpan);
+  };
+
+  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
 }
 
 /**

@@ -53,12 +53,12 @@ export default defineConfig(({ command }) => {
       {
         name: "copy-css-file",
         writeBundle() {
-          if (fs.existsSync("bloom-grid.css")) {
+          if (fs.existsSync("src/bloom-grid.css")) {
             if (!fs.existsSync("dist")) {
               fs.mkdirSync("dist");
             }
             fs.copyFileSync(
-              "bloom-grid.css",
+              "src/bloom-grid.css",
               path.join("dist", "bloom-grid.css")
             );
           }

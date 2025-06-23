@@ -13,13 +13,14 @@ export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "text",
     englishName: "Text",
-    templateHtml: "<div contenteditable='true'></div>",
+    // About the "_": I couldn't get the the browser to honor the contenteditable at runtime if it was empty.
+    templateHtml: "<div contenteditable='true'>_</div>",
     regexToIdentify: /<div[^>]*contenteditable=['"]true['"][^>]*>/,
   },
   {
     id: "grid",
     englishName: "Grid",
-    templateHtml: `<div class='grid' data-column-widths='fit,fit' data-row-heights='fit,fit'>
+    templateHtml: `<div class='grid' data-column-widths='fill,fill' data-row-heights='fill,fill'>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>
@@ -78,7 +79,7 @@ export function setupContentsOfCell(
   }
 
   const content = defaultCellContentsForEachType.find(
-    (c) => c.id === targetType || c.id === cell.dataset.contentType
+    (c) => c.id === targetType
   );
   if (!content) {
     throw new Error(
@@ -88,10 +89,23 @@ export function setupContentsOfCell(
     );
   }
 
-  cell.innerHTML = content.templateHtml;
   cell.dataset.contentType = targetType;
+  cell.innerHTML = content.templateHtml;
 
-  // up until this point, we don't know if the contents fit our rule that there must be only one roo element to the contents
+  // if we just inserted a grid, set each of its cells to the default content type
+  if (targetType === "grid") {
+    const gridCells = cell.querySelectorAll<HTMLElement>(".cell");
+    gridCells.forEach((gridCell) => {
+      gridCell.dataset.contentType = defaultCellContentTypeId;
+
+      gridCell.innerHTML =
+        defaultCellContentsForEachType.find(
+          (c) => c.id === defaultCellContentTypeId
+        )?.templateHtml || "!!!";
+    });
+  }
+
+  // up until this point, we don't know if the contents fit our rule that there must be only one root element to the contents
   // so we check that now
   if (cell.children.length !== 1) {
     throw new Error(

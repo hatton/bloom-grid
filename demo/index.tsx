@@ -52,7 +52,7 @@ function displayExample(content: string) {
   const container = document.getElementById("example-container");
   if (container) {
     container.innerHTML = content;
-    attachGrid(container);
+    attachGrid(container.querySelector(".grid") as HTMLElement);
     // Dispatch a custom event to notify React components that new content has been loaded
     const event = new CustomEvent("exampleContentLoaded", {
       detail: { container },

@@ -101,7 +101,6 @@ class GridHistoryManager {
       }
     }
   }
-
   undo(grid: HTMLElement): boolean {
     if (!this.canUndo()) {
       console.warn(
@@ -116,16 +115,29 @@ class GridHistoryManager {
       return false;
     }
 
+    // Find the top-level grid to ensure we're undoing on the same grid level that was captured
+    const topLevelGrid = this.findTopLevelGrid(grid);
+    if (!topLevelGrid || !this.isAttached(topLevelGrid)) {
+      console.warn(
+        "GridHistoryManager: Cannot undo. Top-level grid not found or not attached."
+      );
+      // Put the entry back since we couldn't undo
+      this.history.push(entry);
+      return false;
+    }
+
     this.operationInProgress = true;
     let undoSuccess = false;
     try {
       const undoOp =
         entry.undoOperation ||
         ((grid, state) => this.defaultUndoOperation(grid, state));
-      undoOp(grid, entry.state);
+      undoOp(topLevelGrid, entry.state);
       undoSuccess = true;
     } catch (error) {
       console.error("GridHistoryManager: Error during undo operation:", error);
+      // Put the entry back since the undo failed
+      this.history.push(entry);
     } finally {
       this.operationInProgress = false;
       const event = new CustomEvent("gridHistoryUpdated", {
