@@ -4,7 +4,7 @@
 
 // Store observer instances for each grid
 const observers = new Map<HTMLElement, MutationObserver>();
-
+const minColumnWidth = "60px"; // Minimum width for a column
 /**
  * Attaches a grid observer to a specific grid element
  * @param grid The grid element to observe
@@ -76,18 +76,20 @@ export function detach(grid: HTMLElement): void {
   }
 }
 
-function makeGridRule(t?: string | null): string {
-  t = (t || "").trim();
-  if (t === "fit") return "minmax(max-content,max-content)";
-  if (t === "fill") return "minmax(0,1fr)";
-  return t; // assume %, px, fr, rem, etc.
+function makeGridRule(size: string, minimum: string): string {
+  size = (size || "").trim();
+  if (size === "fit") return `minmax(${minimum},max-content)`;
+  if (size === "fill") return `minmax(${minColumnWidth},1fr)`;
+  return size;
 }
 
 function updateStyleRulesForColumns(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-column-widths");
   if (!spec) return;
   const columns = spec.split(",");
-  const template = columns.map(makeGridRule).join(" ");
+  const template = columns
+    .map((x) => makeGridRule(x, minColumnWidth))
+    .join(" ");
   grid.style.gridTemplateColumns = template;
   grid.style.setProperty("--grid-column-count", columns.length.toString());
 }
@@ -96,7 +98,7 @@ function updateStyleRulesForRows(grid: HTMLElement): void {
   const spec = grid.getAttribute("data-row-heights");
   if (!spec) return;
   const rows = spec.split(",");
-  const template = rows.map(makeGridRule).join(" ");
+  const template = rows.map((x) => makeGridRule(x, "")).join(" ");
   grid.style.gridTemplateRows = template;
   grid.style.setProperty("--grid-row-count", rows.length.toString());
 }

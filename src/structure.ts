@@ -52,6 +52,7 @@
  */
 
 import { gridHistoryManager } from "./history";
+import { setupContentsOfCell } from "./cell-contents";
 
 /**
  * Runtime assertion function that throws an error if the condition is false.
@@ -102,6 +103,22 @@ export function getGridCells(grid: HTMLElement): HTMLElement[] {
   return cells;
 }
 
+/**
+ * Creates a new cell element with proper class and default contents.
+ * Uses the cell-contents module to set up the default content type.
+ *
+ * @returns A new HTMLElement configured as a grid cell
+ */
+function createCell(): HTMLElement {
+  const newCell = document.createElement("div");
+  newCell.className = "cell";
+
+  // Use cell-contents.ts to set up the default contents
+  setupContentsOfCell(newCell);
+
+  return newCell;
+}
+
 export const defaultColumnWidth = "fit";
 export const defaultRowHeight = "fit";
 
@@ -138,11 +155,8 @@ export const addRow = (grid: HTMLElement, skipHistory = false): void => {
       ? `${currentRowHeights},${defaultRowHeight}`
       : defaultRowHeight;
     grid.setAttribute("data-row-heights", newRowHeights);
-
     for (let i = 0; i < numColumns; i++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      newCell.innerHTML = `<div contenteditable="true"></div>`;
+      const newCell = createCell();
       grid.appendChild(newCell);
     }
   };
@@ -198,14 +212,8 @@ export const addColumn = (grid: HTMLElement, skipHistory = false): void => {
     const numRows = rowHeightsAttr ? rowHeightsAttr.split(",").length : 0;
     if (numRows === 0) return;
     const cells = getGridCells(grid);
-
     for (let i = 0; i < numRows; i++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      // add a contenteditable div to the new cell
-      const contentEditableDiv = document.createElement("div");
-      contentEditableDiv.contentEditable = "true";
-      newCell.appendChild(contentEditableDiv);
+      const newCell = createCell();
 
       // Calculate the position where the new cell should be inserted
       // For each row, we want to insert after the last cell of that row
@@ -549,15 +557,9 @@ export const addColumnAt = (
 
     // Insert new column width at the specified index
     columnWidths.splice(actualIndex, 0, defaultColumnWidth);
-    grid.setAttribute("data-column-widths", columnWidths.join(","));
-
-    // Insert new cells at the appropriate positions
+    grid.setAttribute("data-column-widths", columnWidths.join(",")); // Insert new cells at the appropriate positions
     for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      const contentEditableDiv = document.createElement("div");
-      contentEditableDiv.contentEditable = "true";
-      newCell.appendChild(contentEditableDiv);
+      const newCell = createCell();
 
       grid.insertBefore(newCell, referenceNodes[rowIndex]);
     }
@@ -607,13 +609,9 @@ export const addRowAt = (
 
     // Insert new row height at the specified index
     rowHeights.splice(actualIndex, 0, defaultRowHeight);
-    grid.setAttribute("data-row-heights", rowHeights.join(","));
-
-    // Insert new cells for the entire row
+    grid.setAttribute("data-row-heights", rowHeights.join(",")); // Insert new cells for the entire row
     for (let colIndex = 0; colIndex < numColumns; colIndex++) {
-      const newCell = document.createElement("div");
-      newCell.className = "cell";
-      newCell.innerHTML = `<div contenteditable="true"></div>`;
+      const newCell = createCell();
       grid.insertBefore(newCell, referenceNode);
     }
   };
