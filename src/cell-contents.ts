@@ -14,7 +14,7 @@ export const defaultCellContentsForEachType: CellContentType[] = [
     id: "text",
     englishName: "Text",
     // About the "_": I couldn't get the the browser to honor the contenteditable at runtime if it was empty.
-    templateHtml: "<div contenteditable='true'>_</div>",
+    templateHtml: "<div contenteditable='true'></div>",
     regexToIdentify: /<div[^>]*contenteditable=['"]true['"][^>]*>/,
   },
   {
