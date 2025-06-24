@@ -78,7 +78,7 @@ export function detach(grid: HTMLElement): void {
 
 function makeGridRule(size: string, minimum: string): string {
   size = (size || "").trim();
-  if (size === "fit") return `minmax(${minimum},max-content)`;
+  if (size === "hug") return `minmax(${minimum},max-content)`;
   if (size === "fill") return `minmax(${minColumnWidth},1fr)`;
   return size;
 }

@@ -42,7 +42,7 @@
  * - Example: cell[0,0] spanning 2x2 in a 2x2 grid causes cell[0,1], cell[1,0], and cell[1,1] to be marked as skipped.
  *
  * ### Size Values:
- * - "fit": CSS Grid minmax(max-content,max-content) - size to content
+ * - "hug": CSS Grid minmax(max-content,max-content) - size to content
  * - "fill": CSS Grid minmax(0,1fr) - expand to fill available space
  * - Standard CSS units: "100px", "2rem", "50%", etc.
  *
@@ -119,8 +119,8 @@ function createCell(): HTMLElement {
   return newCell;
 }
 
-export const defaultColumnWidth = "fit";
-export const defaultRowHeight = "fit";
+export const defaultColumnWidth = "hug";
+export const defaultRowHeight = "hug";
 
 export const getTargetGrid = (): HTMLElement | null => {
   // Start from the currently focused element
@@ -739,4 +739,45 @@ export function getRowIndex(cell: HTMLElement) {
 
   const { row } = getRowAndColumn(grid, cell);
   return row;
+}
+
+export function setColumnWidth(
+  grid: HTMLElement,
+  columnIndex: number,
+  width: string // 35px, hug, fill
+): void {
+  assert(
+    grid.classList.contains("grid"),
+    "grid parameter must have 'grid' class"
+  );
+  const gridInfo = getGridInfo(grid);
+  assert(
+    columnIndex >= 0 && columnIndex < gridInfo.columnCount,
+    `Column index ${columnIndex} is out of bounds`
+  );
+
+  const currentWidths = grid.getAttribute("data-column-widths") || "";
+  const widthArray = currentWidths.split(",");
+  if (columnIndex >= 0 && columnIndex < widthArray.length) {
+    widthArray[columnIndex] = width;
+    grid.setAttribute("data-column-widths", widthArray.join(","));
+  }
+}
+export function getColumnWidth(
+  grid: HTMLElement,
+  columnIndex: number
+): string | null {
+  assert(
+    grid.classList.contains("grid"),
+    "grid parameter must have 'grid' class"
+  );
+  const gridInfo = getGridInfo(grid);
+  assert(
+    columnIndex >= 0 && columnIndex < gridInfo.columnCount,
+    `Column index ${columnIndex} is out of bounds`
+  );
+
+  const currentWidths = grid.getAttribute("data-column-widths") || "";
+  const widthArray = currentWidths.split(",");
+  return widthArray[columnIndex] || null;
 }

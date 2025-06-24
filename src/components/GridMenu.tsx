@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import * as Grid from "../";
 import { setupContentsOfCell } from "../cell-contents";
 import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
@@ -8,10 +8,34 @@ import { changeCellSpan } from "../structure";
 const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   props
 ) => {
-  const getTargetGridFromSelection = (): HTMLElement => {
-    const focusedElement = document.activeElement as HTMLElement;
-    const grid = focusedElement.closest(".grid") as HTMLElement;
+  const [, forceUpdate] = useState(0);
 
+  useEffect(() => {
+    if (!props.currentCell) return;
+    const grid = props.currentCell.closest(".grid");
+    if (!grid) return;
+
+    const observer = new MutationObserver(() => {
+      forceUpdate((x) => x + 1);
+    });
+
+    // We're interested in when the grid's columns change, which is stored
+    // in the data-column-widths attribute. We also watch style in case
+    // other things change that should cause a re-render.
+    observer.observe(grid, {
+      attributes: true,
+      attributeFilter: ["data-column-widths", "style"],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [props.currentCell]);
+
+  const getTargetGridFromSelection = (): HTMLElement => {
+    // Using props.currentCell is more reliable than document.activeElement,
+    // because focus can move to the menu itself when we click a menu item.
+    const grid = props.currentCell!.closest(".grid") as HTMLElement;
     return grid;
   };
 
@@ -92,7 +116,10 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const menuItemStyle =
     "flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer w-full text-left";
   const sectionStyle = "border-b border-gray-200 pb-3";
-  const sectionTitleStyle = "text-gray-500 px-4 py-2 text-lg font-medium";
+  const sectionTitleStyle = "px-4 py-2 text-lg font-medium";
+  const subSectionTitleStyle = "text-gray-500 px-4 py-2 text-md font-medium";
+
+  const grid = getTargetGridFromSelection();
 
   return (
     <div
@@ -190,6 +217,10 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       {/* Column section */}
       <div className={sectionStyle}>
         <h2 className={sectionTitleStyle}>Column</h2>
+
+        <div className={menuItemStyle}>
+          <SizeControl grid={grid} cell={props.currentCell} />
+        </div>
         <div className={menuItemStyle} onClick={handleInsertColumnLeft}>
           <span className="text-2xl">_←</span>
           <span>Insert Column Left</span>
@@ -300,4 +331,42 @@ const [canUndo, setCanUndo] = useState(false);
       selectedCellRef.current.focus();
     }
   };*/
+
+const SizeControl: React.FC<{
+  grid: HTMLElement;
+  cell: HTMLElement | null | undefined;
+}> = ({ grid, cell }) => {
+  if (!grid || !cell) {
+    return null;
+  }
+  const columnIndex = Grid.getRowAndColumn(grid, cell).column;
+  const width = Grid.getColumnWidth(grid, columnIndex);
+
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <button
+        className={`px-2 py-1 rounded-md text-sm ${
+          width === "hug"
+            ? "bg-blue-500 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
+        onClick={() => Grid.setColumnWidth(grid, columnIndex, "hug")}
+      >
+        Hug
+      </button>
+      <button
+        className={`px-2 py-1 rounded-md text-sm ${
+          width === "fill"
+            ? "bg-blue-500 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
+        onClick={() => Grid.setColumnWidth(grid, columnIndex, "fill")}
+      >
+        Fill
+      </button>
+      <div>{width !== "hug" && width !== "fill" ? width : ""}</div>
+    </div>
+  );
+};
+
 export default GridMenu;

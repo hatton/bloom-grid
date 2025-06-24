@@ -1,5 +1,10 @@
 import { gridHistoryManager } from "./history";
-import { getGridCells, getGridInfo, getRowAndColumn } from "./structure";
+import {
+  setColumnWidth,
+  getGridCells,
+  getGridInfo,
+  getRowAndColumn,
+} from "./structure";
 
 interface DragState {
   isDragging: boolean;
@@ -12,7 +17,7 @@ interface DragState {
   hasStartedOperation: boolean;
   columnLeftEdge?: number;
   rowTopEdge?: number;
-  baseDimension?: number; // Store the original width/height for "fit" values
+  baseDimension?: number; // Store the original width/height for "hug" values
 }
 
 export class DragToResize {
@@ -120,7 +125,7 @@ export class DragToResize {
         columnLeftEdge: columnLeftEdge,
         rowTopEdge: rowTopEdge,
         baseDimension:
-          resizeInfo.currentValue === "fit"
+          resizeInfo.currentValue === "hug"
             ? resizeInfo.type === "column"
               ? this.getCurrentColumnWidth(resizeInfo.element, resizeInfo.index)
               : this.getCurrentRowHeight(resizeInfo.element, resizeInfo.index)
@@ -258,7 +263,7 @@ export class DragToResize {
       const currentRowHeights =
         gridElement.getAttribute("data-row-heights") || "";
       const rowHeights = currentRowHeights.split(",");
-      const newHeight = rowHeights[capturedTargetIndex] || "fit";
+      const newHeight = rowHeights[capturedTargetIndex] || "hug";
 
       description = `Resize Row ${capturedTargetIndex + 1} to ${newHeight}`;
 
@@ -301,7 +306,7 @@ export class DragToResize {
     if (this.dragState.targetIndex < widthArray.length) {
       return widthArray[this.dragState.targetIndex];
     }
-    return "fit";
+    return "hug";
   }
   private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
     const currentWidths = grid.getAttribute("data-column-widths") || "";
@@ -309,7 +314,7 @@ export class DragToResize {
 
     // Get the base width (original width when dragging started)
     let baseWidth: number;
-    if (this.dragState.originalValue === "fit") {
+    if (this.dragState.originalValue === "hug") {
       // Use the stored base dimension calculated at drag start
       baseWidth =
         this.dragState.baseDimension ||
@@ -331,7 +336,7 @@ export class DragToResize {
   private updateRowHeightPreview(grid: HTMLElement, deltaY: number): void {
     // Get the base height (original height when dragging started)
     let baseHeight: number;
-    if (this.dragState.originalValue === "fit") {
+    if (this.dragState.originalValue === "hug") {
       // Use the stored base dimension calculated at drag start
       baseHeight =
         this.dragState.baseDimension ||
@@ -407,7 +412,7 @@ export class DragToResize {
         const currentRowHeights = grid.getAttribute("data-row-heights") || "";
         const rowHeights = currentRowHeights.split(",");
         const currentHeight =
-          rowIndex < rowHeights.length ? rowHeights[rowIndex] : "fit";
+          rowIndex < rowHeights.length ? rowHeights[rowIndex] : "hug";
 
         return {
           type: "row",
@@ -428,7 +433,7 @@ export class DragToResize {
         return {
           type: "column",
           element: grid,
-          currentValue: widthArray[columnIndex] || "fit",
+          currentValue: widthArray[columnIndex] || "hug",
           index: columnIndex,
         };
       }
@@ -458,7 +463,7 @@ export class DragToResize {
         gridElement.getAttribute("data-row-heights") || "";
       const rowHeights = currentRowHeights.split(",");
       const currentHeight =
-        rowIndex < rowHeights.length ? rowHeights[rowIndex] : "fit";
+        rowIndex < rowHeights.length ? rowHeights[rowIndex] : "hug";
 
       const description = `Auto-size Row ${rowIndex + 1}`;
 
@@ -467,7 +472,7 @@ export class DragToResize {
           gridElement.getAttribute("data-row-heights") || "";
         const rowHeights = currentRowHeights.split(",");
         if (rowIndex >= 0 && rowIndex < rowHeights.length) {
-          rowHeights[rowIndex] = "fit";
+          rowHeights[rowIndex] = "hug";
           gridElement.setAttribute("data-row-heights", rowHeights.join(","));
         }
       };
@@ -502,17 +507,12 @@ export class DragToResize {
       const currentWidths = grid.getAttribute("data-column-widths") || "";
       const widthArray = currentWidths.split(",");
       const currentWidth =
-        columnIndex < widthArray.length ? widthArray[columnIndex] : "fit";
+        columnIndex < widthArray.length ? widthArray[columnIndex] : "hug";
 
       const description = `Auto-size Column ${columnIndex + 1}`;
 
       const performOperation = () => {
-        const currentWidths = grid.getAttribute("data-column-widths") || "";
-        const widthArray = currentWidths.split(",");
-        if (columnIndex >= 0 && columnIndex < widthArray.length) {
-          widthArray[columnIndex] = "fit";
-          grid.setAttribute("data-column-widths", widthArray.join(","));
-        }
+        setColumnWidth(grid, columnIndex, "hug");
       };
 
       const undoOperation = (gridElement: HTMLElement) => {
