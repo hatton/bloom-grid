@@ -12,6 +12,7 @@ interface DragState {
   hasStartedOperation: boolean;
   columnLeftEdge?: number;
   rowTopEdge?: number;
+  baseDimension?: number; // Store the original width/height for "fit" values
 }
 
 export class DragToResize {
@@ -25,6 +26,7 @@ export class DragToResize {
     startY: 0,
     originalValue: "",
     hasStartedOperation: false,
+    baseDimension: undefined,
   };
 
   /**
@@ -88,7 +90,7 @@ export class DragToResize {
   };
   private handleMouseDown = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
-    const resizeInfo = this.getResizeInfo(target, event, true);
+    const resizeInfo = this.getResizeInfo(target, event);
 
     if (resizeInfo) {
       event.preventDefault(); // Capture the appropriate edge position based on resize type
@@ -100,12 +102,12 @@ export class DragToResize {
           resizeInfo.element,
           resizeInfo.index
         );
-        document.body.style.cursor = "ew-resize"; // Latch cursor      } else if (resizeInfo.type === "row") {
+        document.body.style.cursor = "ew-resize"; // Latch cursor
+      } else if (resizeInfo.type === "row") {
         rowTopEdge = this.getRowTopEdge(resizeInfo.element, resizeInfo.index);
         console.info(`handleMouseDown: Row top edge is ${rowTopEdge}`);
         document.body.style.cursor = "ns-resize"; // Latch cursor
       }
-
       this.dragState = {
         isDragging: true,
         dragType: resizeInfo.type,
@@ -117,6 +119,12 @@ export class DragToResize {
         hasStartedOperation: false,
         columnLeftEdge: columnLeftEdge,
         rowTopEdge: rowTopEdge,
+        baseDimension:
+          resizeInfo.currentValue === "fit"
+            ? resizeInfo.type === "column"
+              ? this.getCurrentColumnWidth(resizeInfo.element, resizeInfo.index)
+              : this.getCurrentRowHeight(resizeInfo.element, resizeInfo.index)
+            : undefined,
       };
     }
   };
@@ -139,7 +147,6 @@ export class DragToResize {
       const deltaY = Math.abs(event.clientY - this.dragState.startY);
 
       if (deltaX > 3 || deltaY > 3) {
-        // 3px threshold to avoid accidental operations
         this.dragState.hasStartedOperation = true;
       }
     }
@@ -148,11 +155,27 @@ export class DragToResize {
     const deltaY = event.clientY - this.dragState.startY;
 
     if (this.dragState.dragType === "column") {
-      this.updateColumnWidthPreview(this.dragState.targetElement, deltaX);
+      let effectiveDeltaX = deltaX;
+      const grid = this.dragState.targetElement;
+      if (grid.parentElement) {
+        const parentStyle = window.getComputedStyle(grid.parentElement);
+        // When the grid is centered horizontally, a change in its width will cause its left position to shift.
+        // This makes the column divider the user is dragging move at a different speed than the mouse cursor.
+        // To compensate for this, we check if the parent is a flex container that centers the grid.
+        // If so, we double the horizontal delta of the mouse movement. This is a heuristic that works
+        // for the common case of `display: flex; justify-content: center;`.
+        if (
+          parentStyle.display === "flex" &&
+          parentStyle.justifyContent === "center"
+        ) {
+          effectiveDeltaX *= 2;
+        }
+      }
+      this.updateColumnWidthPreview(
+        this.dragState.targetElement,
+        effectiveDeltaX
+      );
     } else if (this.dragState.dragType === "row") {
-      // console.info(
-      //   `handleGlobalMouseMove: Resizing row at index ${this.dragState.targetIndex}`
-      // );
       this.updateRowHeightPreview(this.dragState.targetElement, deltaY);
     }
   };
@@ -280,30 +303,47 @@ export class DragToResize {
     }
     return "fit";
   }
-
   private updateColumnWidthPreview(grid: HTMLElement, deltaX: number): void {
     const currentWidths = grid.getAttribute("data-column-widths") || "";
     const widthArray = currentWidths.split(",");
 
-    // Simple approach: always use column left edge + current mouse position
-    const currentMouseX = this.dragState.startX + deltaX;
-    const newWidth = Math.max(
-      50,
-      currentMouseX - (this.dragState.columnLeftEdge || 0)
-    );
+    // Get the base width (original width when dragging started)
+    let baseWidth: number;
+    if (this.dragState.originalValue === "fit") {
+      // Use the stored base dimension calculated at drag start
+      baseWidth =
+        this.dragState.baseDimension ||
+        this.getCurrentColumnWidth(grid, this.dragState.targetIndex);
+    } else {
+      // For fixed-width columns, parse the original value
+      const match = this.dragState.originalValue.match(/([0-9.]+)px/);
+      baseWidth = match ? parseFloat(match[1]) : 50;
+    }
+
+    // Apply the delta to the base width
+    const newWidth = Math.max(50, baseWidth + deltaX);
+
     if (this.dragState.targetIndex < widthArray.length) {
       widthArray[this.dragState.targetIndex] = `${newWidth}px`;
       grid.setAttribute("data-column-widths", widthArray.join(","));
     }
   }
-
   private updateRowHeightPreview(grid: HTMLElement, deltaY: number): void {
-    // Simple approach: always use row top edge + current mouse position
-    const currentMouseY = this.dragState.startY + deltaY;
-    const newHeight = Math.max(
-      20,
-      currentMouseY - (this.dragState.rowTopEdge || 0)
-    );
+    // Get the base height (original height when dragging started)
+    let baseHeight: number;
+    if (this.dragState.originalValue === "fit") {
+      // Use the stored base dimension calculated at drag start
+      baseHeight =
+        this.dragState.baseDimension ||
+        this.getCurrentRowHeight(grid, this.dragState.targetIndex);
+    } else {
+      // For fixed-height rows, parse the original value
+      const match = this.dragState.originalValue.match(/([0-9.]+)px/);
+      baseHeight = match ? parseFloat(match[1]) : 20;
+    }
+
+    // Apply the delta to the base height
+    const newHeight = Math.max(20, baseHeight + deltaY);
 
     // Update the row height in the grid's data-row-heights attribute
     const currentRowHeights = grid.getAttribute("data-row-heights") || "";
@@ -329,13 +369,12 @@ export class DragToResize {
       hasStartedOperation: false,
       columnLeftEdge: undefined,
       rowTopEdge: undefined,
+      baseDimension: undefined,
     };
   }
-
   private getResizeInfo(
     target: HTMLElement,
-    event: MouseEvent,
-    verbose: boolean = false
+    event: MouseEvent
   ): {
     type: "row" | "column";
     element: HTMLElement;
@@ -583,6 +622,98 @@ export class DragToResize {
       `getRowTopEdge: Could not parse grid template rows, returning 0`
     );
     return 0;
+  }
+
+  private getCurrentColumnWidth(
+    grid: HTMLElement,
+    columnIndex: number
+  ): number {
+    // Force layout to ensure we get current measurements
+    grid.offsetHeight;
+
+    // Try to get the width from a cell in the target column
+    const gridInfo = getGridInfo(grid);
+
+    if (gridInfo.rowCount > 0 && columnIndex < gridInfo.columnCount) {
+      try {
+        const cells = getGridCells(grid);
+        const targetCellIndex = columnIndex; // First row, target column
+
+        if (targetCellIndex < cells.length) {
+          const cellElement = cells[targetCellIndex];
+          const rect = cellElement.getBoundingClientRect();
+          return rect.width;
+        }
+      } catch (error) {
+        console.warn(
+          "Could not get cell width, falling back to computed style"
+        );
+      }
+    }
+
+    // Fallback: get width from computed grid template
+    const computedStyle = window.getComputedStyle(grid);
+    const gridTemplateColumns = computedStyle.gridTemplateColumns;
+
+    if (gridTemplateColumns && gridTemplateColumns !== "none") {
+      const columnWidths = gridTemplateColumns.split(" ");
+
+      if (columnIndex < columnWidths.length) {
+        const widthValue = columnWidths[columnIndex];
+        const match = widthValue.match(/([0-9.]+)px/);
+        if (match) {
+          return parseFloat(match[1]);
+        }
+      }
+    }
+
+    // Ultimate fallback
+    return 100;
+  }
+
+  private getCurrentRowHeight(grid: HTMLElement, rowIndex: number): number {
+    // Force layout to ensure we get current measurements
+    grid.offsetHeight;
+
+    // Try to get the height from a cell in the target row
+    const gridInfo = getGridInfo(grid);
+
+    if (gridInfo.rowCount > rowIndex && gridInfo.columnCount > 0) {
+      try {
+        const cells = getGridCells(grid);
+        // Get the first cell in the target row
+        const targetCellIndex = rowIndex * gridInfo.columnCount;
+
+        if (targetCellIndex < cells.length) {
+          const cellElement = cells[targetCellIndex];
+          const rect = cellElement.getBoundingClientRect();
+          return rect.height;
+        }
+      } catch (error) {
+        console.warn(
+          "Could not get cell height, falling back to computed style"
+        );
+      }
+    }
+
+    // Fallback: get height from computed grid template
+    const computedStyle = window.getComputedStyle(grid);
+    const gridTemplateRows = computedStyle.gridTemplateRows;
+
+    if (gridTemplateRows && gridTemplateRows !== "none") {
+      const rowHeights = gridTemplateRows.split(" ");
+
+      if (rowIndex < rowHeights.length) {
+        const heightValue = rowHeights[rowIndex];
+        const match = heightValue.match(/([0-9.]+)px/);
+        if (match) {
+          return parseFloat(match[1]);
+        }
+      }
+    }
+
+    // Ultimate fallback
+    return 30;
   }
 }
 

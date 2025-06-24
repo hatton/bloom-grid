@@ -10,6 +10,7 @@
   /* horizontally center children */
   display: flex;
   justify-content: center;
+  padding: 40px;
 }
 .grid {
   display: grid;
