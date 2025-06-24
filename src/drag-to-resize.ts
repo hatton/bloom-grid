@@ -1,5 +1,5 @@
 import { gridHistoryManager } from "./history";
-import { getGridCells, getGridInfo } from "./structure";
+import { getGridCells, getGridInfo, getRowAndColumn } from "./structure";
 
 interface DragState {
   isDragging: boolean;
@@ -69,18 +69,19 @@ export class DragToResize {
     }
   }
 
-  // This just handles the cursor. Unfortunately it gets called repeatedly even when we\'re not doing anything.
   private updateCursorOnMouseMove = (event: MouseEvent): void => {
     if (this.dragState.isDragging) {
       // If dragging, the cursor is already set and latched, so do nothing here.
       return;
     }
-    const target = event.target as HTMLElement;
+    const target = event.target as HTMLElement; // the element that triggered the event, which could be a child of a cell
+
     const resizeInfo = this.getResizeInfo(target, event);
 
     if (resizeInfo) {
       target.style.cursor =
         resizeInfo.type === "row" ? "ns-resize" : "ew-resize";
+      event.stopPropagation();
     } else {
       target.style.cursor = "default";
     }
@@ -91,6 +92,7 @@ export class DragToResize {
 
     if (resizeInfo) {
       event.preventDefault(); // Capture the appropriate edge position based on resize type
+      event.stopPropagation();
       let columnLeftEdge: number | undefined;
       let rowTopEdge: number | undefined;
       if (resizeInfo.type === "column") {
@@ -340,8 +342,17 @@ export class DragToResize {
     currentValue: string;
     index: number;
   } | null {
-    //console.info("getResizeInfo: Invoked.");
-    const rect = target.getBoundingClientRect();
+    const cell = target.closest<HTMLElement>(".cell");
+
+    if (!cell) {
+      return null;
+    }
+    const grid = cell.closest<HTMLElement>(".grid");
+    if (!grid) {
+      throw new Error("getResizeInfo: Could not find parent grid.");
+    }
+
+    const rect = cell.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     // console.info(`getResizeInfo: target=${this.tagInfo(target)}`);
@@ -349,45 +360,38 @@ export class DragToResize {
 
     const edgeThreshold = 5; // pixels from edge to trigger resize    // Check if we're near the bottom edge (row resize)
     if (y >= rect.height - edgeThreshold && y <= rect.height) {
-      // Find the grid this cell belongs to
-      const grid = this.findParentGrid(target, verbose);
-      if (grid) {
-        // Determine which row this cell is in
-        const rowIndex = this.getRowIndexFromCell(grid, target);
-        if (rowIndex >= 0) {
-          // For row resizing, we need to get/set data-row-height on the grid itself
-          // but track which row we're resizing
-          const currentRowHeights = grid.getAttribute("data-row-heights") || "";
-          const rowHeights = currentRowHeights.split(",");
-          const currentHeight =
-            rowIndex < rowHeights.length ? rowHeights[rowIndex] : "fit";
+      // Determine which row this cell is in
+      const { row: rowIndex } = getRowAndColumn(grid, cell);
+      if (rowIndex >= 0) {
+        // For row resizing, we need to get/set data-row-height on the grid itself
+        // but track which row we're resizing
+        const currentRowHeights = grid.getAttribute("data-row-heights") || "";
+        const rowHeights = currentRowHeights.split(",");
+        const currentHeight =
+          rowIndex < rowHeights.length ? rowHeights[rowIndex] : "fit";
 
-          return {
-            type: "row",
-            element: grid, // We store height info on the grid, not individual cells
-            currentValue: currentHeight,
-            index: rowIndex,
-          };
-        }
+        return {
+          type: "row",
+          element: grid, // We store height info on the grid, not individual cells
+          currentValue: currentHeight,
+          index: rowIndex,
+        };
       }
     }
 
     // Check if we're near the right edge (column resize)
     if (x >= rect.width - edgeThreshold && x <= rect.width) {
-      const grid = this.findParentGrid(target, verbose);
-      if (grid) {
-        const columnIndex = this.getColumnIndex(target);
-        const columnWidths = grid.getAttribute("data-column-widths") || "";
-        const widthArray = columnWidths.split(",");
+      const { column: columnIndex } = getRowAndColumn(grid, cell);
+      const columnWidths = grid.getAttribute("data-column-widths") || "";
+      const widthArray = columnWidths.split(",");
 
-        if (columnIndex < widthArray.length) {
-          return {
-            type: "column",
-            element: grid,
-            currentValue: widthArray[columnIndex] || "fit",
-            index: columnIndex,
-          };
-        }
+      if (columnIndex < widthArray.length) {
+        return {
+          type: "column",
+          element: grid,
+          currentValue: widthArray[columnIndex] || "fit",
+          index: columnIndex,
+        };
       }
     }
 
@@ -400,42 +404,14 @@ export class DragToResize {
   ): HTMLElement | null {
     return row.closest<HTMLElement>(".grid") || null;
   }
-  private getRowIndexFromCell(grid: HTMLElement, cell: HTMLElement): number {
-    const gridInfo = getGridInfo(grid);
-    const cells = getGridCells(grid);
-    const cellIndex = cells.indexOf(cell);
 
-    if (cellIndex === -1) {
-      return -1;
-    }
-
-    // Calculate which row this cell belongs to using grid info
-    const columnCount = gridInfo.columnCount;
-    return Math.floor(cellIndex / columnCount);
-  }
-  private getColumnIndex(element: HTMLElement): number {
-    const grid = this.findParentGrid(element, false);
-    if (!grid) {
-      return -1;
-    }
-
-    const gridInfo = getGridInfo(grid);
-    const cells = getGridCells(grid);
-    const cellIndex = cells.indexOf(element);
-
-    if (cellIndex === -1) {
-      return -1;
-    }
-
-    // Calculate which column this cell is in
-    const columnCount = gridInfo.columnCount;
-    return cellIndex % columnCount;
-  }
   private handleDoubleClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
+
     const resizeInfo = this.getResizeInfo(target, event);
     if (resizeInfo && resizeInfo.type === "row") {
       event.preventDefault();
+      event.stopPropagation();
 
       const gridElement = resizeInfo.element; // This is the grid element
       const rowIndex = resizeInfo.index;
@@ -475,8 +451,9 @@ export class DragToResize {
       );
     } else if (resizeInfo && resizeInfo.type === "column") {
       event.preventDefault();
+      event.stopPropagation();
 
-      const grid = this.findParentGrid(resizeInfo.element, false);
+      const grid = resizeInfo.element;
       if (!grid) {
         console.warn("HandleDoubleClick: Could not find parent grid.");
         return;
