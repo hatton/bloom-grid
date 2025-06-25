@@ -2,6 +2,7 @@ import { dragToResize } from "./drag-to-resize";
 import { gridHistoryManager } from "./history";
 import { addColumn, addRow } from "./structure";
 import * as cssGridStyleUpdater from "./cssGrid-style-updater";
+import { migrateGrid } from "./migrate";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
@@ -21,6 +22,7 @@ export function attachGrid(gridDiv: HTMLElement): void {
     addRow(gridDiv, true);
   }
   // todo do a sanity check on the gridDiv to ensure it has the right structure
+  migrateGrid(gridDiv);
 
   // Attach the grid to the history manager
   gridHistoryManager.attachGrid(gridDiv);
