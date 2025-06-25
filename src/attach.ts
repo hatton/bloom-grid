@@ -3,6 +3,7 @@ import { gridHistoryManager } from "./history";
 import { addColumn, addRow } from "./structure";
 import * as cssGridStyleUpdater from "./cssGrid-style-updater";
 import { migrateGrid } from "./migrate";
+import { attachTextEditing } from "./text-editing";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
@@ -30,6 +31,8 @@ export function attachGrid(gridDiv: HTMLElement): void {
   dragToResize.attach(gridDiv);
   // Attach grid observer
   cssGridStyleUpdater.attach(gridDiv);
+
+  attachTextEditing(gridDiv);
 }
 
 export function detachGrid(gridDiv: HTMLElement): void {

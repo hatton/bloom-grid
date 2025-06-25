@@ -43,11 +43,8 @@
 }
 
 .cell > div[contenteditable="true"] {
-  /* center text within this div */
-  display: flex;
-  justify-content: center;
   min-width: 2em; /* without a min-width, you can't click in an empty cell that was added dynamically*/
-
+  text-align: center;
   /*padding: 1em; /* Give it some clickable area around the text so that it's not hard to get your cursor in there when there is no text
   box-sizing: border-box; /* for padding not to increase total size */
   /*background-color: aqua;*/
