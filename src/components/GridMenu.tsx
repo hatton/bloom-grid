@@ -119,7 +119,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const sectionTitleStyle = "px-4 py-2 text-lg font-medium";
   const subSectionTitleStyle = "text-gray-500 px-4 py-2 text-md font-medium";
 
-  const grid = getTargetGridFromSelection();
+  const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
 
   return (
     <div
@@ -333,7 +333,7 @@ const [canUndo, setCanUndo] = useState(false);
   };*/
 
 const SizeControl: React.FC<{
-  grid: HTMLElement;
+  grid?: HTMLElement;
   cell: HTMLElement | null | undefined;
 }> = ({ grid, cell }) => {
   if (!grid || !cell) {
