@@ -65,9 +65,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     const rowIndex = Grid.getRowIndex(props.currentCell!);
     Grid.addRowAt(grid, rowIndex);
   };
-  const handleInsertRowBelow = (
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>
-  ) => {
+  const handleInsertRowBelow = () => {
     const grid = getTargetGridFromSelection();
     const rowIndex = Grid.getRowIndex(props.currentCell!);
     Grid.addRowAt(grid, rowIndex + 1);
@@ -94,6 +92,17 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
     Grid.removeColumnAt(grid, columnIndex);
   };
+
+  const handleSelectParentCell = () => {
+    const grid = getTargetGridFromSelection();
+    const parentCell = grid.parentElement?.closest(
+      ".cell"
+    ) as HTMLElement | null;
+    if (parentCell) {
+      parentCell.focus();
+    }
+  };
+
   const handleToggleOutsideBorder = () => {
     const grid = getTargetGridFromSelection();
     const haveBorders =
@@ -124,9 +133,9 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     "flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer w-full text-left";
   const sectionStyle = "border-b border-gray-200 pb-3";
   const sectionTitleStyle = "px-4 py-2 text-lg font-medium";
-  const subSectionTitleStyle = "text-gray-500 px-4 py-2 text-md font-medium";
 
   const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
+  const parentCell = grid?.parentElement?.closest(".cell");
 
   return (
     <div
@@ -184,12 +193,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
           </div>
         </div>
 
-        <div
-          className={menuItemStyle}
-          onClick={(e) => {
-            handleExtendCell();
-          }}
-        >
+        <div className={menuItemStyle} onClick={handleExtendCell}>
           <span className="text-xl">↦</span>
           <span>Extend Cell</span>
         </div>
@@ -206,12 +210,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
           <span className="text-2xl">↑</span>
           <span>Insert Row Above</span>
         </div>
-        <div
-          className={menuItemStyle}
-          onClick={(event) => {
-            handleInsertRowBelow(event);
-          }}
-        >
+        <div className={menuItemStyle} onClick={handleInsertRowBelow}>
           <span className="text-2xl">↓</span>
           <span>Insert Row Below</span>
         </div>
@@ -246,11 +245,15 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       <div>
         <h2 className={sectionTitleStyle}>Grid</h2>
         <div
-          className={menuItemStyle}
-          onClick={(event) => {
-            handleToggleOutsideBorder();
-          }}
+          className={`${menuItemStyle} ${
+            !parentCell ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={parentCell ? handleSelectParentCell : undefined}
         >
+          <span className="text-xl">↖</span>
+          <span>Select Parent Cell</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleToggleOutsideBorder}>
           <span className="text-xl">◰</span>
           <span>Show Outside Border</span>
         </div>

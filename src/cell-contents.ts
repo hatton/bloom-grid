@@ -108,6 +108,8 @@ export function setupContentsOfCell(
             (c) => c.id === defaultCellContentTypeId
           )?.templateHtml || "!!!";
       });
+      // set tabindex to -1 so that it's possible to focus the parent cell
+      cell.tabIndex = -1;
     }
 
     // up until this point, we don't know if the contents fit our rule that there must be only one root element to the contents
