@@ -2,6 +2,7 @@
 // This file defines the default cell contents and provides a way to customize them.
 
 import { CellContentType } from "./types";
+import { gridHistoryManager } from "./history";
 
 export function contentTypeOptions(): { id: string; englishName: string }[] {
   return defaultCellContentsForEachType.map((content) => ({
@@ -49,8 +50,11 @@ export function getCurrentContentTypeId(cell: HTMLElement): string | undefined {
 }
 export function setupContentsOfCell(
   cell: HTMLElement,
-  targetType?: string
+  targetType?: string,
+  putInHistory: boolean = false
 ): HTMLElement | null {
+  const grid = cell.closest<HTMLElement>(".grid");
+
   // First we figure out what is already there in the cell.
   let existingContentType = cell.dataset.contentType;
   if (existingContentType === undefined && cell.children.length > 0) {
@@ -60,7 +64,7 @@ export function setupContentsOfCell(
     );
     if (content) {
       existingContentType = content.id; // if we found a match, use that as the existing content type
-      cell.dataset.contentType = content.id; // add the attribute that was missing
+      // We don't set the data attribute here because it would be a mutation.
     }
   }
 
@@ -89,29 +93,38 @@ export function setupContentsOfCell(
     );
   }
 
-  cell.dataset.contentType = targetType;
-  cell.innerHTML = content.templateHtml;
+  const doIt = () => {
+    cell.dataset.contentType = targetType;
+    cell.innerHTML = content.templateHtml;
 
-  // if we just inserted a grid, set each of its cells to the default content type
-  if (targetType === "grid") {
-    const gridCells = cell.querySelectorAll<HTMLElement>(".cell");
-    gridCells.forEach((gridCell) => {
-      gridCell.dataset.contentType = defaultCellContentTypeId;
+    // if we just inserted a grid, set each of its cells to the default content type
+    if (targetType === "grid") {
+      const gridCells = cell.querySelectorAll<HTMLElement>(".cell");
+      gridCells.forEach((gridCell) => {
+        gridCell.dataset.contentType = defaultCellContentTypeId;
 
-      gridCell.innerHTML =
-        defaultCellContentsForEachType.find(
-          (c) => c.id === defaultCellContentTypeId
-        )?.templateHtml || "!!!";
-    });
+        gridCell.innerHTML =
+          defaultCellContentsForEachType.find(
+            (c) => c.id === defaultCellContentTypeId
+          )?.templateHtml || "!!!";
+      });
+    }
+
+    // up until this point, we don't know if the contents fit our rule that there must be only one root element to the contents
+    // so we check that now
+    if (cell.children.length !== 1) {
+      throw new Error(
+        `Cell contents must have exactly one root element, but found ${cell.children.length} elements.`
+      );
+    }
+  };
+
+  if (putInHistory && grid) {
+    gridHistoryManager.addHistoryEntry(grid, "Change Cell Content", doIt);
+  } else {
+    doIt();
   }
 
-  // up until this point, we don't know if the contents fit our rule that there must be only one root element to the contents
-  // so we check that now
-  if (cell.children.length !== 1) {
-    throw new Error(
-      `Cell contents must have exactly one root element, but found ${cell.children.length} elements.`
-    );
-  }
   // for testing purposes, return the child
   return (cell.firstChild as HTMLElement) || null;
 }

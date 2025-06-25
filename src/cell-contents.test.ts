@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { setupContentsOfCell } from "./cell-contents";
+import { gridHistoryManager } from "./history";
 
 describe("setupContentsOfCell", () => {
   let cell: HTMLElement;
@@ -31,6 +32,15 @@ describe("setupContentsOfCell", () => {
     const contentDiv = setupContentsOfCell(cell);
     expect(contentDiv?.outerHTML).toContain(`contenteditable="true"`);
     expect(cell.dataset.contentType).toBe("text");
+  });
+
+  it("should use history when putInHistory is true", () => {
+    cell = document.createElement("div");
+    const grid = document.createElement("div");
+    grid.appendChild(cell);
+    const addHistoryEntry = vi.spyOn(gridHistoryManager, "addHistoryEntry");
+    setupContentsOfCell(cell, "text", true);
+    expect(addHistoryEntry).toHaveBeenCalled();
   });
 
   // TODO there are many more cases to cover

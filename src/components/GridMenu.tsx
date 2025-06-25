@@ -41,7 +41,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
 
   const handleSetCellContentType = (contentTypeId: string) => {
     assert(!!props.currentCell, "No cell selected");
-    setupContentsOfCell(props.currentCell!, contentTypeId);
+    setupContentsOfCell(props.currentCell!, contentTypeId, true);
   };
 
   const handleExtendCell = () => {
