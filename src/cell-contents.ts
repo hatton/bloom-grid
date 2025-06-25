@@ -21,7 +21,7 @@ export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "grid",
     englishName: "Grid",
-    templateHtml: `<div class='grid' data-column-widths='fill,fill' data-row-heights='fill,fill'>
+    templateHtml: `<div class='grid' data-column-widths='fill,fill' data-row-heights='fill,fill' style='--cell-border-width: 1px; --grid-border-width: 1px;'>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>

@@ -36,6 +36,11 @@
   justify-content: center;
   align-items: center;
 }
+/* when cell is focused, set a light blue border */
+.cell:focus {
+  outline: 4px solid #fac918 !important;
+  outline-offset: -4px;
+}
 
 .cell > div[contenteditable="true"] {
   /* center text within this div */

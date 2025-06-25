@@ -41,28 +41,30 @@ const App: React.FC<{}> = () => {
   return (
     <>
       <GridMenu currentCell={currentCell} />
-      <button
-        disabled={!isUndoable}
-        onMouseDown={(e) => e.preventDefault()} // Prevent default to avoid losing focus
-        onClick={() => {
-          if (currentCell) {
-            gridHistoryManager.undo(
-              currentCell!.closest(".grid") as HTMLElement
-            );
-          }
-        }}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: isUndoable ? "#007bff" : "#cccccc",
-          color: isUndoable ? "#fff" : "#666666",
-          border: "none",
-          borderRadius: "5px",
-          cursor: isUndoable ? "pointer" : "not-allowed",
-          opacity: isUndoable ? 1 : 0.7,
-        }}
-      >
-        {undoLabel}
-      </button>
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button
+          disabled={!isUndoable}
+          onMouseDown={(e) => e.preventDefault()} // Prevent default to avoid losing focus
+          onClick={() => {
+            if (currentCell) {
+              gridHistoryManager.undo(
+                currentCell!.closest(".grid") as HTMLElement
+              );
+            }
+          }}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: isUndoable ? "#007bff" : "#cccccc",
+            color: isUndoable ? "#fff" : "#666666",
+            border: "none",
+            borderRadius: "5px",
+            cursor: isUndoable ? "pointer" : "not-allowed",
+            opacity: isUndoable ? 1 : 0.7,
+          }}
+        >
+          {undoLabel}
+        </button>
+      </div>
     </>
   );
 };

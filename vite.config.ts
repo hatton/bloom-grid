@@ -4,6 +4,7 @@ import dts from "vite-plugin-dts";
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
+import { getExamples, handleSaveExampleRequest } from "./demo/example-api";
 
 export default defineConfig(({ command }) => {
   const isProduction = command === "build";
@@ -14,39 +15,16 @@ export default defineConfig(({ command }) => {
       dts({
         insertTypesEntry: true,
       }),
-      // Custom plugin to serve API endpoints during development
+      {
+        name: "save-example-api",
+        configureServer(server) {
+          server.middlewares.use("/api/save-example", handleSaveExampleRequest);
+        },
+      },
       {
         name: "demo-api-server",
         configureServer(server) {
-          server.middlewares.use("/api/examples", (req, res, next) => {
-            if (req.method === "GET") {
-              try {
-                const demoDir = path.join(__dirname, "demo");
-                const files = fs.readdirSync(demoDir);
-                const htmlFiles = files
-                  .filter(
-                    (file) => file.endsWith(".html") && file !== "index.html"
-                  )
-                  .map((file) => ({
-                    name: file
-                      .replace(".html", "")
-                      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capitals
-                      .replace(/^\w/, (c) => c.toUpperCase()) // Capitalize first letter
-                      .replace(/\d+/, (match) => ` ${match}`), // Add space before numbers
-                    file: file,
-                  }));
-
-                res.setHeader("Content-Type", "application/json");
-                res.setHeader("Access-Control-Allow-Origin", "*");
-                res.end(JSON.stringify(htmlFiles));
-              } catch (error) {
-                res.statusCode = 500;
-                res.end(JSON.stringify({ error: "Failed to read directory" }));
-              }
-            } else {
-              next();
-            }
-          });
+          server.middlewares.use("/api/examples", getExamples);
         },
       },
       // Custom plugin to copy CSS file to dist folder
@@ -65,10 +43,7 @@ export default defineConfig(({ command }) => {
         },
       },
     ],
-    // Development server configuration
-    server: {
-      open: "/example.html",
-    },
+
     // Build configuration (only applies when building)
     build: isProduction
       ? {

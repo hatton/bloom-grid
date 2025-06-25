@@ -14,7 +14,4 @@ export default defineConfig({
     outDir: "../dist",
     emptyOutDir: false,
   },
-  server: {
-    open: "/demo/example.html",
-  },
 });
