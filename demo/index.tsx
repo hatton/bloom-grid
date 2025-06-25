@@ -112,7 +112,7 @@ async function createExampleList() {
 
 // Initialize the demo
 console.log("Looking for root element...");
-const rootElement = document.getElementById("controls-root");
+const rootElement = document.getElementById("controls-panel");
 if (!rootElement) {
   console.error("Could not find root element to mount to");
 } else {

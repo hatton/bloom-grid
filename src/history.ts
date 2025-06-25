@@ -6,7 +6,7 @@ export interface GridState {
 export interface HistoryEntry {
   state: GridState; // The state *before* the operation was performed
   timestamp: number;
-  description: string;
+  label: string;
   undoOperation?: (grid: HTMLElement, prevState: GridState) => void;
 }
 
@@ -77,7 +77,7 @@ class GridHistoryManager {
       const entry: HistoryEntry = {
         state: stateBeforeOperation,
         timestamp: Date.now(),
-        description,
+        label: description,
         undoOperation:
           undoOperation ||
           ((grid, state) => this.defaultUndoOperation(grid, state)),
@@ -142,7 +142,7 @@ class GridHistoryManager {
       this.operationInProgress = false;
       const event = new CustomEvent("gridHistoryUpdated", {
         detail: {
-          operation: `Undo ${entry.description}`,
+          operation: `Undo ${entry.label}`,
           undoSuccess: undoSuccess,
           canUndo: this.canUndo(),
         },
@@ -170,11 +170,11 @@ class GridHistoryManager {
     return this.history.length > 0 && !this.operationInProgress;
   }
 
-  getLastOperation(): string | null {
+  getLastOperationLabel(): string | null {
     if (this.history.length === 0) {
       return null;
     }
-    return this.history[this.history.length - 1].description;
+    return this.history[this.history.length - 1].label;
   }
 
   clearHistory(): void {

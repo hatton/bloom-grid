@@ -241,7 +241,7 @@ export const canUndo = (): boolean => {
 };
 
 export const getLastOperation = (): string | null => {
-  return gridHistoryManager.getLastOperation();
+  return gridHistoryManager.getLastOperationLabel();
 };
 
 export function removeLastColumn(grid: HTMLElement) {

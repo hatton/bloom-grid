@@ -17,8 +17,6 @@
       }
 
       .grid-menu {
-        margin-left: 20px;
-        position: relative !important;
       }
       .demo-layout {
         display: grid;
@@ -47,10 +45,13 @@
         position: relative;
       }
 
-      .controls-panel {
-        padding: 20px;
+      #controls-panel {
+        padding-left: 20px;
         overflow-y: auto;
         border-left: 1px solid #e5e7eb;
+        gap: 10px;
+        display: flex;
+        flex-direction: column;
       }
 
       .example-list-item {
@@ -99,10 +100,8 @@
         </div>
       </div>
 
-      <div class="controls-panel">
-        <div id="controls-root">
-          <!-- React controls will be mounted here -->
-        </div>
+      <div id="controls-panel">
+        <!-- React controls will be mounted here -->
       </div>
     </div>
 

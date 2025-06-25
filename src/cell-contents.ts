@@ -120,7 +120,11 @@ export function setupContentsOfCell(
   };
 
   if (putInHistory && grid) {
-    gridHistoryManager.addHistoryEntry(grid, "Change Cell Content", doIt);
+    gridHistoryManager.addHistoryEntry(
+      grid,
+      `Change Cell from ${existingContentType} to ${targetType}`,
+      doIt
+    );
   } else {
     doIt();
   }

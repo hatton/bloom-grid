@@ -11,6 +11,13 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
+    document.addEventListener("gridHistoryUpdated", (event) => {
+      // Force a re-render when the grid history is updated
+      forceUpdate((x) => x + 1);
+    });
+  }, []);
+
+  useEffect(() => {
     if (!props.currentCell) return;
     const grid = props.currentCell.closest(".grid");
     if (!grid) return;
@@ -124,7 +131,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   return (
     <div
       onMouseDown={(e) => e.preventDefault()}
-      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 fixed right-4 top-4 z-10"
+      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 z-10"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
         opacity: !!props.currentCell ? 1 : 0.5,
