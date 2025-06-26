@@ -107,3 +107,9 @@
 [contenteditable] h6 {
   font-size: 0.9em !important;
 }
+.cell:nth-of-type(odd) {
+  border-radius: var(--cell-border-radius-odd);
+}
+.grid .cell:nth-of-type(even) {
+  outline-width: var(--cell-border-width-even, var(--cell-border-width));
+}
