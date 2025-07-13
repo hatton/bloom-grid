@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import GridMenu from "../src/components/GridMenu";
 import { gridHistoryManager } from "../src";
 
-const App: React.FC<{}> = () => {
+const Toolbar: React.FC<{}> = () => {
   const [currentCell, setCurrentCell] = useState<HTMLDivElement | null>(null);
   const [canUndo, setCanUndo] = useState(gridHistoryManager.canUndo());
   const [lastOperation, setLastOperation] = useState(
@@ -69,4 +69,4 @@ const App: React.FC<{}> = () => {
   );
 };
 
-export default App;
+export default Toolbar;
