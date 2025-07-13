@@ -1,17 +1,13 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
-import ExampleBar from "./components/ExampleBar";
+import ExampleBar, { Example } from "./components/ExampleBar";
 import MainContent from "./components/MainContent";
 import Toolbar from "./Toolbar";
 import ReactDOM from "react-dom/client";
 
-interface Example {
-  name: string;
-  file: string;
-}
-
 const Demo: React.FC = () => {
-  const [exampleContent, setExampleContent] = useState<string>("");
+  const [exampleHtmlContent, setExampleHtmlContent] = useState<string>("");
+  const [examplePngPath, setExamplePngPath] = useState<string | undefined>();
 
   // Function to load and parse HTML content
   const loadExampleContent = async (filename: string): Promise<string> => {
@@ -32,16 +28,29 @@ const Demo: React.FC = () => {
   };
 
   const handleExampleSelect = async (example: Example) => {
-    console.log(`Loading example: ${example.name} (${example.file})`);
-    const content = await loadExampleContent(example.file);
-    setExampleContent(content);
+    console.log(`Loading example: ${example.name} (${example.htmlFile})`);
+    const exampleHtml = await loadExampleContent(example.htmlFile);
+    setExampleHtmlContent(exampleHtml);
+    setExamplePngPath(example.pngFile);
   };
 
   return (
     <div className="demo-layout">
       <Header />
       <ExampleBar onExampleSelect={handleExampleSelect} />
-      <MainContent exampleContent={exampleContent} />
+
+      <div className="sample-image">
+        {examplePngPath && (
+          <>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Try to match the essence of this example
+            </h3>
+            <img src={examplePngPath} alt="Example" />
+          </>
+        )}
+      </div>
+
+      <MainContent exampleContent={exampleHtmlContent} />
       <div id="controls-panel">
         <Toolbar />
       </div>

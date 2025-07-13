@@ -1,7 +1,8 @@
 import React from "react";
+import { Example } from "./ExampleBar";
 
 interface ExampleListItemProps {
-  example: { name: string; file: string };
+  example: Example;
   isActive: boolean;
   onSelect: () => void;
 }

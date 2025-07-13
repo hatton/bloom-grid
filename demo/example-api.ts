@@ -8,16 +8,28 @@ export async function getExamples(req, res, next) {
     try {
       const demoDir = __dirname; //path.join(__dirname, "demo");
       const files = await fs.readdir(demoDir);
-      const htmlFiles = files
-        .filter((file) => file.endsWith(".html") && file !== "index.html")
-        .map((file) => ({
-          name: file
-            .replace(".html", "")
-            .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capitals
-            .replace(/^\w/, (c) => c.toUpperCase()) // Capitalize first letter
-            .replace(/\d+/, (match) => ` ${match}`), // Add space before numbers
-          file: file,
-        }));
+      const htmlFiles = await Promise.all(
+        files
+          .filter((file) => file.endsWith(".html") && file !== "index.html")
+          .map(async (file) => {
+            // look for a corresponding PNG file
+            const pngFile = file.replace(".html", ".png");
+            const pngPath = path.join(demoDir, pngFile);
+            const pngExists = await fs
+              .access(pngPath)
+              .then(() => true)
+              .catch(() => false);
+            return {
+              name: file
+                .replace(".html", "")
+                .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space before capitals
+                .replace(/^\w/, (c) => c.toUpperCase()) // Capitalize first letter
+                .replace(/\d+/, (match) => ` ${match}`), // Add space before numbers
+              htmlFile: file,
+              pngFile: pngExists ? pngFile : undefined, // Only include PNG if it exists
+            };
+          })
+      );
 
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Access-Control-Allow-Origin", "*");

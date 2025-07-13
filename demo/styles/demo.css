@@ -9,7 +9,7 @@ body {
 
 .demo-layout {
   display: grid;
-  grid-template-columns: 300px auto 350px;
+  grid-template-columns: 300px 500px auto 350px;
   grid-template-rows: auto 1fr;
   height: 100vh;
   gap: 1px;
@@ -26,6 +26,7 @@ body {
   border-right: 1px solid #e5e7eb;
 }
 
+.sample-image,
 .main-content {
   background: rgb(48, 45, 45);
   padding: 20px;

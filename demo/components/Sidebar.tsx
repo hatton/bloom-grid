@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ExampleListItem from "./ExampleListItem";
 import SaveButton from "./SaveButton";
-
-interface Example {
-  name: string;
-  file: string;
-}
+import { Example } from "./ExampleBar";
 
 interface SidebarProps {
   onExampleSelect: (example: Example) => void;
@@ -20,12 +16,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onExampleSelect }) => {
     try {
       const response = await fetch("/api/examples");
       if (response.ok) {
-        const files = await response.json();
+        const files: Example[] = await response.json();
         setExampleFiles(files);
 
         // Set the first example as active by default
         if (files.length > 0) {
-          setActiveExample(files[0].file);
+          setActiveExample(files[0].htmlFile);
           onExampleSelect(files[0]);
         }
       } else {
@@ -46,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onExampleSelect }) => {
   }, []);
 
   const handleExampleSelect = (example: Example) => {
-    setActiveExample(example.file);
+    setActiveExample(example.htmlFile);
     onExampleSelect(example);
   };
 
@@ -59,9 +55,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onExampleSelect }) => {
         ) : (
           exampleFiles.map((example) => (
             <ExampleListItem
-              key={example.file}
+              key={example.htmlFile}
               example={example}
-              isActive={activeExample === example.file}
+              isActive={activeExample === example.htmlFile}
               onSelect={() => handleExampleSelect(example)}
             />
           ))
