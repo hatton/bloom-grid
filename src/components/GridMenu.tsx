@@ -45,7 +45,12 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     const grid = props.currentCell!.closest(".grid") as HTMLElement;
     return grid;
   };
-
+  const getTargetGridFromCell = (cell: HTMLElement): HTMLElement => {
+    // Using props.currentCell is more reliable than document.activeElement,
+    // because focus can move to the menu itself when we click a menu item.
+    const grid = cell.closest(".grid") as HTMLElement;
+    return grid;
+  };
   const handleSetCellContentType = (contentTypeId: string) => {
     assert(!!props.currentCell, "No cell selected");
     setupContentsOfCell(props.currentCell!, contentTypeId, true);
@@ -76,14 +81,14 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     Grid.removeRowAt(grid, rowIndex);
   };
   const handleInsertColumnLeft = () => {
-    const grid = getTargetGridFromSelection();
+    const grid = getTargetGridFromCell(props.currentCell!); // TODO doesn't have cell param
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
     Grid.addColumnAt(grid, columnIndex);
   };
 
-  const handleInsertColumnRight = () => {
-    const grid = getTargetGridFromSelection();
-    const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
+  const handleInsertColumnRight = (cell: HTMLElement) => {
+    const grid = getTargetGridFromCell(cell); // REview has cell param
+    const columnIndex = Grid.getRowAndColumn(grid, cell).column;
     Grid.addColumnAt(grid, columnIndex + 1);
   };
 
@@ -137,9 +142,14 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
   const parentCell = grid?.parentElement?.closest(".cell");
 
+  let cellSaved: HTMLElement | undefined | null = undefined;
+
   return (
     <div
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        //e.preventDefault();
+        cellSaved = props.currentCell;
+      }}
       className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 z-10"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
@@ -150,6 +160,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       // onMouseDown, store the current document selection in a react state. Then onMouseUp, restore the selection.
       // TODO
     >
+      <div>{`${props.currentCell ? "Grid Menu" : "No Cell Selected"}`}</div>
       {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
       {/* Cell section */}
       <div className={sectionStyle}>
@@ -231,7 +242,10 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
           <span className="text-2xl">_←</span>
           <span>Insert Column Left</span>
         </div>
-        <div className={menuItemStyle} onClick={handleInsertColumnRight}>
+        <div
+          className={menuItemStyle}
+          onClick={() => handleInsertColumnRight(cellSaved!)}
+        >
           <span className="text-2xl">→_</span>
           <span>Insert Column Right</span>
         </div>
