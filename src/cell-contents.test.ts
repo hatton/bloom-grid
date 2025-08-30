@@ -37,6 +37,7 @@ describe("setupContentsOfCell", () => {
   it("should use history when putInHistory is true", () => {
     cell = document.createElement("div");
     const grid = document.createElement("div");
+    grid.classList.add("grid");
     grid.appendChild(cell);
     const addHistoryEntry = vi.spyOn(gridHistoryManager, "addHistoryEntry");
     setupContentsOfCell(cell, "text", true);

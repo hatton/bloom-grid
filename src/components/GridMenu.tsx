@@ -11,7 +11,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    document.addEventListener("gridHistoryUpdated", (event) => {
+    document.addEventListener("gridHistoryUpdated", () => {
       // Force a re-render when the grid history is updated
       forceUpdate((x) => x + 1);
     });
@@ -135,9 +135,9 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   };
 
   const menuItemStyle =
-    "flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer w-full text-left";
-  const sectionStyle = "border-b border-gray-200 pb-3";
-  const sectionTitleStyle = "px-4 py-2 text-lg font-medium";
+    "flex items-center gap-2 px-4 py-1 hover:bg-gray-100 cursor-pointer w-full text-left";
+  const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
+  const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
 
   const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
   const parentCell = grid?.parentElement?.closest(".cell");
@@ -146,11 +146,11 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
 
   return (
     <div
-      onMouseDown={(e) => {
+      onMouseDown={() => {
         //e.preventDefault();
         cellSaved = props.currentCell;
       }}
-      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 z-10"
+      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 z-10 p-2.5"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
         opacity: !!props.currentCell ? 1 : 0.5,
@@ -160,7 +160,72 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       // onMouseDown, store the current document selection in a react state. Then onMouseUp, restore the selection.
       // TODO
     >
-      <div>{`${props.currentCell ? "Grid Menu" : "No Cell Selected"}`}</div>
+      <h1 className="flex items-center justify-center gap-1 text-xl ">
+        <span className="text-xl">⊞</span>
+        {`${props.currentCell ? "Table Controls" : "No Cell Selected"}`}
+      </h1>
+
+      {/* Table section */}
+      <div className={sectionStyle}>
+        <h2 className={sectionTitleStyle}>Table</h2>
+        <div
+          className={`${menuItemStyle} ${
+            !parentCell ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={parentCell ? handleSelectParentCell : undefined}
+        >
+          <span className="text-xl">↖</span>
+          <span>Select Parent Cell</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleToggleOutsideBorder}>
+          <span className="text-xl">◰</span>
+          <span>Show Outside Border</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleToggleInsideBorders}>
+          <span className="text-xl">▦</span>
+          <span>Show Inside Borders</span>
+        </div>
+      </div>
+      {/* Row section */}
+      <div className={sectionStyle}>
+        <h2 className={sectionTitleStyle}>Row</h2>
+        <div className={menuItemStyle} onClick={handleInsertRowAbove}>
+          <span className="text-2xl">↑</span>
+          <span>Insert Row Above</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleInsertRowBelow}>
+          <span className="text-2xl">↓</span>
+          <span>Insert Row Below</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleDeleteRow}>
+          <span className="text-xl">🗑️</span>
+          <span>Delete Row</span>
+        </div>
+      </div>
+
+      {/* Column section */}
+      <div className={sectionStyle}>
+        <h2 className={sectionTitleStyle}>Column</h2>
+
+        <div className={menuItemStyle}>
+          <SizeControl grid={grid} cell={props.currentCell} />
+        </div>
+        <div className={menuItemStyle} onClick={handleInsertColumnLeft}>
+          <span className="text-2xl">_←</span>
+          <span>Insert Column Left</span>
+        </div>
+        <div
+          className={menuItemStyle}
+          onClick={() => handleInsertColumnRight(cellSaved!)}
+        >
+          <span className="text-2xl">→_</span>
+          <span>Insert Column Right</span>
+        </div>
+        <div className={menuItemStyle} onClick={handleDeleteColumn}>
+          <span className="text-xl">🗑️</span>
+          <span>Delete Column</span>
+        </div>
+      </div>
       {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
       {/* Cell section */}
       <div className={sectionStyle}>
@@ -211,69 +276,6 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
         <div className={menuItemStyle} onClick={handleContractCell}>
           <span className="text-xl">⭰</span>
           <span>Contract Cell</span>
-        </div>
-      </div>
-
-      {/* Row section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Row</h2>
-        <div className={menuItemStyle} onClick={handleInsertRowAbove}>
-          <span className="text-2xl">↑</span>
-          <span>Insert Row Above</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleInsertRowBelow}>
-          <span className="text-2xl">↓</span>
-          <span>Insert Row Below</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleDeleteRow}>
-          <span className="text-xl">🗑️</span>
-          <span>Delete Row</span>
-        </div>
-      </div>
-
-      {/* Column section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Column</h2>
-
-        <div className={menuItemStyle}>
-          <SizeControl grid={grid} cell={props.currentCell} />
-        </div>
-        <div className={menuItemStyle} onClick={handleInsertColumnLeft}>
-          <span className="text-2xl">_←</span>
-          <span>Insert Column Left</span>
-        </div>
-        <div
-          className={menuItemStyle}
-          onClick={() => handleInsertColumnRight(cellSaved!)}
-        >
-          <span className="text-2xl">→_</span>
-          <span>Insert Column Right</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleDeleteColumn}>
-          <span className="text-xl">🗑️</span>
-          <span>Delete Column</span>
-        </div>
-      </div>
-
-      {/* Grid section */}
-      <div>
-        <h2 className={sectionTitleStyle}>Grid</h2>
-        <div
-          className={`${menuItemStyle} ${
-            !parentCell ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          onClick={parentCell ? handleSelectParentCell : undefined}
-        >
-          <span className="text-xl">↖</span>
-          <span>Select Parent Cell</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleToggleOutsideBorder}>
-          <span className="text-xl">◰</span>
-          <span>Show Outside Border</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleToggleInsideBorders}>
-          <span className="text-xl">▦</span>
-          <span>Show Inside Borders</span>
         </div>
       </div>
     </div>
@@ -367,7 +369,7 @@ const SizeControl: React.FC<{
   const width = Grid.getColumnWidth(grid, columnIndex);
 
   return (
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2">
       <button
         className={`px-2 py-1 rounded-md text-sm ${
           width === "hug"

@@ -10,10 +10,10 @@
  * ### HTML Structure:
  * ```html
  * <div class="grid" data-column-widths="100px,fit" data-row-heights="50px,60px">
- *   <div class="cell">Cell 0,0</div>
- *   <div class="cell">Cell 0,1</div>
- *   <div class="cell">Cell 1,0</div>
- *   <div class="cell">Cell 1,1</div>
+ *   <div class="cell" data-border-radius="8px">Cell 0,0</div>
+ *   <div class="cell"data-border-top='{"width": "4px", "color": "red", "style": "solid"}'>thick red border all around</div>
+ *   <div class="cell" data-border-left='{"weight": 0}'>Cell 1,0 No left border</div>
+ *   <div class="cell" data-border-bottom='{"style": "double"}'>Cell 1,1</div>
  * </div>
  * ```
  *
