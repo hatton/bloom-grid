@@ -22,7 +22,11 @@ export default function StyleMenu(props: {
       options={options.map((o) => ({
         value: o.value,
         label: o.label,
-        icon: () => <StyleIcon value={o.value} color="#1f3a40" />,
+        icon: () => (
+          <div style={{ width: "100%" }}>
+            <StyleIcon value={o.value} color="#1f3a40" fullWidth />
+          </div>
+        ),
       }))}
       onChange={props.onChange}
       disabled={props.disabled}

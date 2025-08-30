@@ -109,8 +109,11 @@ export const BorderMenu = <T extends BorderMenuValue>(props: {
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: hideLabels ? "center" : "flex-start",
                 gap: 8,
-                padding: "6px 8px",
+                padding: "6px 10px",
+                width: "100%",
+                boxSizing: "border-box",
                 cursor: "pointer",
                 borderRadius: 4,
                 background:

@@ -8,31 +8,30 @@ export function CornerIcon({
   color?: string;
 }) {
   if (value === "mixed") return <span style={{ fontSize: 11 }}>Mixed</span>;
-  const r = value * 2; // make corners twice as big
+
+  const size = 20; // requested 20px high and wide
+  const borderWidth = 2;
+  const r = Math.max(0, Math.min(value, size)); // clamp radius to box size
+
   return (
-    <svg
-      width={32}
-      height={18}
-      viewBox="0 0 32 18"
+    <div
       aria-hidden
-      style={{ display: "block", margin: "auto" }}
+      style={{ width: size, height: size, display: "block", margin: "auto" }}
     >
-      <rect x="4" y="4" width="24" height="10" fill="none" />
-      {r > 0 ? (
-        <path
-          d={`M 10 14 Q 10 ${14 - r} ${10 + r} ${14 - r}`}
-          stroke={color}
-          strokeWidth={2}
-          fill="none"
-        />
-      ) : (
-        <path
-          d="M 10 14 L 10 10 L 14 10"
-          stroke={color}
-          strokeWidth={2}
-          fill="none"
-        />
-      )}
-    </svg>
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderLeft: `${borderWidth}px solid ${color}`,
+          borderTop: `${borderWidth}px solid ${color}`,
+          boxSizing: "border-box",
+          // Per-corner radii: only top-left should be rounded; others 0
+          borderTopLeftRadius: r,
+          borderTopRightRadius: 0,
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
+        }}
+      />
+    </div>
   );
 }

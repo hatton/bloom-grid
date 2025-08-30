@@ -23,11 +23,14 @@ export default function WeightMenu(props: {
         value: o.value,
         label: o.label,
         icon: () => (
-          <WeightIcon
-            value={o.value}
-            style={props.currentStyle}
-            color="#1f3a40"
-          />
+          <div style={{ width: "100%" }}>
+            <WeightIcon
+              value={o.value}
+              style={props.currentStyle}
+              color="#1f3a40"
+              fullWidth
+            />
+          </div>
         ),
       }))}
       onChange={props.onChange}

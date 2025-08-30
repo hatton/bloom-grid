@@ -60,10 +60,9 @@ function Preview({ map }: { map: BorderValueMap }) {
     height: size,
     background: "#fff",
     boxSizing: "border-box",
-    borderTop: toCss("top"),
-    borderRight: toCss("right"),
-    borderBottom: toCss("bottom"),
-    borderLeft: toCss("left"),
+    // Use outline for smoother outer curves. Note outline doesn't support different styles per side,
+    // so we approximate with a single outline using the top edge style/weight; fall back to border if needed.
+    outline: toCss("top"),
     borderRadius: radiusPx,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
