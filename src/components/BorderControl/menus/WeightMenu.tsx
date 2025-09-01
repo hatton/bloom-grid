@@ -35,7 +35,9 @@ export default function WeightMenu(props: {
       }))}
       onChange={props.onChange}
       disabled={props.disabled}
-      renderButtonIcon={(v) => <WeightIcon value={v as any} style={"solid"} />}
+      renderButtonIcon={(v) => (
+        <WeightIcon value={v as any} style={props.currentStyle} />
+      )}
       hideLabels
     />
   );

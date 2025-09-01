@@ -4,6 +4,7 @@ import { setupContentsOfCell } from "../cell-contents";
 import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
 
 import { changeCellSpan } from "../structure";
+import TableSection from "./TableSection";
 
 const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   props
@@ -108,34 +109,10 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     }
   };
 
-  const handleToggleOutsideBorder = () => {
-    const grid = getTargetGridFromSelection();
-    const haveBorders =
-      !grid.style ||
-      !grid.style.getPropertyValue("--grid-border-width") ||
-      grid.style.getPropertyValue("--grid-border-width") === "1px";
-    if (!haveBorders) {
-      grid.style.setProperty("--grid-border-width", "1px");
-    } else {
-      grid.style.setProperty("--grid-border-width", "0px");
-    }
-  };
-
-  const handleToggleInsideBorders = () => {
-    const grid = getTargetGridFromSelection();
-    const haveBorders =
-      !grid.style ||
-      !grid.style.getPropertyValue("--cell-border-width") ||
-      grid.style?.getPropertyValue("--cell-border-width") === "1px";
-    if (!haveBorders) {
-      grid.style.setProperty("--cell-border-width", "1px");
-    } else {
-      grid.style.setProperty("--cell-border-width", "0px");
-    }
-  };
+  // (Old border toggle handlers removed in favor of BorderControl)
 
   const menuItemStyle =
-    "flex items-center gap-2 px-4 py-1 hover:bg-gray-100 cursor-pointer w-full text-left";
+    "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
   const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
   const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
 
@@ -150,9 +127,11 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
         //e.preventDefault();
         cellSaved = props.currentCell;
       }}
-      className="grid-menu bg-white border border-gray-300 rounded-md shadow-lg w-64 z-10 p-2.5"
+      className="grid-menu border border-gray-300 rounded-md shadow-lg w-64 z-10 p-2.5"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
+        backgroundColor: "#2E2E2E",
+        color: "rgba(255,255,255,0.95)",
         opacity: !!props.currentCell ? 1 : 0.5,
         pointerEvents: !!props.currentCell ? "auto" : "none",
       }}
@@ -160,32 +139,12 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       // onMouseDown, store the current document selection in a react state. Then onMouseUp, restore the selection.
       // TODO
     >
-      <h1 className="flex items-center justify-center gap-1 text-xl ">
-        <span className="text-xl">⊞</span>
-        {`${props.currentCell ? "Table Controls" : "No Cell Selected"}`}
-      </h1>
-
       {/* Table section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Table</h2>
-        <div
-          className={`${menuItemStyle} ${
-            !parentCell ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          onClick={parentCell ? handleSelectParentCell : undefined}
-        >
-          <span className="text-xl">↖</span>
-          <span>Select Parent Cell</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleToggleOutsideBorder}>
-          <span className="text-xl">◰</span>
-          <span>Show Outside Border</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleToggleInsideBorders}>
-          <span className="text-xl">▦</span>
-          <span>Show Inside Borders</span>
-        </div>
-      </div>
+      <TableSection
+        grid={grid}
+        hasParentCell={!!parentCell}
+        onSelectParentCell={parentCell ? handleSelectParentCell : undefined}
+      />
       {/* Row section */}
       <div className={sectionStyle}>
         <h2 className={sectionTitleStyle}>Row</h2>
@@ -255,11 +214,15 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
               contentTypeOptions().map((option) => (
                 <button
                   key={option.id}
-                  className={`px-2 py-1 rounded-md text-sm ${
-                    getCurrentContentTypeId(props.currentCell!) === option.id
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
+                  className={`px-2 py-1 rounded-md text-sm`}
+                  style={{
+                    backgroundColor: "#2D8294",
+                    color: "rgba(255,255,255,0.95)",
+                    border:
+                      getCurrentContentTypeId(props.currentCell!) === option.id
+                        ? "2px solid rgba(255,255,255,0.95)"
+                        : "2px solid transparent",
+                  }}
                   onMouseDown={(e) => e.preventDefault()} // Prevent default to avoid losing focus
                   onClick={() => handleSetCellContentType(option.id)}
                 >
@@ -371,21 +334,29 @@ const SizeControl: React.FC<{
   return (
     <div className="flex items-center gap-2">
       <button
-        className={`px-2 py-1 rounded-md text-sm ${
-          width === "hug"
-            ? "bg-blue-500 text-white"
-            : "bg-gray-200 text-gray-700"
-        }`}
+        className={`px-2 py-1 rounded-md text-sm`}
+        style={{
+          backgroundColor: "#2D8294",
+          color: "rgba(255,255,255,0.95)",
+          border:
+            width === "hug"
+              ? "2px solid rgba(255,255,255,0.95)"
+              : "2px solid transparent",
+        }}
         onClick={() => Grid.setColumnWidth(grid, columnIndex, "hug")}
       >
         Hug
       </button>
       <button
-        className={`px-2 py-1 rounded-md text-sm ${
-          width === "fill"
-            ? "bg-blue-500 text-white"
-            : "bg-gray-200 text-gray-700"
-        }`}
+        className={`px-2 py-1 rounded-md text-sm`}
+        style={{
+          backgroundColor: "#2D8294",
+          color: "rgba(255,255,255,0.95)",
+          border:
+            width === "fill"
+              ? "2px solid rgba(255,255,255,0.95)"
+              : "2px solid transparent",
+        }}
         onClick={() => Grid.setColumnWidth(grid, columnIndex, "fill")}
       >
         Fill

@@ -32,10 +32,13 @@ export function WeightIcon({
   const xStart = fullWidth ? 0 : 4;
   const xEnd = fullWidth ? viewBoxWidth : 28;
 
-  const dash =
-    style === "dashed" ? "6 4" : style === "dotted" ? "1 3" : undefined;
   return (
-    <svg width={svgWidth} height={18} viewBox={`0 0 ${viewBoxWidth} 18`} aria-hidden>
+    <svg
+      width={svgWidth}
+      height={18}
+      viewBox={`0 0 ${viewBoxWidth} 18`}
+      aria-hidden
+    >
       {visible ? (
         style === "double" ? (
           <>
@@ -64,11 +67,16 @@ export function WeightIcon({
             y2="9"
             stroke={stroke}
             strokeWidth={strokeWidth}
-            strokeDasharray={dash}
           />
         )
       ) : (
-        <rect x={xStart} y="8" width={xEnd - xStart} height="2" fill="transparent" />
+        <rect
+          x={xStart}
+          y="8"
+          width={xEnd - xStart}
+          height="2"
+          fill="transparent"
+        />
       )}
     </svg>
   );

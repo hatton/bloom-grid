@@ -66,32 +66,34 @@ function BorderControl(props: {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <BorderSelector
-        valueMap={props.valueMap}
-        showInner={showInner}
-        selected={selected}
-        onChange={setSelected}
-        size={140}
-        look={selectorLook}
-      />
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <StyleMenu
-          value={style as any}
-          onChange={(v) => apply({ style: v })}
-          disabled={disabled.styleDisabled}
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <BorderSelector
+          valueMap={props.valueMap}
+          showInner={showInner}
+          selected={selected}
+          onChange={setSelected}
+          size={140}
+          look={selectorLook}
         />
-        <WeightMenu
-          value={weight as any}
-          currentStyle={style as any}
-          onChange={(v) => apply({ weight: v })}
-          disabled={disabled.weightDisabled}
-        />
-        <CornerMenu
-          value={radius as any}
-          onChange={(v) => apply({ radius: v })}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <StyleMenu
+            value={style as any}
+            onChange={(v) => apply({ style: v })}
+            disabled={disabled.styleDisabled}
+          />
+          <WeightMenu
+            value={weight as any}
+            currentStyle={style as any}
+            onChange={(v) => apply({ weight: v })}
+            disabled={disabled.weightDisabled}
+          />
+        </div>
       </div>
+      <CornerMenu
+        value={radius as any}
+        onChange={(v) => apply({ radius: v })}
+      />
     </div>
   );
 }

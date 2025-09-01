@@ -2,8 +2,11 @@
   --cell-bg: #fff;
   --cell-padding: 8px 10px;
   --cell-border-width: 1px;
+  --cell-border-style: solid;
   --cell-border-color: #444;
   --grid-border-width: 1px;
+  --grid-border-style: solid;
+  --grid-border-color: black;
 }
 
 #page {
@@ -18,13 +21,19 @@
 
   gap: var(--gap, 0);
   background: var(--bg, transparent);
-  outline: var(--grid-border-width, 0) solid black;
+  /* Use separate outline properties so style can be a CSS variable */
+  outline-width: var(--grid-border-width, 0);
+  outline-style: var(--grid-border-style, solid);
+  outline-color: var(--grid-border-color, black);
 }
 
 .cell {
   background: var(--cell-bg);
   padding: var(--cell-padding);
-  outline: var(--cell-border-width) solid var(--cell-border-color);
+  /* Use separate outline properties so style can be a CSS variable */
+  outline-width: var(--cell-border-width);
+  outline-style: var(--cell-border-style, solid);
+  outline-color: var(--cell-border-color);
 
   background: var(--this-bg, var(--cell-bg));
   padding: var(--this-padding, var(--cell-padding));
@@ -78,10 +87,7 @@
   margin: 0.5em 0 !important;
 }
 
-.cell h1,
-[contenteditable] h1 {
-  /* font-size: 2em !important; */
-}
+/* Removed empty h1 ruleset to satisfy linter (font-size was commented out) */
 
 .cell h2,
 [contenteditable] h2 {
