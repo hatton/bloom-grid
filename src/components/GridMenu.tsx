@@ -133,6 +133,20 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const parentCell = grid?.parentElement?.closest(".cell");
 
   // no-op placeholder removed: variable was unused
+  // If there's no current context (no selected cell or not within a grid),
+  // show an instructional message instead of the full menu.
+  const hasContext =
+    !!props.currentCell && !!props.currentCell.closest(".grid");
+  if (!hasContext) {
+    return (
+      <div
+        className="grid-menu border border-gray-300 rounded-md shadow-lg w-64 z-10 p-2.5"
+        style={{ backgroundColor: "#2E2E2E", color: "rgba(255,255,255,0.95)" }}
+      >
+        Click in any table cell.
+      </div>
+    );
+  }
 
   return (
     <div

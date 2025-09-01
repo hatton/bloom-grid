@@ -24,38 +24,62 @@ const RadioGroup: React.FC<Props> = ({
   className,
 }) => {
   return (
-    <div className={className} style={{ display: "flex", gap: 12 }}>
-      {options.map((opt) => {
+    <div
+      className={className}
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        gap: 0,
+      }}
+    >
+      {options.map((opt, idx) => {
         const selected = value === opt.id;
+        const isLast = idx === options.length - 1;
         return (
-          <IconButton
-            key={opt.id}
-            icon={opt.icon}
-            alt={opt.label || opt.id}
-            title={opt.label || opt.id}
-            onClick={() => onChange(opt.id)}
-            selected={selected}
-            style={{
-              border: selected
-                ? "3px solid rgba(255,255,255,0.95)"
-                : "3px solid transparent",
-            }}
-          >
-            {!opt.icon && (
-              <div
+          <React.Fragment key={opt.id}>
+            <IconButton
+              icon={opt.icon}
+              alt={opt.label || opt.id}
+              title={opt.label || opt.id}
+              onClick={() => onChange(opt.id)}
+              selected={selected}
+              style={{
+                border: selected
+                  ? "3px solid rgba(255,255,255,0.95)"
+                  : "3px solid transparent",
+              }}
+            >
+              {!opt.icon && (
+                <div
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    textAlign: "center",
+                    lineHeight: 1.1,
+                    padding: 6,
+                    // Allow per-option label styling to be controlled by the caller
+                    ...(opt.labelStyle || {}),
+                  }}
+                >
+                  {opt.label}
+                </div>
+              )}
+            </IconButton>
+            {/* connector segment only between tiles */}
+            {!isLast && (
+              <span
+                aria-hidden
                 style={{
-                  whiteSpace: "pre-wrap",
-                  textAlign: "center",
-                  lineHeight: 1.1,
-                  padding: 6,
-                  // Allow per-option label styling to be controlled by the caller
-                  ...(opt.labelStyle || {}),
+                  width: 12, // matches former gap
+                  height: 2,
+                  background: "rgba(255,255,255,0.35)",
+                  display: "inline-block",
+                  alignSelf: "center",
+                  pointerEvents: "none",
                 }}
-              >
-                {opt.label}
-              </div>
+              />
             )}
-          </IconButton>
+          </React.Fragment>
         );
       })}
     </div>

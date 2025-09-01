@@ -1,8 +1,8 @@
 import React from "react";
 import * as Grid from "../";
-import addRowAboveIcon from "./icons/add-row-above.svg";
-import addRowBelowIcon from "./icons/add-row-below.svg";
-import deleteRowIcon from "./icons/delete-row.svg";
+import addRowAboveIcon from "./icons/row-add-before.svg";
+import addRowBelowIcon from "./icons/row-add-after.svg";
+import deleteRowIcon from "./icons/row-delete.svg";
 import IconButton from "./IconButton";
 import rowGrowIcon from "./icons/row-grow.svg";
 import rowHugIcon from "./icons/row-hug.svg";
@@ -49,17 +49,6 @@ export const RowSection: React.FC<Props> = ({
         const mmMatch = h.match(/^(\d+(?:\.\d+)?)mm$/i);
         fixedLabel = mmMatch ? `${mmMatch[1]}\nmm` : h;
       }
-      // Debug selection logic for manual resize
-      console.log(
-        "[RowSection] rowIndex=",
-        rowIndex,
-        "raw=",
-        raw,
-        "parsed=",
-        h,
-        "selectedSize=",
-        selectedSize
-      );
     }
   } catch {}
 
