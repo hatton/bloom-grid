@@ -18,6 +18,3 @@ export {
   attach as attachGridObserver,
   detach as detachGridObserver,
 } from "./cssGrid-style-updater";
-
-// Border Control UI (experimental)
-export { default as BorderControl } from "./components/BorderControl/BorderControl";

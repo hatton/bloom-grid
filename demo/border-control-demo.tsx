@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
-import { BorderControl } from "../src";
+import { BorderControl } from "../src/components/BorderControl/BorderControl";
 import type {
   BorderValueMap,
   BorderWeight,
@@ -64,10 +64,10 @@ function Preview({ map }: { map: BorderValueMap }) {
     borderRight: toCss("right"),
     borderBottom: toCss("bottom"),
     borderLeft: toCss("left"),
-  borderTopLeftRadius: rTL,
-  borderTopRightRadius: rTR,
-  borderBottomRightRadius: rBR,
-  borderBottomLeftRadius: rBL,
+    borderTopLeftRadius: rTL,
+    borderTopRightRadius: rTR,
+    borderBottomRightRadius: rBR,
+    borderBottomLeftRadius: rBL,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gridTemplateRows: "1fr 1fr",

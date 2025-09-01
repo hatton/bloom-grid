@@ -3,7 +3,6 @@ import BorderSelector from "./BorderSelector";
 import WeightMenu from "./menus/WeightMenu";
 import StyleMenu from "./menus/StyleMenu";
 import CornerMenu from "./menus/CornerMenu";
-import SelectorLookMenu from "./menus/SelectorLookMenu";
 import {
   BorderStyle,
   BorderValueMap,
@@ -20,7 +19,7 @@ import {
   interdependencyDisabled,
 } from "./logic/mixedState";
 
-export default function BorderControl(props: {
+function BorderControl(props: {
   valueMap: BorderValueMap;
   showInner?: boolean;
   onChange: (next: BorderValueMap) => void;
@@ -47,7 +46,8 @@ export default function BorderControl(props: {
   );
 
   const disabled = interdependencyDisabled(weight, style);
-  const [selectorLook, setSelectorLook] = useState<"flat" | "gradients" | "bevel" | "rounded" | "card">("flat");
+  // Force the selector to use the 'rounded' look and remove the Look menu
+  const selectorLook: "rounded" = "rounded";
 
   const apply = (
     change: Partial<{
@@ -76,7 +76,6 @@ export default function BorderControl(props: {
         look={selectorLook}
       />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <SelectorLookMenu value={selectorLook} onChange={setSelectorLook} />
         <StyleMenu
           value={style as any}
           onChange={(v) => apply({ style: v })}
@@ -96,3 +95,5 @@ export default function BorderControl(props: {
     </div>
   );
 }
+
+export { BorderControl };
