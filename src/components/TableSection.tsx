@@ -9,8 +9,6 @@ import type {
 
 type Props = {
   grid?: HTMLElement;
-  hasParentCell: boolean;
-  onSelectParentCell?: () => void;
 };
 
 // --- BorderControl wiring helpers (moved from GridMenu) ---
@@ -101,23 +99,10 @@ const menuItemStyle =
 const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
 const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
 
-export const TableSection: React.FC<Props> = ({
-  grid,
-  hasParentCell,
-  onSelectParentCell,
-}) => {
+export const TableSection: React.FC<Props> = ({ grid }) => {
   return (
     <div className={sectionStyle}>
       <h2 className={sectionTitleStyle}>Table</h2>
-      <div
-        className={`${menuItemStyle} ${
-          !hasParentCell ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-        onClick={hasParentCell ? onSelectParentCell : undefined}
-      >
-        <span className="text-xl">↖</span>
-        <span>Select Parent Cell</span>
-      </div>
       {grid && (
         <div className={menuItemStyle} style={{ cursor: "default" }}>
           <BorderControl

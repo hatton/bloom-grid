@@ -5,6 +5,8 @@ import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
 
 import { changeCellSpan } from "../structure";
 import TableSection from "./TableSection";
+import RowSection from "./RowSection";
+import ColumnSection from "./ColumnSection";
 
 const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   props
@@ -108,6 +110,11 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       parentCell.focus();
     }
   };
+  const handleUndo = () => {
+    const grid = props.currentCell ? getTargetGridFromSelection() : null;
+    if (!grid) return;
+    Grid.undoLastOperation(grid);
+  };
 
   // (Old border toggle handlers removed in favor of BorderControl)
 
@@ -140,51 +147,20 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       // TODO
     >
       {/* Table section */}
-      <TableSection
-        grid={grid}
-        hasParentCell={!!parentCell}
-        onSelectParentCell={parentCell ? handleSelectParentCell : undefined}
+      <TableSection grid={grid} />
+      <RowSection
+        onInsertAbove={handleInsertRowAbove}
+        onInsertBelow={handleInsertRowBelow}
+        onDelete={handleDeleteRow}
       />
-      {/* Row section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Row</h2>
-        <div className={menuItemStyle} onClick={handleInsertRowAbove}>
-          <span className="text-2xl">↑</span>
-          <span>Insert Row Above</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleInsertRowBelow}>
-          <span className="text-2xl">↓</span>
-          <span>Insert Row Below</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleDeleteRow}>
-          <span className="text-xl">🗑️</span>
-          <span>Delete Row</span>
-        </div>
-      </div>
 
-      {/* Column section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Column</h2>
-
-        <div className={menuItemStyle}>
-          <SizeControl grid={grid} cell={props.currentCell} />
-        </div>
-        <div className={menuItemStyle} onClick={handleInsertColumnLeft}>
-          <span className="text-2xl">_←</span>
-          <span>Insert Column Left</span>
-        </div>
-        <div
-          className={menuItemStyle}
-          onClick={() => handleInsertColumnRight(cellSaved!)}
-        >
-          <span className="text-2xl">→_</span>
-          <span>Insert Column Right</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleDeleteColumn}>
-          <span className="text-xl">🗑️</span>
-          <span>Delete Column</span>
-        </div>
-      </div>
+      <ColumnSection
+        grid={grid}
+        currentCell={props.currentCell}
+        onInsertLeft={handleInsertColumnLeft}
+        onInsertRight={handleInsertColumnRight}
+        onDelete={handleDeleteColumn}
+      />
       {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
       {/* Cell section */}
       <div className={sectionStyle}>
@@ -240,6 +216,37 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
           <span className="text-xl">⭰</span>
           <span>Contract Cell</span>
         </div>
+      </div>
+
+      {/* Top actions: Undo + Select Parent */}
+      <div className="flex items-center gap-2 px-2 pb-2 border-b border-gray-200 mb-2">
+        <button
+          className="px-2 py-1 rounded-md text-sm"
+          style={{
+            backgroundColor: Grid.canUndo() && grid ? "#2D8294" : "#555",
+            color: "rgba(255,255,255,0.95)",
+            cursor: Grid.canUndo() && grid ? "pointer" : "not-allowed",
+            opacity: Grid.canUndo() && grid ? 1 : 0.6,
+          }}
+          disabled={!Grid.canUndo() || !grid}
+          onClick={handleUndo}
+        >
+          Undo
+        </button>
+        <button
+          className="px-2 py-1 rounded-md text-sm"
+          style={{
+            backgroundColor: parentCell ? "#2D8294" : "#555",
+            color: "rgba(255,255,255,0.95)",
+            cursor: parentCell ? "pointer" : "not-allowed",
+            opacity: parentCell ? 1 : 0.6,
+          }}
+          disabled={!parentCell}
+          onClick={parentCell ? handleSelectParentCell : undefined}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          Select Parent Cell
+        </button>
       </div>
     </div>
   );
@@ -321,49 +328,6 @@ const [canUndo, setCanUndo] = useState(false);
     }
   };*/
 
-const SizeControl: React.FC<{
-  grid?: HTMLElement;
-  cell: HTMLElement | null | undefined;
-}> = ({ grid, cell }) => {
-  if (!grid || !cell) {
-    return null;
-  }
-  const columnIndex = Grid.getRowAndColumn(grid, cell).column;
-  const width = Grid.getColumnWidth(grid, columnIndex);
-
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        className={`px-2 py-1 rounded-md text-sm`}
-        style={{
-          backgroundColor: "#2D8294",
-          color: "rgba(255,255,255,0.95)",
-          border:
-            width === "hug"
-              ? "2px solid rgba(255,255,255,0.95)"
-              : "2px solid transparent",
-        }}
-        onClick={() => Grid.setColumnWidth(grid, columnIndex, "hug")}
-      >
-        Hug
-      </button>
-      <button
-        className={`px-2 py-1 rounded-md text-sm`}
-        style={{
-          backgroundColor: "#2D8294",
-          color: "rgba(255,255,255,0.95)",
-          border:
-            width === "fill"
-              ? "2px solid rgba(255,255,255,0.95)"
-              : "2px solid transparent",
-        }}
-        onClick={() => Grid.setColumnWidth(grid, columnIndex, "fill")}
-      >
-        Fill
-      </button>
-      <div>{width !== "hug" && width !== "fill" ? width : ""}</div>
-    </div>
-  );
-};
+// SizeControl moved into ColumnSection
 
 export default GridMenu;
