@@ -20,6 +20,27 @@ interface DragState {
   baseDimension?: number; // Store the original width/height for "hug" values
 }
 
+// Unit conversion helpers
+const PX_PER_IN = 96;
+const MM_PER_IN = 25.4;
+const PX_TO_MM = MM_PER_IN / PX_PER_IN; // ≈ 0.264583...
+const MM_TO_PX = PX_PER_IN / MM_PER_IN; // ≈ 3.779528...
+
+function parseSizeToPx(size: string): number | null {
+  const s = (size || "").trim();
+  const mm = s.match(/^([0-9.]+)mm$/i);
+  if (mm) return parseFloat(mm[1]) * MM_TO_PX;
+  const px = s.match(/^([0-9.]+)px$/i);
+  if (px) return parseFloat(px[1]);
+  return null;
+}
+
+function formatMm(px: number): string {
+  const mm = px * PX_TO_MM;
+  // one decimal place like "2.1mm"
+  return `${mm.toFixed(1)}mm`;
+}
+
 export class DragToResize {
   private attachedGrids = new Set<HTMLElement>();
   private dragState: DragState = {
@@ -342,13 +363,13 @@ export class DragToResize {
         this.dragState.baseDimension ||
         this.getCurrentRowHeight(grid, this.dragState.targetIndex);
     } else {
-      // For fixed-height rows, parse the original value
-      const match = this.dragState.originalValue.match(/([0-9.]+)px/);
-      baseHeight = match ? parseFloat(match[1]) : 20;
+      // For fixed-height rows, parse the original value (supports px or mm)
+      const parsed = parseSizeToPx(this.dragState.originalValue);
+      baseHeight = parsed ?? 20;
     }
 
     // Apply the delta to the base height
-    const newHeight = Math.max(20, baseHeight + deltaY);
+    const newHeightPx = Math.max(20, baseHeight + deltaY);
 
     // Update the row height in the grid's data-row-heights attribute
     const currentRowHeights = grid.getAttribute("data-row-heights") || "";
@@ -358,7 +379,8 @@ export class DragToResize {
       this.dragState.targetIndex >= 0 &&
       this.dragState.targetIndex < rowHeights.length
     ) {
-      rowHeights[this.dragState.targetIndex] = `${newHeight}px`;
+      // Store in mm for rows
+      rowHeights[this.dragState.targetIndex] = formatMm(newHeightPx);
       grid.setAttribute("data-row-heights", rowHeights.join(","));
     }
   }

@@ -100,13 +100,8 @@ function updateStyleRulesForRows(grid: HTMLElement): void {
   const rows = spec.split(",");
   const minRowHeight = "20px"; // Minimum height for a row
   const template = rows.map((x) => makeGridRule(x, minRowHeight)).join(" ");
-  console.info("updateStyleRulesForRows template = ", JSON.stringify(template));
   grid.style.gridTemplateRows = template;
-  console.info(
-    "updateStyleRulesForRows gridTemplateRows = " +
-      JSON.stringify(grid.style.gridTemplateRows, null, 2)
-  );
-  console.info("updateStyleRulesForRows style" + grid.style);
+  // Debug logs removed for cleaner console
   // Set the custom property for row count
   grid.style.setProperty("--grid-row-count", rows.length.toString());
 }

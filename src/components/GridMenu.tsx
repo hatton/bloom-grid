@@ -126,14 +126,10 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
   const parentCell = grid?.parentElement?.closest(".cell");
 
-  let cellSaved: HTMLElement | undefined | null = undefined;
+  // no-op placeholder removed: variable was unused
 
   return (
     <div
-      onMouseDown={() => {
-        //e.preventDefault();
-        cellSaved = props.currentCell;
-      }}
       className="grid-menu border border-gray-300 rounded-md shadow-lg w-64 z-10 p-2.5"
       /* if haveSelectedCell is false, dim/disable the menu */
       style={{
@@ -149,6 +145,8 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       {/* Table section */}
       <TableSection grid={grid} />
       <RowSection
+        grid={grid}
+        currentCell={props.currentCell}
         onInsertAbove={handleInsertRowAbove}
         onInsertBelow={handleInsertRowBelow}
         onDelete={handleDeleteRow}

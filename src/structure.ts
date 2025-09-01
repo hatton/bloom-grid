@@ -781,3 +781,45 @@ export function getColumnWidth(
   const widthArray = currentWidths.split(",");
   return widthArray[columnIndex] || null;
 }
+
+/** Gets the raw height spec for a given row (e.g., "hug", "fill", or "42px"). */
+export function getRowHeight(
+  grid: HTMLElement,
+  rowIndex: number
+): string | null {
+  assert(
+    grid.classList.contains("grid"),
+    "grid parameter must have 'grid' class"
+  );
+  const gridInfo = getGridInfo(grid);
+  assert(
+    rowIndex >= 0 && rowIndex < gridInfo.rowCount,
+    `Row index ${rowIndex} is out of bounds`
+  );
+  const currentHeights = grid.getAttribute("data-row-heights") || "";
+  const heightArray = currentHeights.split(",");
+  return heightArray[rowIndex] || null;
+}
+
+/** Sets the height for a given row to a spec (e.g., "hug", "fill", or "42px"). */
+export function setRowHeight(
+  grid: HTMLElement,
+  rowIndex: number,
+  height: string
+): void {
+  assert(
+    grid.classList.contains("grid"),
+    "grid parameter must have 'grid' class"
+  );
+  const gridInfo = getGridInfo(grid);
+  assert(
+    rowIndex >= 0 && rowIndex < gridInfo.rowCount,
+    `Row index ${rowIndex} is out of bounds`
+  );
+  const currentHeights = grid.getAttribute("data-row-heights") || "";
+  const heightArray = currentHeights.split(",");
+  if (rowIndex >= 0 && rowIndex < heightArray.length) {
+    heightArray[rowIndex] = height;
+    grid.setAttribute("data-row-heights", heightArray.join(","));
+  }
+}
