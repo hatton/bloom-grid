@@ -17,6 +17,14 @@ export type SelectedEdges = Set<EdgeKey>;
 
 export type BorderMenuValue = BorderWeight | BorderStyle | CornerRadius;
 
+// Visual look options for the BorderSelector widget (static, no animations)
+export type SelectorLook =
+  | "flat" // current simple solid bars
+  | "gradients" // directional linear gradients for a raised look
+  | "bevel" // thin highlight/shadow lines to fake a bevel
+  | "rounded" // rounded corners on bars
+  | "card"; // background card + gradients
+
 export type PartialEdgeUpdate = {
   edges: EdgeKey[];
   change: Partial<Pick<EdgeValue, "weight" | "style" | "radius">>;

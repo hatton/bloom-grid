@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BorderMenuValue } from "./logic/types";
 
-export type BorderMenuOption<T extends BorderMenuValue> = {
+export type BorderMenuOption<T> = {
   value: T;
   label: string;
   icon?: () => JSX.Element;
 };
 
-export const BorderMenu = <T extends BorderMenuValue>(props: {
+export const BorderMenu = <T,>(props: {
   label: string;
   value: T | "mixed";
   options: BorderMenuOption<T>[];

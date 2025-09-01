@@ -48,22 +48,26 @@ function Preview({ map }: { map: BorderValueMap }) {
     return `${w}px ${s} #000`;
   };
 
-  const radiusPx = Math.max(
-    map.top.radius,
-    map.right.radius,
-    map.bottom.radius,
-    map.left.radius
-  );
+  // Derive each corner radius from adjacent edges: use the minimum so a 0 on either side yields a 0 corner
+  const rTL = Math.min(map.top.radius, map.left.radius);
+  const rTR = Math.min(map.top.radius, map.right.radius);
+  const rBR = Math.min(map.bottom.radius, map.right.radius);
+  const rBL = Math.min(map.bottom.radius, map.left.radius);
 
   const wrapperStyle: React.CSSProperties = {
     width: size,
     height: size,
     background: "#fff",
     boxSizing: "border-box",
-    // Use outline for smoother outer curves. Note outline doesn't support different styles per side,
-    // so we approximate with a single outline using the top edge style/weight; fall back to border if needed.
-    outline: toCss("top"),
-    borderRadius: radiusPx,
+    // Use per-side borders so radii apply correctly and each side can reflect its weight/style
+    borderTop: toCss("top"),
+    borderRight: toCss("right"),
+    borderBottom: toCss("bottom"),
+    borderLeft: toCss("left"),
+  borderTopLeftRadius: rTL,
+  borderTopRightRadius: rTR,
+  borderBottomRightRadius: rBR,
+  borderBottomLeftRadius: rBL,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gridTemplateRows: "1fr 1fr",

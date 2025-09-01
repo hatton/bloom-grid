@@ -3,6 +3,7 @@ import BorderSelector from "./BorderSelector";
 import WeightMenu from "./menus/WeightMenu";
 import StyleMenu from "./menus/StyleMenu";
 import CornerMenu from "./menus/CornerMenu";
+import SelectorLookMenu from "./menus/SelectorLookMenu";
 import {
   BorderStyle,
   BorderValueMap,
@@ -46,6 +47,7 @@ export default function BorderControl(props: {
   );
 
   const disabled = interdependencyDisabled(weight, style);
+  const [selectorLook, setSelectorLook] = useState<"flat" | "gradients" | "bevel" | "rounded" | "card">("flat");
 
   const apply = (
     change: Partial<{
@@ -71,8 +73,10 @@ export default function BorderControl(props: {
         selected={selected}
         onChange={setSelected}
         size={140}
+        look={selectorLook}
       />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <SelectorLookMenu value={selectorLook} onChange={setSelectorLook} />
         <StyleMenu
           value={style as any}
           onChange={(v) => apply({ style: v })}
