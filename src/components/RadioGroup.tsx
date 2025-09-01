@@ -1,9 +1,11 @@
 import React from "react";
+import IconButton from "./IconButton";
 
 export type RadioOption = {
   id: string;
   label?: string;
   icon?: string; // optional svg path
+  labelStyle?: React.CSSProperties; // optional style for text-only labels
 };
 
 type Props = {
@@ -13,47 +15,7 @@ type Props = {
   className?: string;
 };
 
-const itemBase: React.CSSProperties = {
-  backgroundColor: "#2D8294",
-  width: 64,
-  height: 64,
-  borderRadius: 16,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  color: "rgba(255,255,255,0.95)",
-  fontSize: 14,
-  textAlign: "center",
-  lineHeight: 1.1,
-  padding: 6,
-};
-
-const RadioTile: React.FC<{
-  option: RadioOption;
-  selected: boolean;
-  onClick: () => void;
-}> = ({ option, selected, onClick }) => (
-  <button
-    onMouseDown={(e) => e.preventDefault()}
-    onClick={onClick}
-    style={{
-      ...itemBase,
-      border: selected
-        ? "3px solid rgba(255,255,255,0.95)"
-        : "3px solid transparent",
-    }}
-    aria-pressed={selected}
-    aria-label={option.label || option.id}
-    title={option.label || option.id}
-  >
-    {option.icon ? (
-      <img src={option.icon} alt="" style={{ width: 28, height: 28 }} />
-    ) : (
-      <div style={{ whiteSpace: "pre-wrap" }}>{option.label}</div>
-    )}
-  </button>
-);
+// No per-tile sizing here; tiles inherit size from IconButton.
 
 const RadioGroup: React.FC<Props> = ({
   options,
@@ -62,18 +24,40 @@ const RadioGroup: React.FC<Props> = ({
   className,
 }) => {
   return (
-    <div
-      className={className}
-      style={{ display: "flex", gap: 12, alignItems: "center" }}
-    >
-      {options.map((opt) => (
-        <RadioTile
-          key={opt.id}
-          option={opt}
-          selected={value === opt.id}
-          onClick={() => onChange(opt.id)}
-        />
-      ))}
+    <div className={className} style={{ display: "flex", gap: 12 }}>
+      {options.map((opt) => {
+        const selected = value === opt.id;
+        return (
+          <IconButton
+            key={opt.id}
+            icon={opt.icon}
+            alt={opt.label || opt.id}
+            title={opt.label || opt.id}
+            onClick={() => onChange(opt.id)}
+            selected={selected}
+            style={{
+              border: selected
+                ? "3px solid rgba(255,255,255,0.95)"
+                : "3px solid transparent",
+            }}
+          >
+            {!opt.icon && (
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  textAlign: "center",
+                  lineHeight: 1.1,
+                  padding: 6,
+                  // Allow per-option label styling to be controlled by the caller
+                  ...(opt.labelStyle || {}),
+                }}
+              >
+                {opt.label}
+              </div>
+            )}
+          </IconButton>
+        );
+      })}
     </div>
   );
 };

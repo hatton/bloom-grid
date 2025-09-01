@@ -45,7 +45,9 @@ export const RowSection: React.FC<Props> = ({
       else if (h === "fill") selectedSize = "grow";
       else if (/(px|mm)$/i.test(h)) {
         selectedSize = "fixed";
-        fixedLabel = h;
+        // If value is in mm, put the number and the unit on separate lines
+        const mmMatch = h.match(/^(\d+(?:\.\d+)?)mm$/i);
+        fixedLabel = mmMatch ? `${mmMatch[1]}\nmm` : h;
       }
       // Debug selection logic for manual resize
       console.log(
@@ -64,7 +66,7 @@ export const RowSection: React.FC<Props> = ({
   const sizeOptions: RadioOption[] = [
     { id: "grow", icon: rowGrowIcon, label: "Grow" },
     { id: "hug", icon: rowHugIcon, label: "Hug" },
-    { id: "fixed", label: fixedLabel },
+    { id: "fixed", label: fixedLabel, labelStyle: { fontSize: 12 } },
   ];
 
   const onChangeSize = (id: string) => {
@@ -82,13 +84,6 @@ export const RowSection: React.FC<Props> = ({
   return (
     <div className={sectionStyle}>
       <h2 className={sectionTitleStyle}>Row</h2>
-      <div className={subTitleStyle}>Size</div>
-      <RadioGroup
-        className="px-4"
-        options={sizeOptions}
-        value={selectedSize}
-        onChange={onChangeSize}
-      />
       <div className={subTitleStyle}>Add / Remove</div>
       <div
         className="px-4 pb-1 flex items-center justify-between gap-3"
@@ -108,7 +103,14 @@ export const RowSection: React.FC<Props> = ({
           />
         </div>
         <IconButton icon={deleteRowIcon} alt="Delete Row" onClick={onDelete} />
-      </div>
+      </div>{" "}
+      <div className={subTitleStyle}>Size</div>
+      <RadioGroup
+        className="px-4"
+        options={sizeOptions}
+        value={selectedSize}
+        onChange={onChangeSize}
+      />
     </div>
   );
 };
