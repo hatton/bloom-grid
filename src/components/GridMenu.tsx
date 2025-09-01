@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import * as Grid from "../";
 import { setupContentsOfCell } from "../cell-contents";
-import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
 
 import { changeCellSpan } from "../structure";
 import TableSection from "./TableSection";
 import RowSection from "./RowSection";
 import ColumnSection from "./ColumnSection";
+import CellSection from "./CellSection";
 
 const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   props
@@ -14,10 +14,12 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    document.addEventListener("gridHistoryUpdated", () => {
+    const handler = () => {
       // Force a re-render when the grid history is updated
       forceUpdate((x) => x + 1);
-    });
+    };
+    document.addEventListener("gridHistoryUpdated", handler);
+    return () => document.removeEventListener("gridHistoryUpdated", handler);
   }, []);
 
   useEffect(() => {
@@ -95,8 +97,9 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     Grid.addColumnAt(grid, columnIndex);
   };
 
-  const handleInsertColumnRight = (cell: HTMLElement) => {
-    const grid = getTargetGridFromCell(cell); // REview has cell param
+  const handleInsertColumnRight = () => {
+    const cell = props.currentCell!;
+    const grid = getTargetGridFromCell(cell);
     const columnIndex = Grid.getRowAndColumn(grid, cell).column;
     Grid.addColumnAt(grid, columnIndex + 1);
   };
@@ -123,11 +126,6 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
   };
 
   // (Old border toggle handlers removed in favor of BorderControl)
-
-  const menuItemStyle =
-    "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
-  const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
-  const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
 
   const grid = props.currentCell ? getTargetGridFromSelection() : undefined;
   const parentCell = grid?.parentElement?.closest(".cell");
@@ -179,62 +177,12 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
         onInsertRight={handleInsertColumnRight}
         onDelete={handleDeleteColumn}
       />
-      {/* <div>{JSON.stringify(selectedCellRef?.current?.outerHTML || "nope")}</div> */}
-      {/* Cell section */}
-      <div className={sectionStyle}>
-        <h2 className={sectionTitleStyle}>Cell</h2>
-        {/* a submenu named "Content Type" that has options from contentTypeOptions(). 
-        The one with id matching getCurrentContentTypeId() should be checked.*/}
-
-        <div className={menuItemStyle}>
-          {/* not using select because I can't get it to work without losing focus on the cell
-          {props.currentCell && (
-            <select
-              className="ml-2"
-              value={getCurrentContentTypeId(props.currentCell!)}
-              onChange={(e) => handleSetCellContentType(e.target.value)}
-            >
-              {contentTypeOptions().map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.englishName}
-                </option>
-              ))}
-            </select>
-          )} */}
-          {/* a row of buttons, one for each type, with the current type selected. i.e. radio button behavior */}
-
-          <div className="flex flex-wrap gap-2 ml-2">
-            {props.currentCell &&
-              contentTypeOptions().map((option) => (
-                <button
-                  key={option.id}
-                  className={`px-2 py-1 rounded-md text-sm`}
-                  style={{
-                    backgroundColor: "#2D8294",
-                    color: "rgba(255,255,255,0.95)",
-                    border:
-                      getCurrentContentTypeId(props.currentCell!) === option.id
-                        ? "2px solid rgba(255,255,255,0.95)"
-                        : "2px solid transparent",
-                  }}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent default to avoid losing focus
-                  onClick={() => handleSetCellContentType(option.id)}
-                >
-                  {option.englishName}
-                </button>
-              ))}
-          </div>
-        </div>
-
-        <div className={menuItemStyle} onClick={handleExtendCell}>
-          <span className="text-xl">↦</span>
-          <span>Extend Cell</span>
-        </div>
-        <div className={menuItemStyle} onClick={handleContractCell}>
-          <span className="text-xl">⭰</span>
-          <span>Contract Cell</span>
-        </div>
-      </div>
+      <CellSection
+        currentCell={props.currentCell}
+        onSetContentType={handleSetCellContentType}
+        onExtend={handleExtendCell}
+        onContract={handleContractCell}
+      />
 
       {/* Top actions: Undo + Select Parent */}
       <div className="flex items-center gap-2 px-2 pb-2 border-b border-gray-200 mb-2">

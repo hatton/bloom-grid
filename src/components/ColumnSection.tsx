@@ -1,60 +1,26 @@
 import React from "react";
 import * as Grid from "../";
+import addColumnLeftIcon from "./icons/column-add-before.svg";
+import addColumnRightIcon from "./icons/column-add-after.svg";
+import deleteColumnIcon from "./icons/column-delete.svg";
+import IconButton from "./IconButton";
+import columnGrowIcon from "./icons/column-grow.svg";
+import columnHugIcon from "./icons/column-hug.svg";
+import RadioGroup, { RadioOption } from "./RadioGroup";
+import { subTitleStyle } from "./sectionStyles";
+import Section from "./Section";
 
 type Props = {
   grid?: HTMLElement;
-  currentCell: HTMLElement | null | undefined;
+  currentCell?: HTMLElement | null;
   onInsertLeft: () => void;
-  onInsertRight: (cell: HTMLElement) => void;
+  onInsertRight: () => void;
   onDelete: () => void;
 };
 
-const menuItemStyle =
-  "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
-const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
-const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
+// styles now come from sectionStyles.ts for consistency
 
-const SizeControl: React.FC<{
-  grid?: HTMLElement;
-  cell: HTMLElement | null | undefined;
-}> = ({ grid, cell }) => {
-  if (!grid || !cell) return null;
-  const columnIndex = Grid.getRowAndColumn(grid, cell).column;
-  const width = Grid.getColumnWidth(grid, columnIndex);
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        className={`px-2 py-1 rounded-md text-sm`}
-        style={{
-          backgroundColor: "#2D8294",
-          color: "rgba(255,255,255,0.95)",
-          border:
-            width === "hug"
-              ? "2px solid rgba(255,255,255,0.95)"
-              : "2px solid transparent",
-        }}
-        onClick={() => Grid.setColumnWidth(grid, columnIndex, "hug")}
-      >
-        Hug
-      </button>
-      <button
-        className={`px-2 py-1 rounded-md text-sm`}
-        style={{
-          backgroundColor: "#2D8294",
-          color: "rgba(255,255,255,0.95)",
-          border:
-            width === "fill"
-              ? "2px solid rgba(255,255,255,0.95)"
-              : "2px solid transparent",
-        }}
-        onClick={() => Grid.setColumnWidth(grid, columnIndex, "fill")}
-      >
-        Fill
-      </button>
-      <div>{width !== "hug" && width !== "fill" ? width : ""}</div>
-    </div>
-  );
-};
+// IconButton now comes from ./IconButton and defaults to 64x64.
 
 export const ColumnSection: React.FC<Props> = ({
   grid,
@@ -63,28 +29,77 @@ export const ColumnSection: React.FC<Props> = ({
   onInsertRight,
   onDelete,
 }) => {
+  // Determine current column width and map to radio value
+  let selectedSize: "grow" | "hug" | "fixed" = "hug";
+  let fixedLabel = "mm";
+  try {
+    if (grid && currentCell) {
+      const { column: columnIndex } = Grid.getRowAndColumn(grid, currentCell);
+      const raw = Grid.getColumnWidth(grid, columnIndex) || "hug";
+      const w = typeof raw === "string" ? raw.trim() : raw;
+      if (w === "hug") selectedSize = "hug";
+      else if (w === "fill") selectedSize = "grow";
+      else if (/(px|mm)$/i.test(w)) {
+        selectedSize = "fixed";
+        // If value is in mm, put the number and the unit on separate lines
+        const mmMatch = w.match(/^(\d+(?:\.\d+)?)mm$/i);
+        fixedLabel = mmMatch ? `${mmMatch[1]}\nmm` : w;
+      }
+    }
+  } catch {}
+
+  const sizeOptions: RadioOption[] = [
+    { id: "grow", icon: columnGrowIcon, label: "Grow" },
+    { id: "hug", icon: columnHugIcon, label: "Hug" },
+    { id: "fixed", label: fixedLabel, labelStyle: { fontSize: 12 } },
+  ];
+
+  const onChangeSize = (id: string) => {
+    if (!grid || !currentCell) return;
+    const { column: columnIndex } = Grid.getRowAndColumn(grid, currentCell);
+    if (id === "grow") Grid.setColumnWidth(grid, columnIndex, "fill");
+    else if (id === "hug") Grid.setColumnWidth(grid, columnIndex, "hug");
+    else if (id === "fixed") {
+      // Keep existing fixed value if present; otherwise set a default 10mm
+      const current = (Grid.getColumnWidth(grid, columnIndex) || "").trim();
+      const next = current && /(px|mm)$/i.test(current) ? current : "10mm";
+      Grid.setColumnWidth(grid, columnIndex, next);
+    }
+  };
   return (
-    <div className={sectionStyle}>
-      <h2 className={sectionTitleStyle}>Column</h2>
-      <div className={menuItemStyle}>
-        <SizeControl grid={grid} cell={currentCell} />
-      </div>
-      <div className={menuItemStyle} onClick={onInsertLeft}>
-        <span className="text-2xl">_←</span>
-        <span>Insert Column Left</span>
-      </div>
+    <Section label="Column">
+      <div className={subTitleStyle}>Add / Remove</div>
       <div
-        className={menuItemStyle}
-        onClick={() => currentCell && onInsertRight(currentCell)}
+        className="px-4 pb-1 flex items-center justify-between gap-3"
+        // Ensure the menu doesn't steal focus on mousedown (consistent with other sections)
+        onMouseDown={(e) => e.preventDefault()}
       >
-        <span className="text-2xl">→_</span>
-        <span>Insert Column Right</span>
-      </div>
-      <div className={menuItemStyle} onClick={onDelete}>
-        <span className="text-xl">🗑️</span>
-        <span>Delete Column</span>
-      </div>
-    </div>
+        <div className="flex gap-3">
+          <IconButton
+            icon={addColumnLeftIcon}
+            alt="Insert Column Left"
+            onClick={onInsertLeft}
+          />
+          <IconButton
+            icon={addColumnRightIcon}
+            alt="Insert Column Right"
+            onClick={onInsertRight}
+          />
+        </div>
+        <IconButton
+          icon={deleteColumnIcon}
+          alt="Delete Column"
+          onClick={onDelete}
+        />
+      </div>{" "}
+      <div className={subTitleStyle}>Size</div>
+      <RadioGroup
+        className="px-4"
+        options={sizeOptions}
+        value={selectedSize}
+        onChange={onChangeSize}
+      />
+    </Section>
   );
 };
 

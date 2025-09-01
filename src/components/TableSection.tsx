@@ -1,5 +1,6 @@
 import React from "react";
 import { BorderControl } from "./BorderControl/BorderControl";
+import Section from "./Section";
 import type {
   BorderValueMap,
   BorderWeight,
@@ -96,13 +97,10 @@ const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
 
 const menuItemStyle =
   "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
-const sectionStyle = "border-b border-gray-200 pb-2 flex flex-col gap-1";
-const sectionTitleStyle = "px-4 py-1 text-lg font-medium";
 
 export const TableSection: React.FC<Props> = ({ grid }) => {
   return (
-    <div className={sectionStyle}>
-      <h2 className={sectionTitleStyle}>Table</h2>
+    <Section label="Table">
       {grid && (
         <div className={menuItemStyle} style={{ cursor: "default" }}>
           <BorderControl
@@ -112,7 +110,7 @@ export const TableSection: React.FC<Props> = ({ grid }) => {
           />
         </div>
       )}
-    </div>
+    </Section>
   );
 };
 

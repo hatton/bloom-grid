@@ -7,6 +7,8 @@ import IconButton from "./IconButton";
 import rowGrowIcon from "./icons/row-grow.svg";
 import rowHugIcon from "./icons/row-hug.svg";
 import RadioGroup, { RadioOption } from "./RadioGroup";
+import { subTitleStyle } from "./sectionStyles";
+import Section from "./Section";
 
 type Props = {
   grid?: HTMLElement;
@@ -15,10 +17,6 @@ type Props = {
   onInsertBelow: () => void;
   onDelete: () => void;
 };
-
-const sectionStyle = "border-b border-gray-200 pb-3 flex flex-col gap-2";
-const sectionTitleStyle = "px-4 pt-1 text-2xl font-semibold";
-const subTitleStyle = "px-4 text-base opacity-90";
 
 // IconButton now comes from ./IconButton and defaults to 64x64.
 
@@ -71,8 +69,7 @@ export const RowSection: React.FC<Props> = ({
     }
   };
   return (
-    <div className={sectionStyle}>
-      <h2 className={sectionTitleStyle}>Row</h2>
+    <Section label="Row">
       <div className={subTitleStyle}>Add / Remove</div>
       <div
         className="px-4 pb-1 flex items-center justify-between gap-3"
@@ -100,7 +97,7 @@ export const RowSection: React.FC<Props> = ({
         value={selectedSize}
         onChange={onChangeSize}
       />
-    </div>
+    </Section>
   );
 };
 
