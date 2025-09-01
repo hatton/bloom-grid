@@ -133,6 +133,13 @@ export class DragToResize {
         rowTopEdge = this.getRowTopEdge(resizeInfo.element, resizeInfo.index);
         console.info(`handleMouseDown: Row top edge is ${rowTopEdge}`);
         document.body.style.cursor = "ns-resize"; // Latch cursor
+        // Mark active row being resized so UI can reflect this row
+        try {
+          resizeInfo.element.setAttribute(
+            "data-ui-active-row-index",
+            String(resizeInfo.index)
+          );
+        } catch {}
       }
       this.dragState = {
         isDragging: true,
@@ -211,6 +218,14 @@ export class DragToResize {
       // Commit the operation through grid-history
       this.commitResizeOperation();
     }
+    // Clear active row marker if any
+    try {
+      if (this.dragState.dragType === "row" && this.dragState.targetElement) {
+        this.dragState.targetElement.removeAttribute(
+          "data-ui-active-row-index"
+        );
+      }
+    } catch {}
     this.resetDragState();
     document.body.style.cursor = "default"; // Release cursor
   };
@@ -373,7 +388,18 @@ export class DragToResize {
 
     // Update the row height in the grid's data-row-heights attribute
     const currentRowHeights = grid.getAttribute("data-row-heights") || "";
-    const rowHeights = currentRowHeights.split(",");
+    let rowHeights = currentRowHeights ? currentRowHeights.split(",") : [];
+
+    // Ensure the array has an entry for each grid row
+    try {
+      const info = getGridInfo(grid);
+      const needed = info.rowCount;
+      if (rowHeights.length < needed) {
+        rowHeights = rowHeights.concat(
+          Array(needed - rowHeights.length).fill("hug")
+        );
+      }
+    } catch {}
 
     if (
       this.dragState.targetIndex >= 0 &&
@@ -382,6 +408,14 @@ export class DragToResize {
       // Store in mm for rows
       rowHeights[this.dragState.targetIndex] = formatMm(newHeightPx);
       grid.setAttribute("data-row-heights", rowHeights.join(","));
+      // Debug preview write
+      // eslint-disable-next-line no-console
+      console.log(
+        "[drag-to-resize] preview row",
+        this.dragState.targetIndex,
+        "->",
+        rowHeights[this.dragState.targetIndex]
+      );
     }
   }
   private resetDragState(): void {

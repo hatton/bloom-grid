@@ -34,7 +34,13 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
     // other things change that should cause a re-render.
     observer.observe(grid, {
       attributes: true,
-      attributeFilter: ["data-column-widths", "style"],
+      // Re-render when column widths, row heights, active drag row, or style change
+      attributeFilter: [
+        "data-column-widths",
+        "data-row-heights",
+        "data-ui-active-row-index",
+        "style",
+      ],
     });
 
     return () => {

@@ -817,7 +817,16 @@ export function setRowHeight(
     `Row index ${rowIndex} is out of bounds`
   );
   const currentHeights = grid.getAttribute("data-row-heights") || "";
-  const heightArray = currentHeights.split(",");
+  const heightArray = currentHeights ? currentHeights.split(",") : [];
+
+  // Ensure array is sized to number of rows
+  if (heightArray.length < gridInfo.rowCount) {
+    heightArray.length = gridInfo.rowCount;
+  }
+  // Fill any empty slots with 'hug'
+  for (let i = 0; i < heightArray.length; i++) {
+    if (!heightArray[i]) heightArray[i] = "hug";
+  }
   if (rowIndex >= 0 && rowIndex < heightArray.length) {
     heightArray[rowIndex] = height;
     grid.setAttribute("data-row-heights", heightArray.join(","));

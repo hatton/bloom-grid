@@ -30,25 +30,41 @@ export const RowSection: React.FC<Props> = ({
   onDelete,
 }) => {
   // Determine current row height and map to radio value
-  let selectedSize: "grow" | "hug" | "px" = "hug";
-  let pxLabel = "px";
+  let selectedSize: "grow" | "hug" | "fixed" = "hug";
+  let fixedLabel = "mm";
   try {
     if (grid && currentCell) {
-      const rowIndex = Grid.getRowIndex(currentCell);
-      const h = Grid.getRowHeight(grid, rowIndex) || "hug";
+      // Prefer active row index if a drag is in progress
+      const activeAttr = grid.getAttribute("data-ui-active-row-index");
+      const rowIndex = activeAttr
+        ? parseInt(activeAttr, 10)
+        : Grid.getRowIndex(currentCell);
+      const raw = Grid.getRowHeight(grid, rowIndex) || "hug";
+      const h = typeof raw === "string" ? raw.trim() : raw;
       if (h === "hug") selectedSize = "hug";
       else if (h === "fill") selectedSize = "grow";
       else if (/(px|mm)$/i.test(h)) {
-        selectedSize = "px";
-        pxLabel = h;
+        selectedSize = "fixed";
+        fixedLabel = h;
       }
+      // Debug selection logic for manual resize
+      console.log(
+        "[RowSection] rowIndex=",
+        rowIndex,
+        "raw=",
+        raw,
+        "parsed=",
+        h,
+        "selectedSize=",
+        selectedSize
+      );
     }
   } catch {}
 
   const sizeOptions: RadioOption[] = [
     { id: "grow", icon: rowGrowIcon, label: "Grow" },
     { id: "hug", icon: rowHugIcon, label: "Hug" },
-    { id: "px", label: pxLabel },
+    { id: "fixed", label: fixedLabel },
   ];
 
   const onChangeSize = (id: string) => {
@@ -56,9 +72,9 @@ export const RowSection: React.FC<Props> = ({
     const rowIndex = Grid.getRowIndex(currentCell);
     if (id === "grow") Grid.setRowHeight(grid, rowIndex, "fill");
     else if (id === "hug") Grid.setRowHeight(grid, rowIndex, "hug");
-    else if (id === "px") {
+    else if (id === "fixed") {
       // Keep existing fixed value if present; otherwise set a default 10mm
-      const current = Grid.getRowHeight(grid, rowIndex);
+      const current = (Grid.getRowHeight(grid, rowIndex) || "").trim();
       const next = current && /(px|mm)$/i.test(current) ? current : "10mm";
       Grid.setRowHeight(grid, rowIndex, next);
     }
