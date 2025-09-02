@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BorderControl } from "./BorderControl/BorderControl";
 import Section from "./Section";
 import type {
@@ -7,6 +7,7 @@ import type {
   BorderStyle,
   CornerRadius,
 } from "./BorderControl/logic/types";
+import CornerMenu from "./BorderControl/menus/CornerMenu";
 
 type Props = {
   grid?: HTMLElement;
@@ -52,7 +53,11 @@ const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
       : innerW === 0
       ? "none"
       : "solid";
-  const radius: CornerRadius = 0;
+  // Read grid corner radius (use top-left as representative; CornerMenu will handle mixed state separately)
+  const radiusPx = parsePx(cs.borderTopLeftRadius);
+  const radius: CornerRadius = ([0, 2, 4, 8] as number[]).includes(radiusPx)
+    ? (radiusPx as CornerRadius)
+    : 0;
   return {
     top: { weight: outlineW, style: outlineStyle, radius },
     right: { weight: outlineW, style: outlineStyle, radius },
@@ -82,33 +87,71 @@ const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
     innerStyle === "none" || maxInnerW === 0 ? "0px" : `${maxInnerW}px`
   );
   g.style.setProperty("--cell-border-style", innerStyle);
-
-  const r = Math.max(
-    map.top.radius,
-    map.right.radius,
-    map.bottom.radius,
-    map.left.radius
-  );
-  const cells = g.querySelectorAll<HTMLElement>(":scope > .cell");
-  cells.forEach((c) => {
-    c.style.borderRadius = r ? `${r}px` : "";
-  });
 };
 
 const menuItemStyle =
   "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
 
 export const TableSection: React.FC<Props> = ({ grid }) => {
+  // Corner menu value state, derived from the grid and updated on change
+  const getCornerValue = (
+    g: HTMLElement | undefined | null
+  ): CornerRadius | "mixed" => {
+    if (!g) return 0;
+    const cs = getComputedStyle(g);
+    const radii = [
+      parsePx(cs.borderTopLeftRadius),
+      parsePx(cs.borderTopRightRadius),
+      parsePx(cs.borderBottomRightRadius),
+      parsePx(cs.borderBottomLeftRadius),
+    ].map((n) => Math.round(n));
+    const uniq = Array.from(new Set(radii));
+    if (uniq.length !== 1) return "mixed";
+    const r = uniq[0];
+    return ([0, 2, 4, 8] as number[]).includes(r)
+      ? (r as CornerRadius)
+      : ("mixed" as const);
+  };
+
+  const [cornerValue, setCornerValue] = useState<CornerRadius | "mixed">(
+    getCornerValue(grid)
+  );
+  useEffect(() => {
+    setCornerValue(getCornerValue(grid));
+  }, [grid]);
+
   return (
     <Section label="Table">
       {grid && (
-        <div className={menuItemStyle} style={{ cursor: "default" }}>
-          <BorderControl
-            valueMap={buildBorderMapFromGrid(grid)}
-            showInner
-            onChange={(next) => applyBorderMapToGrid(grid, next)}
-          />
-        </div>
+        <>
+          {(() => {
+            const valueMap = buildBorderMapFromGrid(grid);
+            const cornerDisabled =
+              valueMap.top.weight === 0 || valueMap.top.style === "none";
+            return (
+              <>
+                <div className={menuItemStyle} style={{ cursor: "default" }}>
+                  <BorderControl
+                    valueMap={valueMap}
+                    showInner
+                    onChange={(next) => applyBorderMapToGrid(grid, next)}
+                  />
+                </div>
+                <div className={menuItemStyle} style={{ cursor: "default" }}>
+                  <CornerMenu
+                    value={cornerValue}
+                    onChange={(v) => {
+                      if (!grid) return;
+                      grid.style.borderRadius = v ? `${v}px` : "";
+                      setCornerValue(v);
+                    }}
+                    disabled={cornerDisabled}
+                  />
+                </div>
+              </>
+            );
+          })()}
+        </>
       )}
     </Section>
   );

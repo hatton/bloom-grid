@@ -6,6 +6,7 @@ const options: { value: CornerRadius; label: string }[] = [
   { value: 0, label: "0" },
   { value: 4, label: "4" },
   { value: 8, label: "8" },
+  { value: 16, label: "16" },
 ];
 
 export default function CornerMenu(props: {

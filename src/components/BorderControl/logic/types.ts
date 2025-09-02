@@ -2,7 +2,7 @@ export type EdgeKey = "top" | "right" | "bottom" | "left" | "innerH" | "innerV";
 
 export type BorderWeight = 0 | 1 | 2 | 4;
 export type BorderStyle = "none" | "solid" | "dashed" | "dotted" | "double";
-export type CornerRadius = 0 | 2 | 4 | 8;
+export type CornerRadius = 0 | 2 | 4 | 8 | 16;
 
 export interface EdgeValue {
   weight: BorderWeight;
