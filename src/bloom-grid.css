@@ -119,3 +119,14 @@
 .grid .cell:nth-of-type(even) {
   outline-width: var(--cell-border-width-even, var(--cell-border-width));
 }
+
+/* Ensure nested grids fill their parent cell */
+.cell[data-content-type="grid"] > .grid {
+  width: 100%;
+  height: 100%;
+}
+
+/* Remove padding when the cell contains a grid */
+.cell[data-content-type="grid"] {
+  --this-padding: 0;
+}
