@@ -1,5 +1,6 @@
 import React from "react";
 import * as Grid from "../";
+import { BloomGrid } from "../";
 import addRowAboveIcon from "./icons/row-add-before.svg";
 import addRowBelowIcon from "./icons/row-add-after.svg";
 import deleteRowIcon from "./icons/row-delete.svg";
@@ -32,18 +33,17 @@ export const RowSection: React.FC<Props> = ({
   let fixedLabel = "mm";
   try {
     if (grid && currentCell) {
-      // Prefer active row index if a drag is in progress
       const activeAttr = grid.getAttribute("data-ui-active-row-index");
       const rowIndex = activeAttr
         ? parseInt(activeAttr, 10)
         : Grid.getRowIndex(currentCell);
-      const raw = Grid.getRowHeight(grid, rowIndex) || "hug";
+      const controller = new BloomGrid(grid);
+      const raw = controller.getRowHeight(rowIndex) || "hug";
       const h = typeof raw === "string" ? raw.trim() : raw;
       if (h === "hug") selectedSize = "hug";
       else if (h === "fill") selectedSize = "grow";
       else if (/(px|mm)$/i.test(h)) {
         selectedSize = "fixed";
-        // If value is in mm, put the number and the unit on separate lines
         const mmMatch = h.match(/^(\d+(?:\.\d+)?)mm$/i);
         fixedLabel = mmMatch ? `${mmMatch[1]}\nmm` : h;
       }
@@ -59,13 +59,14 @@ export const RowSection: React.FC<Props> = ({
   const onChangeSize = (id: string) => {
     if (!grid || !currentCell) return;
     const rowIndex = Grid.getRowIndex(currentCell);
-    if (id === "grow") Grid.setRowHeight(grid, rowIndex, "fill");
-    else if (id === "hug") Grid.setRowHeight(grid, rowIndex, "hug");
+    const controller = new BloomGrid(grid);
+    if (id === "grow") controller.setRowHeight(rowIndex, "fill");
+    else if (id === "hug") controller.setRowHeight(rowIndex, "hug");
     else if (id === "fixed") {
       // Keep existing fixed value if present; otherwise set a default 10mm
-      const current = (Grid.getRowHeight(grid, rowIndex) || "").trim();
+      const current = (controller.getRowHeight(rowIndex) || "").trim();
       const next = current && /(px|mm)$/i.test(current) ? current : "10mm";
-      Grid.setRowHeight(grid, rowIndex, next);
+      controller.setRowHeight(rowIndex, next);
     }
   };
   return (

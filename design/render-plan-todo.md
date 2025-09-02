@@ -48,12 +48,16 @@ This checklist tracks implementation of the revised plan. We’ll proceed increm
 
 - [ ] Stage 7 — Adapter + cleanup
 
-  - [ ] migrate attach.ts for cssGrid-style-updater.ts
-  - [ ] Ensure demos still run (manual smoke)
-  - [ ] Remove dead code and update docs
+  - [x] Migrate attach.ts off cssGrid-style-updater.ts
+  - [x] Remove old observer and tests (deleted cssGrid-style-updater.\*)
+  - [x] Ensure demos still run (manual smoke + demo-smoke.test)
+  - [x] Update demos to data-\* (spans, inner borders, corners)
+  - [ ] Update docs to reflect explicit renderer (README touch-up pending)
 
 - [ ] Stage 8 — UI refactor (follow-up)
-  - [ ] Switch UI to use grid-model/BloomGrid for reads/writes
+
+  - [x] Switch UI to use BloomGrid for row/column sizing and span edits (RowSection, ColumnSection, GridMenu)
   - [ ] Verify behavior in demo pages
 
-Implementation order can adjust slightly if tests suggest dependencies.
+- [ ] Stage 9 - Playwright tests
+  - [ ] Test new grid, adding and removing columns and rows, take a screenshot, us AI to validate that the grid looks like whatever rows x column grid we expect to see.

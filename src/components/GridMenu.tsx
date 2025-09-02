@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import * as Grid from "../";
+import { BloomGrid } from "../";
 import { setupContentsOfCell } from "../cell-contents";
 
-import { changeCellSpan } from "../structure";
 import TableSection from "./TableSection";
 import RowSection from "./RowSection";
 import ColumnSection from "./ColumnSection";
@@ -69,45 +69,62 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
 
   const handleExtendCell = () => {
     assert(!!props.currentCell, "No cell selected");
-
-    changeCellSpan(props.currentCell!, 1, 0);
+    const grid = getTargetGridFromCell(props.currentCell!);
+    const controller = new BloomGrid(grid);
+    const current = controller.getSpan(props.currentCell!);
+    controller.setSpan(
+      props.currentCell!,
+      (current.x || 1) + 1,
+      current.y || 1
+    );
   };
 
   const handleContractCell = () => {
-    changeCellSpan(props.currentCell!, -1, 0);
+    assert(!!props.currentCell, "No cell selected");
+    const grid = getTargetGridFromCell(props.currentCell!);
+    const controller = new BloomGrid(grid);
+    const current = controller.getSpan(props.currentCell!);
+    const nextX = Math.max(1, (current.x || 1) - 1);
+    controller.setSpan(props.currentCell!, nextX, current.y || 1);
   };
   const handleInsertRowAbove = () => {
     const grid = getTargetGridFromSelection();
     const rowIndex = Grid.getRowIndex(props.currentCell!);
-    Grid.addRowAt(grid, rowIndex);
+    const controller = new BloomGrid(grid);
+    controller.addRowAt(rowIndex);
   };
   const handleInsertRowBelow = () => {
     const grid = getTargetGridFromSelection();
     const rowIndex = Grid.getRowIndex(props.currentCell!);
-    Grid.addRowAt(grid, rowIndex + 1);
+    const controller = new BloomGrid(grid);
+    controller.addRowAt(rowIndex + 1);
   };
   const handleDeleteRow = () => {
     const grid = getTargetGridFromSelection();
     const rowIndex = Grid.getRowIndex(props.currentCell!);
-    Grid.removeRowAt(grid, rowIndex);
+    const controller = new BloomGrid(grid);
+    controller.removeRowAt(rowIndex);
   };
   const handleInsertColumnLeft = () => {
     const grid = getTargetGridFromCell(props.currentCell!); // TODO doesn't have cell param
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
-    Grid.addColumnAt(grid, columnIndex);
+    const controller = new BloomGrid(grid);
+    controller.addColumnAt(columnIndex);
   };
 
   const handleInsertColumnRight = () => {
     const cell = props.currentCell!;
     const grid = getTargetGridFromCell(cell);
     const columnIndex = Grid.getRowAndColumn(grid, cell).column;
-    Grid.addColumnAt(grid, columnIndex + 1);
+    const controller = new BloomGrid(grid);
+    controller.addColumnAt(columnIndex + 1);
   };
 
   const handleDeleteColumn = () => {
     const grid = getTargetGridFromSelection();
     const columnIndex = Grid.getRowAndColumn(grid, props.currentCell!).column;
-    Grid.removeColumnAt(grid, columnIndex);
+    const controller = new BloomGrid(grid);
+    controller.removeColumnAt(columnIndex);
   };
 
   const handleSelectParentCell = () => {

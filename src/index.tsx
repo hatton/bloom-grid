@@ -13,8 +13,7 @@ export { attachGrid, detachGrid } from "./attach";
 // Grid history manager (if needed for advanced use)
 export { gridHistoryManager } from "./history";
 
-// Grid observer (optional, if you want to expose it)
-export {
-  attach as attachGridObserver,
-  detach as detachGridObserver,
-} from "./cssGrid-style-updater";
+// (observer removed; explicit renderer is used)
+
+// Controller
+export { BloomGrid } from "./BloomGrid";

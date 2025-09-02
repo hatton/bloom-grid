@@ -1,5 +1,6 @@
 import React from "react";
 import * as Grid from "../";
+import { BloomGrid } from "../";
 import addColumnLeftIcon from "./icons/column-add-before.svg";
 import addColumnRightIcon from "./icons/column-add-after.svg";
 import deleteColumnIcon from "./icons/column-delete.svg";
@@ -35,7 +36,8 @@ export const ColumnSection: React.FC<Props> = ({
   try {
     if (grid && currentCell) {
       const { column: columnIndex } = Grid.getRowAndColumn(grid, currentCell);
-      const raw = Grid.getColumnWidth(grid, columnIndex) || "hug";
+      const controller = new BloomGrid(grid);
+      const raw = controller.getColumnWidth(columnIndex) || "hug";
       const w = typeof raw === "string" ? raw.trim() : raw;
       if (w === "hug") selectedSize = "hug";
       else if (w === "fill") selectedSize = "grow";
@@ -57,13 +59,14 @@ export const ColumnSection: React.FC<Props> = ({
   const onChangeSize = (id: string) => {
     if (!grid || !currentCell) return;
     const { column: columnIndex } = Grid.getRowAndColumn(grid, currentCell);
-    if (id === "grow") Grid.setColumnWidth(grid, columnIndex, "fill");
-    else if (id === "hug") Grid.setColumnWidth(grid, columnIndex, "hug");
+    const controller = new BloomGrid(grid);
+    if (id === "grow") controller.setColumnWidth(columnIndex, "fill");
+    else if (id === "hug") controller.setColumnWidth(columnIndex, "hug");
     else if (id === "fixed") {
       // Keep existing fixed value if present; otherwise set a default 10mm
-      const current = (Grid.getColumnWidth(grid, columnIndex) || "").trim();
+      const current = (controller.getColumnWidth(columnIndex) || "").trim();
       const next = current && /(px|mm)$/i.test(current) ? current : "10mm";
-      Grid.setColumnWidth(grid, columnIndex, next);
+      controller.setColumnWidth(columnIndex, next);
     }
   };
   return (

@@ -48,6 +48,35 @@ export class BloomGrid {
     this.schedule("removeLastColumn");
   }
 
+  // Positioned structure ops
+  addRowAt(index: number): void {
+    // reuse structure's history-wrapped op
+    const { addRowAt } = require("./structure") as typeof import("./structure");
+    addRowAt(this.grid, index);
+    this.schedule("addRowAt");
+  }
+
+  addColumnAt(index: number): void {
+    const { addColumnAt } =
+      require("./structure") as typeof import("./structure");
+    addColumnAt(this.grid, index);
+    this.schedule("addColumnAt");
+  }
+
+  removeRowAt(index: number): void {
+    const { removeRowAt } =
+      require("./structure") as typeof import("./structure");
+    removeRowAt(this.grid, index);
+    this.schedule("removeRowAt");
+  }
+
+  removeColumnAt(index: number): void {
+    const { removeColumnAt } =
+      require("./structure") as typeof import("./structure");
+    removeColumnAt(this.grid, index);
+    this.schedule("removeColumnAt");
+  }
+
   // Column/Row sizing with history integration
   setColumnWidth(index: number, value: string): void {
     const perform = () => {
@@ -77,6 +106,23 @@ export class BloomGrid {
       perform
     );
     this.schedule("setRowHeight");
+  }
+
+  // Getters to read current specs for UI
+  getRowHeight(index: number): string | null {
+    const heights = getRowHeights(this.grid);
+    return index >= 0 && index < heights.length ? heights[index] : null;
+  }
+
+  getColumnWidth(index: number): string | null {
+    const widths = getColumnWidths(this.grid);
+    return index >= 0 && index < widths.length ? widths[index] : null;
+  }
+
+  getSpan(cell: HTMLElement): { x: number; y: number } {
+    const { getSpan } =
+      require("./grid-model") as typeof import("./grid-model");
+    return getSpan(cell);
   }
 
   // Borders & corners (model-level attributes)

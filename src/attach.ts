@@ -1,15 +1,18 @@
 import { dragToResize } from "./drag-to-resize";
 import { gridHistoryManager } from "./history";
 import { addColumn, addRow } from "./structure";
-import * as cssGridStyleUpdater from "./cssGrid-style-updater";
 import { migrateGrid } from "./migrate";
 import { attachTextEditing } from "./text-editing";
+import { setRenderer, request } from "./render-scheduler";
+import { render } from "./grid-renderer";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
 
   // Ensure the grid has the correct class and attributes
   gridDiv.classList.add("grid");
+  // Ensure renderer is configured (idempotent)
+  setRenderer(render);
   if (!gridDiv.hasAttribute("data-column-widths")) {
     gridDiv.setAttribute("data-column-widths", "");
     // add two columns by default
@@ -29,10 +32,11 @@ export function attachGrid(gridDiv: HTMLElement): void {
   gridHistoryManager.attachGrid(gridDiv);
   // Attach resize handlers
   dragToResize.attach(gridDiv);
-  // Attach grid observer
-  cssGridStyleUpdater.attach(gridDiv);
 
   attachTextEditing(gridDiv);
+
+  // Schedule an initial render so styles (borders, corners, spans) are applied immediately
+  request(gridDiv, "attach:initial", { immediate: true });
 }
 
 export function detachGrid(gridDiv: HTMLElement): void {
@@ -42,6 +46,4 @@ export function detachGrid(gridDiv: HTMLElement): void {
   gridHistoryManager.detachGrid(gridDiv);
   // Detach resize handlers
   dragToResize.detach(gridDiv);
-  // Detach grid observer
-  cssGridStyleUpdater.detach(gridDiv);
 }

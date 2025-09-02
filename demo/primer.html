@@ -27,13 +27,10 @@
         style="
          
           --bg: #ffffff; /* if we see this, it means our cell counts are off */
-          --border-color: red; /* no border on the main grid */
-
           --gap: 1px;
           /* Tier: give all outergrid cells a light orange bg & tighter padding */
           --cell-bg: transparent;
           --cell-padding: 6px 8px; /* slightly tighter */
-          /*--cell-border-color: #ecf0f6;*/
         "
       >
 
@@ -45,18 +42,17 @@
             id="top nested-grid"
             data-column-widths="fill,fill"
             data-row-heights="fit,fit"
-            style="--border-color: green; --cell-border-width: 1px"
+            data-border-inner-h='{"weight":1,"style":"solid","color":"green"}'
+            data-border-inner-v='{"weight":1,"style":"solid","color":"green"}'
           >
             <!-- Row 2.1 -->
             <div class="cell"><div contenteditable="true">A</div></div>
             <div class="cell"><div contenteditable="true">B</div></div>
             <!-- Row 2.2 -->
-            <div class="cell" style="--span-x: 2">
+            <div class="cell" data-span-x="2">
               <div contenteditable="true">Spanning nested cell</div>
             </div>
-            <!-- This cell is present in the DOM for logical consistency,
-                 but hidden from layout because the cell to the left of it spans 2 columns. -->
-            <div class="cell skip"><div contenteditable="true"></div></div>
+            <!-- Covered neighbor remains in DOM; class "skip" may be applied dynamically by structure.ts when interactive. -->
           </div>
         </div>
 
@@ -66,9 +62,9 @@
             class="grid"
             data-column-widths="fit,fit,fit"
             data-row-heights="fit,fit"
+            data-border-inner-h='{"weight":1,"style":"solid","color":"black"}'
+            data-border-inner-v='{"weight":1,"style":"solid","color":"black"}'
             style="
-              --cell-border-color: black;
-              --cell-border-width: 1px;
               margin-left: auto;
               margin-right: auto;
               width: fit-content;
