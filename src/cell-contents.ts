@@ -2,18 +2,29 @@
 // This file defines the default cell contents and provides a way to customize them.
 
 import { CellContentType } from "./types";
+// icons for default content types
+import textIcon from "./components/icons/cell-content-text.svg";
+import tableIcon from "./components/icons/cell-content-table.svg";
+import imageIcon from "./components/icons/cell-content-image.svg";
+import videoIcon from "./components/icons/cell-content-video.svg";
 import { gridHistoryManager } from "./history";
 
-export function contentTypeOptions(): { id: string; englishName: string }[] {
+export function contentTypeOptions(): {
+  id: string;
+  englishName: string;
+  icon: string;
+}[] {
   return defaultCellContentsForEachType.map((content) => ({
     id: content.id,
     englishName: content.englishName,
+    icon: content.icon,
   }));
 }
 export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "text",
     englishName: "Text",
+    icon: textIcon,
     // About the "_": I couldn't get the the browser to honor the contenteditable at runtime if it was empty.
     templateHtml: "<div contenteditable='true'></div>",
     regexToIdentify: /<div[^>]*contenteditable=['"]true['"][^>]*>/,
@@ -21,6 +32,7 @@ export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "grid",
     englishName: "Grid",
+    icon: tableIcon,
     templateHtml: `<div class='grid' data-column-widths='fill,fill' data-row-heights='fill,fill' style='--cell-border-width: 1px; --grid-border-width: 1px;'>
             <div class='cell' data-content-type='text'></div>
             <div class='cell' data-content-type='text'></div>
@@ -32,8 +44,21 @@ export const defaultCellContentsForEachType: CellContentType[] = [
   {
     id: "image",
     englishName: "Image",
+    icon: imageIcon,
     templateHtml: `<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Green_parrot_on_branch_with_yellow_head.svg/195px-Green_parrot_on_branch_with_yellow_head.svg.png' alt='Placeholder Image' />`,
     regexToIdentify: /<img/,
+  },
+  {
+    id: "video",
+    englishName: "Video",
+    icon: videoIcon,
+    // basic HTML5 video tag with controls and a placeholder source
+    templateHtml: `<video controls preload='metadata' style='max-width: 100%; max-height: 100%'>
+  <source src='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' type='video/mp4'>
+  Your browser does not support the video tag.
+</video>`,
+    // heuristically detect presence of a <video> tag
+    regexToIdentify: /<video/,
   },
 ];
 

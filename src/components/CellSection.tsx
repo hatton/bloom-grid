@@ -10,9 +10,8 @@ import type {
   BorderWeight,
 } from "./BorderControl/logic/types";
 // icons
-import textIcon from "./icons/cell-content-text.svg";
-import tableIcon from "./icons/cell-content-table.svg";
-import videoIcon from "./icons/cell-content-video.svg"; // used for the third content type
+// icons are now owned by CellContentType; no direct imports here
+// (leftover icons removed)
 import mergeIcon from "./icons/cell-merge.svg";
 import splitIcon from "./icons/cell-split.svg";
 
@@ -113,12 +112,7 @@ const CellSection: React.FC<Props> = ({
             options={contentTypeOptions().map((o) => ({
               id: o.id,
               label: o.englishName,
-              icon:
-                o.id === "text"
-                  ? textIcon
-                  : o.id === "grid"
-                  ? tableIcon
-                  : /* image */ videoIcon,
+              icon: o.icon,
             }))}
           />
         )}
