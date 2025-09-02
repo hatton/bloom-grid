@@ -9,6 +9,13 @@ import {
 const MIN_COLUMN_WIDTH = "60px";
 const MIN_ROW_HEIGHT = "20px";
 
+// Renderer defaults when data-* attributes are absent
+const DEFAULT_BORDER: BorderSpec = {
+  weight: 1,
+  style: "solid",
+  color: "#000",
+};
+
 function makeGridRule(size: string, minimum: string): string {
   const s = (size || "").trim();
   if (s === "hug") return `minmax(${minimum},max-content)`;
@@ -128,6 +135,8 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const iRight = idx(r, c + 1);
       const leftCell = cells[iLeft];
       const rightCell = cells[iRight];
+      const leftIsSkip = !!(leftCell && leftCell.classList.contains("skip"));
+      const rightIsSkip = !!(rightCell && rightCell.classList.contains("skip"));
       const leftSpec =
         leftCell && !leftCell.classList.contains("skip")
           ? getCellBorder(leftCell, "right")
@@ -136,7 +145,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
         rightCell && !rightCell.classList.contains("skip")
           ? getCellBorder(rightCell, "left")
           : null;
-      const gridInner = getGridBorder(grid, "innerV");
+      const gridInner = getGridBorder(grid, "innerV") || DEFAULT_BORDER;
       // First: specific vs specific
       let winner = pickHeavier(leftSpec, rightSpec, "leftTop");
       // If no specific winner, compare specific vs inner
@@ -145,13 +154,29 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
         winner = leftSpec || rightSpec || gridInner || null;
       }
       if (!winner) continue;
-      // Assign to one side only
-      if (winner === leftSpec || (!leftSpec && !rightSpec && gridInner)) {
+      // Assign to one side only; prefer non-skip side when using inner default
+      if (winner === leftSpec) {
         cellBorders[iLeft].right = winner;
         cellBorders[iRight].left = null;
-      } else {
+      } else if (winner === rightSpec) {
         cellBorders[iRight].left = winner;
         cellBorders[iLeft].right = null;
+      } else {
+        // winner came from gridInner default
+        if (leftIsSkip && !rightIsSkip) {
+          cellBorders[iRight].left = winner;
+          cellBorders[iLeft].right = null;
+        } else if (rightIsSkip && !leftIsSkip) {
+          cellBorders[iLeft].right = winner;
+          cellBorders[iRight].left = null;
+        } else if (leftIsSkip && rightIsSkip) {
+          // both skip, don't draw this inner edge
+          // no-op
+        } else {
+          // deterministic default: assign to left cell's right edge
+          cellBorders[iLeft].right = winner;
+          cellBorders[iRight].left = null;
+        }
       }
     }
   }
@@ -163,6 +188,10 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const iBottom = idx(r + 1, c);
       const topCell = cells[iTop];
       const bottomCell = cells[iBottom];
+      const topIsSkip = !!(topCell && topCell.classList.contains("skip"));
+      const bottomIsSkip = !!(
+        bottomCell && bottomCell.classList.contains("skip")
+      );
       const topSpec =
         topCell && !topCell.classList.contains("skip")
           ? getCellBorder(topCell, "bottom")
@@ -171,27 +200,43 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
         bottomCell && !bottomCell.classList.contains("skip")
           ? getCellBorder(bottomCell, "top")
           : null;
-      const gridInner = getGridBorder(grid, "innerH");
+      const gridInner = getGridBorder(grid, "innerH") || DEFAULT_BORDER;
       let winner = pickHeavier(topSpec, bottomSpec, "leftTop");
       if (!winner) {
         winner = topSpec || bottomSpec || gridInner || null;
       }
       if (!winner) continue;
-      if (winner === topSpec || (!topSpec && !bottomSpec && gridInner)) {
+      if (winner === topSpec) {
         cellBorders[iTop].bottom = winner;
         cellBorders[iBottom].top = null;
-      } else {
+      } else if (winner === bottomSpec) {
         cellBorders[iBottom].top = winner;
         cellBorders[iTop].bottom = null;
+      } else {
+        // winner came from gridInner default
+        if (topIsSkip && !bottomIsSkip) {
+          cellBorders[iBottom].top = winner;
+          cellBorders[iTop].bottom = null;
+        } else if (bottomIsSkip && !topIsSkip) {
+          cellBorders[iTop].bottom = winner;
+          cellBorders[iBottom].top = null;
+        } else if (topIsSkip && bottomIsSkip) {
+          // both skip, don't draw this inner edge
+          // no-op
+        } else {
+          // deterministic default: assign to top cell's bottom edge
+          cellBorders[iTop].bottom = winner;
+          cellBorders[iBottom].top = null;
+        }
       }
     }
   }
 
   // Perimeter: outer wins over cells when present
-  const perTop = getGridBorder(grid, "top");
-  const perRight = getGridBorder(grid, "right");
-  const perBottom = getGridBorder(grid, "bottom");
-  const perLeft = getGridBorder(grid, "left");
+  const perTop = getGridBorder(grid, "top") || DEFAULT_BORDER;
+  const perRight = getGridBorder(grid, "right") || DEFAULT_BORDER;
+  const perBottom = getGridBorder(grid, "bottom") || DEFAULT_BORDER;
+  const perLeft = getGridBorder(grid, "left") || DEFAULT_BORDER;
 
   // If a perimeter exists for a side, suppress corresponding cell side borders and let grid draw via outline vars
   if (perTop) {
@@ -341,14 +386,21 @@ export function render(grid: HTMLElement, _reason?: string): void {
   }
 
   // Apply outer corner radii
-  const corners = getGridCorners(grid);
-  if (corners && Number.isFinite(corners.radius)) {
+  const corners = getGridCorners(grid) ?? { radius: 0 };
+  if (Number.isFinite(corners.radius)) {
     const radiusPx = `${corners.radius}px`;
     // set on grid as well (background corner), noting outline may not round
     (grid.style as any).borderRadius = radiusPx;
     const rows = model.rowHeights.length;
     const cols = model.columnWidths.length;
     const cellsArr = getCells(grid);
+    // reset all cell corner radii to default 0 first (ensures determinism across renders)
+    cellsArr.forEach((cell) => {
+      (cell.style as any).borderTopLeftRadius = "0px";
+      (cell.style as any).borderTopRightRadius = "0px";
+      (cell.style as any).borderBottomLeftRadius = "0px";
+      (cell.style as any).borderBottomRightRadius = "0px";
+    });
     const idx = (r: number, c: number) => r * cols + c;
     function setCorner(
       r: number,
@@ -366,19 +418,11 @@ export function render(grid: HTMLElement, _reason?: string): void {
       (cell.style as any)[prop] = radiusPx;
     }
     setCorner(0, 0, "borderTopLeftRadius");
+    setCorner(0, Math.max(0, cols - 1), "borderTopRightRadius");
+    setCorner(Math.max(0, rows - 1), 0, "borderBottomLeftRadius");
     setCorner(
-      0,
-      Math.max(0, model.columnWidths.length - 1),
-      "borderTopRightRadius"
-    );
-    setCorner(
-      Math.max(0, model.rowHeights.length - 1),
-      0,
-      "borderBottomLeftRadius"
-    );
-    setCorner(
-      Math.max(0, model.rowHeights.length - 1),
-      Math.max(0, model.columnWidths.length - 1),
+      Math.max(0, rows - 1),
+      Math.max(0, cols - 1),
       "borderBottomRightRadius"
     );
   }

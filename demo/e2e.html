@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BloomGrid E2E Minimal</title>
+    <link rel="stylesheet" href="/src/bloom-grid.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 16px;
+      }
+      #grid {
+        margin-top: 12px;
+      }
+      .cell {
+        outline-offset: -1px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>BloomGrid E2E</h1>
+    <div id="mount"></div>
+    <script type="module">
+      import {
+        attachGrid,
+        addRowAt,
+        addColumnAt,
+        removeRowAt,
+        removeColumnAt,
+        getGridInfo,
+      } from "/src/index.tsx";
+
+      const grid = document.createElement("div");
+      grid.id = "grid";
+      grid.className = "grid";
+      // Intentionally omit data-* sizes so attachGrid creates a default 2x2
+      document.getElementById("mount").appendChild(grid);
+      attachGrid(grid);
+
+      // Expose helpers for Playwright
+      window.bg = {
+        grid,
+        addColumnAt: (i) => addColumnAt(grid, i),
+        addRowAt: (i) => addRowAt(grid, i),
+        removeColumnAt: (i) => removeColumnAt(grid, i),
+        removeRowAt: (i) => removeRowAt(grid, i),
+        info: () => {
+          const info = getGridInfo(grid);
+          const cs = getComputedStyle(grid);
+          return {
+            rows: info.rowCount,
+            columns: info.columnCount,
+            cells: grid.querySelectorAll(".cell").length,
+            templateColumns: cs.gridTemplateColumns,
+            templateRows: cs.gridTemplateRows,
+          };
+        },
+      };
+      window.bgReady = true;
+    </script>
+  </body>
+</html>
