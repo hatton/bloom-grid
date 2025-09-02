@@ -1,4 +1,9 @@
-import { InnerEdges, BorderValueMap, EdgeKey, SelectedEdges } from "./logic/types";
+import {
+  InnerEdges,
+  BorderValueMap,
+  EdgeKey,
+  SelectedEdges,
+} from "./logic/types";
 import type { SelectorLook } from "./logic/types";
 
 const TEAL = "#2b6e77";
@@ -37,49 +42,53 @@ export function BorderSelector(props: {
   const outerRect = { x: pad, y: pad, w: w - pad * 2, h: h - pad * 2 };
 
   // Geometry constants
-  const EDGE = 10; // thickness of the outer segments
+  const BAR_THICKNESS = 10; // single thickness for both outer segments and inner plus
   const GAP = 2; // space between horizontal and vertical pieces
 
   // Outer bars with 2px gap between horizontals and verticals
-  const leftRect = { x: outerRect.x, y: outerRect.y, w: EDGE, h: outerRect.h };
-  const rightRect = {
-    x: outerRect.x + outerRect.w - EDGE,
+  const leftRect = {
+    x: outerRect.x,
     y: outerRect.y,
-    w: EDGE,
+    w: BAR_THICKNESS,
+    h: outerRect.h,
+  };
+  const rightRect = {
+    x: outerRect.x + outerRect.w - BAR_THICKNESS,
+    y: outerRect.y,
+    w: BAR_THICKNESS,
     h: outerRect.h,
   };
   const topRect = {
-    x: outerRect.x + EDGE + GAP,
+    x: outerRect.x + BAR_THICKNESS + GAP,
     y: outerRect.y,
-    w: outerRect.w - 2 * (EDGE + GAP),
-    h: EDGE,
+    w: outerRect.w - 2 * (BAR_THICKNESS + GAP),
+    h: BAR_THICKNESS,
   };
   const bottomRect = {
     x: topRect.x,
-    y: outerRect.y + outerRect.h - EDGE,
+    y: outerRect.y + outerRect.h - BAR_THICKNESS,
     w: topRect.w,
-    h: EDGE,
+    h: BAR_THICKNESS,
   };
 
   // Inner bars sized to leave 2px margin from inner bounds
   const innerBounds = {
-    x: outerRect.x + EDGE,
-    y: outerRect.y + EDGE,
-    w: outerRect.w - 2 * EDGE,
-    h: outerRect.h - 2 * EDGE,
+    x: outerRect.x + BAR_THICKNESS,
+    y: outerRect.y + BAR_THICKNESS,
+    w: outerRect.w - 2 * BAR_THICKNESS,
+    h: outerRect.h - 2 * BAR_THICKNESS,
   };
   const INNER_GAP = 2;
-  const INNER_THICK = 16;
   const innerHRect = {
     x: innerBounds.x + INNER_GAP,
-    y: innerBounds.y + innerBounds.h / 2 - INNER_THICK / 2,
+    y: innerBounds.y + innerBounds.h / 2 - BAR_THICKNESS / 2,
     w: innerBounds.w - 2 * INNER_GAP,
-    h: INNER_THICK,
+    h: BAR_THICKNESS,
   };
   const innerVRect = {
-    x: innerBounds.x + innerBounds.w / 2 - INNER_THICK / 2,
+    x: innerBounds.x + innerBounds.w / 2 - BAR_THICKNESS / 2,
     y: innerBounds.y + INNER_GAP,
-    w: INNER_THICK,
+    w: BAR_THICKNESS,
     h: innerBounds.h - 2 * INNER_GAP,
   };
 
@@ -128,12 +137,20 @@ export function BorderSelector(props: {
         <filter id="insetShadow" x="-20%" y="-20%" width="140%" height="140%">
           <feOffset dx="0" dy="1" />
           <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="arithmetic" k2="-1" k3="1" />
-          <feColorMatrix type="matrix"
+          <feComposite
+            in="SourceGraphic"
+            in2="blur"
+            operator="arithmetic"
+            k2="-1"
+            k3="1"
+          />
+          <feColorMatrix
+            type="matrix"
             values="1 0 0 0 0
                     0 1 0 0 0
                     0 0 1 0 0
-                    0 0 0 0.25 0" />
+                    0 0 0 0.25 0"
+          />
         </filter>
       </defs>
 
@@ -166,8 +183,20 @@ export function BorderSelector(props: {
       </rect>
       {useBevel && (
         <>
-          <rect x={leftRect.x} y={leftRect.y} width={1} height={leftRect.h} fill="#ffffff66" />
-          <rect x={leftRect.x + leftRect.w - 1} y={leftRect.y} width={1} height={leftRect.h} fill="#00000033" />
+          <rect
+            x={leftRect.x}
+            y={leftRect.y}
+            width={1}
+            height={leftRect.h}
+            fill="#ffffff66"
+          />
+          <rect
+            x={leftRect.x + leftRect.w - 1}
+            y={leftRect.y}
+            width={1}
+            height={leftRect.h}
+            fill="#00000033"
+          />
         </>
       )}
 
@@ -187,8 +216,20 @@ export function BorderSelector(props: {
       </rect>
       {useBevel && (
         <>
-          <rect x={topRect.x} y={topRect.y} width={topRect.w} height={1} fill="#ffffff66" />
-          <rect x={topRect.x} y={topRect.y + topRect.h - 1} width={topRect.w} height={1} fill="#00000033" />
+          <rect
+            x={topRect.x}
+            y={topRect.y}
+            width={topRect.w}
+            height={1}
+            fill="#ffffff66"
+          />
+          <rect
+            x={topRect.x}
+            y={topRect.y + topRect.h - 1}
+            width={topRect.w}
+            height={1}
+            fill="#00000033"
+          />
         </>
       )}
 
@@ -208,8 +249,20 @@ export function BorderSelector(props: {
       </rect>
       {useBevel && (
         <>
-          <rect x={rightRect.x} y={rightRect.y} width={1} height={rightRect.h} fill="#ffffff66" />
-          <rect x={rightRect.x + rightRect.w - 1} y={rightRect.y} width={1} height={rightRect.h} fill="#00000033" />
+          <rect
+            x={rightRect.x}
+            y={rightRect.y}
+            width={1}
+            height={rightRect.h}
+            fill="#ffffff66"
+          />
+          <rect
+            x={rightRect.x + rightRect.w - 1}
+            y={rightRect.y}
+            width={1}
+            height={rightRect.h}
+            fill="#00000033"
+          />
         </>
       )}
 
@@ -227,8 +280,20 @@ export function BorderSelector(props: {
       />
       {useBevel && (
         <>
-          <rect x={bottomRect.x} y={bottomRect.y} width={bottomRect.w} height={1} fill="#ffffff66" />
-          <rect x={bottomRect.x} y={bottomRect.y + bottomRect.h - 1} width={bottomRect.w} height={1} fill="#00000033" />
+          <rect
+            x={bottomRect.x}
+            y={bottomRect.y}
+            width={bottomRect.w}
+            height={1}
+            fill="#ffffff66"
+          />
+          <rect
+            x={bottomRect.x}
+            y={bottomRect.y + bottomRect.h - 1}
+            width={bottomRect.w}
+            height={1}
+            fill="#00000033"
+          />
         </>
       )}
 
@@ -251,8 +316,20 @@ export function BorderSelector(props: {
           />
           {useBevel && (
             <>
-              <rect x={innerHRect.x} y={innerHRect.y} width={innerHRect.w} height={1} fill="#ffffff66" />
-              <rect x={innerHRect.x} y={innerHRect.y + innerHRect.h - 1} width={innerHRect.w} height={1} fill="#00000033" />
+              <rect
+                x={innerHRect.x}
+                y={innerHRect.y}
+                width={innerHRect.w}
+                height={1}
+                fill="#ffffff66"
+              />
+              <rect
+                x={innerHRect.x}
+                y={innerHRect.y + innerHRect.h - 1}
+                width={innerHRect.w}
+                height={1}
+                fill="#00000033"
+              />
             </>
           )}
           {/* vertical bar */}
@@ -266,8 +343,20 @@ export function BorderSelector(props: {
           />
           {useBevel && (
             <>
-              <rect x={innerVRect.x} y={innerVRect.y} width={1} height={innerVRect.h} fill="#ffffff66" />
-              <rect x={innerVRect.x + innerVRect.w - 1} y={innerVRect.y} width={1} height={innerVRect.h} fill="#00000033" />
+              <rect
+                x={innerVRect.x}
+                y={innerVRect.y}
+                width={1}
+                height={innerVRect.h}
+                fill="#ffffff66"
+              />
+              <rect
+                x={innerVRect.x + innerVRect.w - 1}
+                y={innerVRect.y}
+                width={1}
+                height={innerVRect.h}
+                fill="#00000033"
+              />
             </>
           )}
         </g>

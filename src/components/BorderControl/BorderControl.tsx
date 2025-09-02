@@ -2,18 +2,15 @@ import { useMemo, useState } from "react";
 import BorderSelector from "./BorderSelector";
 import WeightMenu from "./menus/WeightMenu";
 import StyleMenu from "./menus/StyleMenu";
-import CornerMenu from "./menus/CornerMenu";
 import {
   BorderStyle,
   BorderValueMap,
   BorderWeight,
-  CornerRadius,
   SelectedEdges,
 } from "./logic/types";
 import { computeInitialSelection } from "./logic/selectionInit";
 import {
   MixedOr,
-  computeMixedRadius,
   computeMixedStyle,
   computeMixedWeight,
   interdependencyDisabled,
@@ -40,10 +37,6 @@ function BorderControl(props: {
     () => computeMixedStyle(props.valueMap, selected),
     [props.valueMap, selected]
   );
-  const radius: MixedOr<CornerRadius> = useMemo(
-    () => computeMixedRadius(props.valueMap, selected),
-    [props.valueMap, selected]
-  );
 
   const disabled = interdependencyDisabled(weight, style);
   // Force the selector to use the 'rounded' look and remove the Look menu
@@ -53,7 +46,6 @@ function BorderControl(props: {
     change: Partial<{
       weight: BorderWeight;
       style: BorderStyle;
-      radius: CornerRadius;
     }>
   ) => {
     const edges = Array.from(selected);
@@ -73,7 +65,7 @@ function BorderControl(props: {
           showInner={showInner}
           selected={selected}
           onChange={setSelected}
-          size={140}
+          size={80}
           look={selectorLook}
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -90,10 +82,6 @@ function BorderControl(props: {
           />
         </div>
       </div>
-      <CornerMenu
-        value={radius as any}
-        onChange={(v) => apply({ radius: v })}
-      />
     </div>
   );
 }
