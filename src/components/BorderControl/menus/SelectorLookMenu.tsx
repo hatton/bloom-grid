@@ -19,7 +19,7 @@ export default function SelectorLookMenu(props: {
       value={props.value}
       options={options.map((o) => ({ value: o.value, label: o.label }))}
       onChange={props.onChange as any}
-      renderButtonIcon={() => <span style={{ fontSize: 12 }}>Look</span>}
+      renderButtonImage={() => <span style={{ fontSize: 12 }}>Look</span>}
     />
   );
 }

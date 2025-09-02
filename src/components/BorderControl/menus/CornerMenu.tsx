@@ -1,5 +1,5 @@
 import { BorderMenu } from "../BorderMenu";
-import { CornerIcon } from "../icons/cornerIcon";
+import { CornerSampleImage } from "../icons/cornerSampleImage";
 import { CornerRadius } from "../logic/types";
 
 const options: { value: CornerRadius; label: string }[] = [
@@ -20,11 +20,11 @@ export default function CornerMenu(props: {
       options={options.map((o) => ({
         value: o.value,
         label: o.label,
-        icon: () => <CornerIcon value={o.value} color="#1f3a40" />,
+        icon: () => <CornerSampleImage value={o.value} color="#1f3a40" />,
       }))}
       onChange={props.onChange}
       disabled={props.disabled}
-      renderButtonIcon={(v) => <CornerIcon value={v as any} />}
+      renderButtonImage={(v) => <CornerSampleImage value={v as any} />}
       hideLabels
     />
   );

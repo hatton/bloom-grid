@@ -1,5 +1,5 @@
 import { BorderMenu } from "../BorderMenu";
-import { StyleIcon } from "../icons/styleIcon";
+import { StyleSampleLine } from "../icons/styleSampleLine";
 import { BorderStyle } from "../logic/types";
 
 const options: { value: BorderStyle; label: string }[] = [
@@ -23,13 +23,13 @@ export default function StyleMenu(props: {
         label: o.label,
         icon: () => (
           <div style={{ width: "100%" }}>
-            <StyleIcon value={o.value} color="#1f3a40" fullWidth />
+            <StyleSampleLine value={o.value} color="#1f3a40" fullWidth />
           </div>
         ),
       }))}
       onChange={props.onChange}
       disabled={props.disabled}
-      renderButtonIcon={(v) => <StyleIcon value={v as any} />}
+      renderButtonImage={(v) => <StyleSampleLine value={v as any} />}
       hideLabels
     />
   );

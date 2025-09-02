@@ -1,6 +1,6 @@
 import { CornerRadius } from "../logic/types";
 
-export function CornerIcon({
+export function CornerSampleImage({
   value,
   color = "#fff",
 }: {

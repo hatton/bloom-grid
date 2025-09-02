@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BorderSelector from "./BorderSelector";
 import WeightMenu from "./menus/WeightMenu";
 import StyleMenu from "./menus/StyleMenu";
@@ -23,19 +23,26 @@ function BorderControl(props: {
   initialSelected?: SelectedEdges;
 }) {
   const showInner = props.showInner ?? true;
+  // Maintain a local copy so the UI reflects changes immediately
+  const [valueMap, setValueMap] = useState<BorderValueMap>(props.valueMap);
   const [selected, setSelected] = useState<SelectedEdges>(
     () =>
       props.initialSelected ??
       computeInitialSelection(props.valueMap, showInner)
   );
 
+  // Sync local state when the upstream map changes (e.g., switching cells/tables)
+  useEffect(() => {
+    setValueMap(props.valueMap);
+  }, [props.valueMap]);
+
   const weight: MixedOr<BorderWeight> = useMemo(
-    () => computeMixedWeight(props.valueMap, selected),
-    [props.valueMap, selected]
+    () => computeMixedWeight(valueMap, selected),
+    [valueMap, selected]
   );
   const style: MixedOr<BorderStyle> = useMemo(
-    () => computeMixedStyle(props.valueMap, selected),
-    [props.valueMap, selected]
+    () => computeMixedStyle(valueMap, selected),
+    [valueMap, selected]
   );
 
   const disabled = interdependencyDisabled(weight, style);
@@ -50,10 +57,11 @@ function BorderControl(props: {
   ) => {
     const edges = Array.from(selected);
     if (edges.length === 0) return; // nothing to apply
-    const next: BorderValueMap = { ...props.valueMap } as BorderValueMap;
+    const next: BorderValueMap = { ...valueMap } as BorderValueMap;
     for (const e of edges) {
       next[e] = { ...next[e], ...change } as any;
     }
+    setValueMap(next);
     props.onChange(next);
   };
 
@@ -61,7 +69,7 @@ function BorderControl(props: {
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <BorderSelector
-          valueMap={props.valueMap}
+          valueMap={valueMap}
           showInner={showInner}
           selected={selected}
           onChange={setSelected}

@@ -1,5 +1,5 @@
 import { BorderMenu } from "../BorderMenu";
-import { WeightIcon } from "../icons/weightIcon";
+import { WeightSampleLine } from "../icons/weightSampleLine";
 import { BorderStyle, BorderWeight } from "../logic/types";
 
 const options: { value: BorderWeight; label: string }[] = [
@@ -24,7 +24,7 @@ export default function WeightMenu(props: {
         label: o.label,
         icon: () => (
           <div style={{ width: "100%" }}>
-            <WeightIcon
+            <WeightSampleLine
               value={o.value}
               style={props.currentStyle}
               color="#1f3a40"
@@ -35,8 +35,8 @@ export default function WeightMenu(props: {
       }))}
       onChange={props.onChange}
       disabled={props.disabled}
-      renderButtonIcon={(v) => (
-        <WeightIcon value={v as any} style={props.currentStyle} />
+      renderButtonImage={(v) => (
+        <WeightSampleLine value={v as any} style={props.currentStyle} />
       )}
       hideLabels
     />

@@ -1,6 +1,6 @@
 import { BorderStyle, BorderWeight } from "../logic/types";
 
-export function WeightIcon({
+export function WeightSampleLine({
   value,
   style,
   color = "#fff",

@@ -185,7 +185,7 @@ const GridMenu: React.FC<{ currentCell: HTMLElement | null | undefined }> = (
       />
 
       {/* Top actions: Undo + Select Parent */}
-      <div className="flex items-center gap-2 px-2 pb-2 border-b border-gray-200 mb-2">
+      <div className="flex items-center gap-2 px-2 pb-2 border-gray-200 mb-2">
         <button
           className="px-2 py-1 rounded-md text-sm"
           style={{

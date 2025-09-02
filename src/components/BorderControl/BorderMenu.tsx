@@ -12,7 +12,7 @@ export const BorderMenu = <T,>(props: {
   options: BorderMenuOption<T>[];
   onChange: (value: T) => void;
   disabled?: boolean;
-  renderButtonIcon?: (current: T | "mixed") => JSX.Element;
+  renderButtonImage?: (current: T | "mixed") => JSX.Element;
   hideLabels?: boolean;
 }) => {
   const {
@@ -21,7 +21,7 @@ export const BorderMenu = <T,>(props: {
     options,
     onChange,
     disabled,
-    renderButtonIcon,
+    renderButtonImage,
     hideLabels,
   } = props;
   const [open, setOpen] = useState(false);
@@ -52,10 +52,10 @@ export const BorderMenu = <T,>(props: {
           background: "#2b6e77",
           color: "#fff",
           border: "none",
-          borderRadius: 6,
+          borderRadius: 4,
           padding: "6px 8px",
-          minWidth: 44,
-          height: 36,
+          minWidth: 64,
+          height: 24,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
@@ -70,8 +70,8 @@ export const BorderMenu = <T,>(props: {
             justifyContent: "center",
           }}
         >
-          {renderButtonIcon
-            ? renderButtonIcon(value as any)
+          {renderButtonImage
+            ? renderButtonImage(value as any)
             : value === "mixed"
             ? "Mixed"
             : String(value)}
