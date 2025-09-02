@@ -40,11 +40,11 @@ This checklist tracks implementation of the revised plan. We’ll proceed increm
   - [x] Ensure synchronous structural mutations + single scheduled render
   - [x] Unit tests for call sequencing and outcomes
 
-- [ ] Stage 6 — structure.ts migration (spans only)
+- [x] Stage 6 — structure.ts migration (spans only)
 
-  - [ ] Change span writes from CSS vars to data-span-x/y
-  - [ ] Preserve skip semantics and covered cells behavior
-  - [ ] Unit tests for setCellSpan and covered/skip
+  - [x] Change span writes from CSS vars to data-span-x/y
+  - [x] Preserve skip semantics and covered cells behavior
+  - [x] Unit tests for setCellSpan and covered/skip
 
 - [ ] Stage 7 — Adapter + cleanup
 

@@ -325,8 +325,8 @@ export function changeCellSpan(
   const grid = cell.closest<HTMLElement>(".grid");
   assert(!!grid, "Cell must be inside a grid element");
 
-  const currentSpanX = parseInt(cell.style.getPropertyValue("--span-x")) || 1;
-  const currentSpanY = parseInt(cell.style.getPropertyValue("--span-y")) || 1;
+  const currentSpanX = parseInt(cell.getAttribute("data-span-x") || "1") || 1;
+  const currentSpanY = parseInt(cell.getAttribute("data-span-y") || "1") || 1;
 
   // Calculate new span values
   const newHorizontalSpan = Math.max(1, currentSpanX + xChange);
@@ -399,18 +399,15 @@ export function setCellSpan(
     }
   }
 
-  // Set the new span values on the cell
-  if (newHorizontalSpan > 1) {
-    cell.style.setProperty("--span-x", newHorizontalSpan.toString());
-  } else {
-    cell.style.removeProperty("--span-x");
-  }
-
-  if (newVerticalSpan > 1) {
-    cell.style.setProperty("--span-y", newVerticalSpan.toString());
-  } else {
-    cell.style.removeProperty("--span-y");
-  }
+  // Set the new span values on the cell (data-* is source of truth; also mirror to CSS vars for compatibility)
+  cell.setAttribute("data-span-x", String(newHorizontalSpan));
+  cell.setAttribute("data-span-y", String(newVerticalSpan));
+  if (newHorizontalSpan > 1)
+    cell.style.setProperty("--span-x", String(newHorizontalSpan));
+  else cell.style.removeProperty("--span-x");
+  if (newVerticalSpan > 1)
+    cell.style.setProperty("--span-y", String(newVerticalSpan));
+  else cell.style.removeProperty("--span-y");
 
   // Now mark all cells that are covered by the new span
   for (let r = row; r < row + newVerticalSpan; r++) {
@@ -649,16 +646,15 @@ export const removeColumnAt = (grid: HTMLElement, index: number): void => {
     cells.forEach((cell) => {
       const htmlCell = cell as HTMLElement;
       const { column: cellColumn } = getRowAndColumn(grid, htmlCell);
-      const spanX = parseInt(htmlCell.style.getPropertyValue("--span-x")) || 1;
+      const spanX = parseInt(htmlCell.getAttribute("data-span-x") || "1") || 1;
 
       // If this cell's span extended beyond the column to be removed, reduce its span
       if (cellColumn < index && cellColumn + spanX > index) {
         const newSpanX = spanX - 1;
-        if (newSpanX > 1) {
-          htmlCell.style.setProperty("--span-x", newSpanX.toString());
-        } else {
-          htmlCell.style.removeProperty("--span-x");
-        }
+        htmlCell.setAttribute("data-span-x", String(newSpanX));
+        if (newSpanX > 1)
+          htmlCell.style.setProperty("--span-x", String(newSpanX));
+        else htmlCell.style.removeProperty("--span-x");
       }
     });
 
@@ -707,16 +703,15 @@ export const removeRowAt = (grid: HTMLElement, index: number): void => {
     cells.forEach((cell) => {
       const htmlCell = cell as HTMLElement;
       const { row: cellRow } = getRowAndColumn(grid, htmlCell);
-      const spanY = parseInt(htmlCell.style.getPropertyValue("--span-y")) || 1;
+      const spanY = parseInt(htmlCell.getAttribute("data-span-y") || "1") || 1;
 
       // If this cell's span extended beyond the removed row, reduce its span
       if (cellRow < index && cellRow + spanY > index) {
         const newSpanY = spanY - 1;
-        if (newSpanY > 1) {
-          htmlCell.style.setProperty("--span-y", newSpanY.toString());
-        } else {
-          htmlCell.style.removeProperty("--span-y");
-        }
+        htmlCell.setAttribute("data-span-y", String(newSpanY));
+        if (newSpanY > 1)
+          htmlCell.style.setProperty("--span-y", String(newSpanY));
+        else htmlCell.style.removeProperty("--span-y");
       }
     });
 

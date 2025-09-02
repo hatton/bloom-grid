@@ -172,7 +172,8 @@ describe("span-related tests", () => {
     const info = getGridInfo(grid);
     expect(info.columnCount).toBe(original.columnCount);
     expect(info.rowCount).toBe(original.rowCount);
-    // expect the style to have been set
+    // expect data-* and CSS var to have been set
+    expect(cellR0C0.getAttribute("data-span-x")).toBe("2");
     const styleString = cellR0C0.getAttribute("style");
     expect(styleString).toContain("--span-x: 2");
 
@@ -194,7 +195,8 @@ describe("span-related tests", () => {
     const info = getGridInfo(grid);
     expect(info.columnCount).toBe(original.columnCount);
     expect(info.rowCount).toBe(original.rowCount);
-    // expect the style to have been set
+    // expect data-* and CSS var to have been set
+    expect(cellR0C0.getAttribute("data-span-y")).toBe("2");
     const styleString = cellR0C0.getAttribute("style");
     expect(styleString).toContain("--span-y: 2");
 
@@ -222,7 +224,9 @@ describe("span-related tests", () => {
     const info = getGridInfo(grid);
     expect(info.columnCount).toBe(original.columnCount);
     expect(info.rowCount).toBe(original.rowCount);
-    // expect the style to have been set
+    // expect data-* and CSS var to have been set
+    expect(cellR0C0.getAttribute("data-span-x")).toBe("2");
+    expect(cellR0C0.getAttribute("data-span-y")).toBe("2");
     const styleString = cellR0C0.getAttribute("style");
     expect(styleString).toContain("--span-x: 2");
     expect(styleString).toContain("--span-y: 2");
@@ -242,7 +246,9 @@ describe("span-related tests", () => {
 
     // Now reduce the span back to 1x1
     setCellSpan(cellR0C0, 1, 1);
-    // expect the style to have been removed
+    // expect the data-* and style to reflect 1x1
+    expect(cellR0C0.getAttribute("data-span-x")).toBe("1");
+    expect(cellR0C0.getAttribute("data-span-y")).toBe("1");
     const styleString = cellR0C0.getAttribute("style") || "";
     expect(styleString).not.toContain("--span-x");
     expect(styleString).not.toContain("--span-y");
