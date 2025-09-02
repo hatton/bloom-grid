@@ -77,55 +77,147 @@ export function setSpan(cell: HTMLElement, span: SpanSpec): void {
 
 // Borders
 export type BorderSide = "top" | "right" | "bottom" | "left";
-export type GridBorderSide = BorderSide | "innerH" | "innerV";
 
-function sideToAttr(side: GridBorderSide): string {
-  switch (side) {
-    case "top":
-    case "right":
-    case "bottom":
-    case "left":
-      return `data-border-${side}`;
-    case "innerH":
-      return "data-border-inner-h";
-    case "innerV":
-      return "data-border-inner-v";
-  }
+// Edge-based model
+export interface HVHorizontalEdgeCellSides {
+  north?: BorderSpec | null;
+  south?: BorderSpec | null;
+}
+export interface HVVerticalEdgeCellSides {
+  west?: BorderSpec | null;
+  east?: BorderSpec | null;
+}
+// A single interior edge can be represented either as sided entries (west/east or north/south)
+// or as a single BorderSpec applied to the edge. This enables simpler authoring when there is no gap.
+export type VEdgeEntry = HVVerticalEdgeCellSides | BorderSpec | null;
+export type HEdgeEntry = HVHorizontalEdgeCellSides | BorderSpec | null;
+export interface EdgesOuterSpec {
+  top: Array<BorderSpec | null>; // length C
+  right: Array<BorderSpec | null>; // length R
+  bottom: Array<BorderSpec | null>; // length C
+  left: Array<BorderSpec | null>; // length R
 }
 
+// Defaults and gaps
+export type EdgeDefaultSpec = BorderSpec | null; // data-border-default
+
+export function getGapX(grid: HTMLElement): string[] {
+  assert(grid.classList.contains("grid"), "getGapX: not a grid");
+  const v = (grid.getAttribute("data-gap-x") || "").trim();
+  if (!v) return [];
+  return v.split(",").map((s) => s.trim());
+}
+export function setGapX(grid: HTMLElement, gaps: string[] | string): void {
+  assert(grid.classList.contains("grid"), "setGapX: not a grid");
+  const v = Array.isArray(gaps) ? gaps.join(",") : gaps;
+  grid.setAttribute("data-gap-x", v);
+}
+export function getGapY(grid: HTMLElement): string[] {
+  assert(grid.classList.contains("grid"), "getGapY: not a grid");
+  const v = (grid.getAttribute("data-gap-y") || "").trim();
+  if (!v) return [];
+  return v.split(",").map((s) => s.trim());
+}
+export function setGapY(grid: HTMLElement, gaps: string[] | string): void {
+  assert(grid.classList.contains("grid"), "setGapY: not a grid");
+  const v = Array.isArray(gaps) ? gaps.join(",") : gaps;
+  grid.setAttribute("data-gap-y", v);
+}
+
+export function getEdgesH(grid: HTMLElement): HEdgeEntry[][] | null {
+  assert(grid.classList.contains("grid"), "getEdgesH: not a grid");
+  return parseJSONAttr<HEdgeEntry[][]>(grid, "data-edges-h");
+}
+export function setEdgesH(
+  grid: HTMLElement,
+  edges: HEdgeEntry[][] | null
+): void {
+  assert(grid.classList.contains("grid"), "setEdgesH: not a grid");
+  setJSONAttr(grid, "data-edges-h", edges);
+}
+
+export function getEdgesV(grid: HTMLElement): VEdgeEntry[][] | null {
+  assert(grid.classList.contains("grid"), "getEdgesV: not a grid");
+  return parseJSONAttr<VEdgeEntry[][]>(grid, "data-edges-v");
+}
+export function setEdgesV(
+  grid: HTMLElement,
+  edges: VEdgeEntry[][] | null
+): void {
+  assert(grid.classList.contains("grid"), "setEdgesV: not a grid");
+  setJSONAttr(grid, "data-edges-v", edges);
+}
+
+export function getEdgesOuter(grid: HTMLElement): EdgesOuterSpec | null {
+  assert(grid.classList.contains("grid"), "getEdgesOuter: not a grid");
+  return parseJSONAttr<EdgesOuterSpec>(grid, "data-edges-outer");
+}
+export function setEdgesOuter(
+  grid: HTMLElement,
+  outer: EdgesOuterSpec | null
+): void {
+  assert(grid.classList.contains("grid"), "setEdgesOuter: not a grid");
+  setJSONAttr(grid, "data-edges-outer", outer);
+}
+
+export function getEdgeDefault(grid: HTMLElement): EdgeDefaultSpec {
+  assert(grid.classList.contains("grid"), "getEdgeDefault: not a grid");
+  return parseJSONAttr<BorderSpec>(grid, "data-border-default");
+}
+export function setEdgeDefault(
+  grid: HTMLElement,
+  border: EdgeDefaultSpec
+): void {
+  assert(grid.classList.contains("grid"), "setEdgeDefault: not a grid");
+  setJSONAttr(grid, "data-border-default", border);
+}
+
+// Grid-level shorthand perimeter default
+// Deprecated APIs retained temporarily for migration (no-op or passthrough where possible)
+export function getGridBorderDefault(_grid: HTMLElement): BorderSpec | null {
+  return null;
+}
+export function setGridBorderDefault(
+  _grid: HTMLElement,
+  _border: BorderSpec | null
+): void {}
+export type GridBorderSide = never;
 export function getGridBorder(
-  grid: HTMLElement,
-  side: GridBorderSide
+  _grid: HTMLElement,
+  _side: GridBorderSide
 ): BorderSpec | null {
-  assert(grid.classList.contains("grid"), "getGridBorder: not a grid");
-  return parseJSONAttr<BorderSpec>(grid, sideToAttr(side));
+  return null;
 }
-
 export function setGridBorder(
-  grid: HTMLElement,
-  side: GridBorderSide,
-  border: BorderSpec | null
-): void {
-  assert(grid.classList.contains("grid"), "setGridBorder: not a grid");
-  setJSONAttr(grid, sideToAttr(side), border);
+  _grid: HTMLElement,
+  _side: GridBorderSide,
+  _border: BorderSpec | null
+): void {}
+export function getGridInnerDefault(_grid: HTMLElement): BorderSpec | null {
+  return null;
 }
-
+export function setGridInnerDefault(
+  _grid: HTMLElement,
+  _border: BorderSpec | null
+): void {}
 export function getCellBorder(
-  cell: HTMLElement,
-  side: BorderSide
+  _cell: HTMLElement,
+  _side: BorderSide
 ): BorderSpec | null {
-  assert(cell.classList.contains("cell"), "getCellBorder: not a cell");
-  return parseJSONAttr<BorderSpec>(cell, `data-border-${side}`);
+  return null;
 }
-
 export function setCellBorder(
-  cell: HTMLElement,
-  side: BorderSide,
-  border: BorderSpec | null
-): void {
-  assert(cell.classList.contains("cell"), "setCellBorder: not a cell");
-  setJSONAttr(cell, `data-border-${side}`, border);
+  _cell: HTMLElement,
+  _side: BorderSide,
+  _border: BorderSpec | null
+): void {}
+export function getCellBorderDefault(_cell: HTMLElement): BorderSpec | null {
+  return null;
 }
+export function setCellBorderDefault(
+  _cell: HTMLElement,
+  _border: BorderSpec | null
+): void {}
 
 // Corners
 export function getGridCorners(grid: HTMLElement): CornersSpec | null {

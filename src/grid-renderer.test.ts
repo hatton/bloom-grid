@@ -17,6 +17,64 @@ function addCell(grid: HTMLElement, spanX = 1, spanY = 1): HTMLElement {
 }
 
 describe("grid-renderer", () => {
+  it("sided edges with gap allow neighbors to differ", () => {
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    grid.setAttribute("data-column-widths", "100px,100px");
+    grid.setAttribute("data-row-heights", "30px");
+    grid.setAttribute("data-gap-x", "10px");
+    const a = addCell(grid); // left
+    const b = addCell(grid); // right
+    document.body.appendChild(grid);
+
+    // Vertical boundary at c=0: west (A's right) vs east (B's left)
+    grid.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          {
+            west: { weight: 2, style: "solid", color: "red" },
+            east: { weight: 1, style: "dashed", color: "blue" },
+          },
+        ],
+      ])
+    );
+
+    render(grid);
+    // With positive gap, both sides render independently
+    expect((a.style as any).borderRightWidth).toBe("2px");
+    expect((a.style as any).borderRightStyle).toBe("solid");
+    expect((b.style as any).borderLeftWidth).toBe("1px");
+    expect((b.style as any).borderLeftStyle).toBe("dashed");
+  });
+
+  it("zero gap resolves neighbors to a single stroke (heavier wins)", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px");
+    addCell(g);
+    addCell(g);
+    // gap-x omitted => zero
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          {
+            west: { weight: 1, style: "solid", color: "#444" },
+            east: { weight: 3, style: "dashed", color: "#888" },
+          },
+        ],
+      ])
+    );
+    const m = buildRenderModel(g);
+    // Heavier east (3) should win and be assigned to b.left only
+    expect(m.cellBorders[0].right).toBeNull();
+    expect(m.cellBorders[1].left).toEqual({
+      weight: 3,
+      style: "dashed",
+      color: "#888",
+    });
+  });
   it("builds template strings from data attributes", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "hug,100px,fill");
@@ -45,27 +103,55 @@ describe("grid-renderer", () => {
     expect(b.style.getPropertyValue("--span-y")).toBe("3");
   });
 
-  it("resolves adjacent edge conflicts (heaviest wins)", () => {
+  it("edge default fills when one side is missing", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
     g.setAttribute("data-row-heights", "30px");
-    const a = addCell(g); // left cell
-    const b = addCell(g); // right cell
-    a.setAttribute(
-      "data-border-right",
-      JSON.stringify({ weight: 4, style: "solid", color: "blue" })
+    g.setAttribute(
+      "data-border-default",
+      JSON.stringify({ weight: 1, style: "solid", color: "#444" })
     );
-    b.setAttribute(
-      "data-border-left",
-      JSON.stringify({ weight: 2, style: "dotted", color: "red" })
+    addCell(g); // left
+    addCell(g); // right
+    // Only west specified; east missing
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([[{ west: { weight: 0, style: "none", color: "#000" } }]])
     );
-
     const m = buildRenderModel(g);
-    // winner should be applied to one side only; right cell left suppressed
+    // With zero gap, compare west (none) vs default -> winner is 'none', assigned to left.right
     expect(m.cellBorders[0].right).toEqual({
-      weight: 4,
-      style: "solid",
-      color: "blue",
+      weight: 0,
+      style: "none",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].left).toBeNull();
+  });
+
+  it("'none' trumps any other style/weight in conflicts", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px");
+    addCell(g);
+    addCell(g);
+    // Edge definition for the boundary: west=none, east=4px solid
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          {
+            west: { weight: 0, style: "none", color: "#000" },
+            east: { weight: 4, style: "solid", color: "blue" },
+          },
+        ],
+      ])
+    );
+    const m = buildRenderModel(g);
+    // Expect the winner to be 'none' on the edge, applied to left cell's right and suppressing right cell's left
+    expect(m.cellBorders[0].right).toEqual({
+      weight: 0,
+      style: "none",
+      color: "#000",
     });
     expect(m.cellBorders[1].left).toBeNull();
   });
@@ -74,15 +160,14 @@ describe("grid-renderer", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
     g.setAttribute("data-row-heights", "30px");
-    const a = addCell(g); // left cell
-    const b = addCell(g); // right cell
+    addCell(g);
+    addCell(g);
+    // Neither side provided; fall back to edge default
     g.setAttribute(
-      "data-border-inner-v",
+      "data-border-default",
       JSON.stringify({ weight: 1, style: "solid", color: "#444" })
     );
-    a.removeAttribute("data-border-right");
-    b.removeAttribute("data-border-left");
-
+    g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
     const m = buildRenderModel(g);
     expect(m.cellBorders[0].right).toEqual({
       weight: 1,
@@ -92,7 +177,7 @@ describe("grid-renderer", () => {
     expect(m.cellBorders[1].left).toBeNull();
   });
 
-  it("perimeter suppresses cell edges and sets grid outline vars", () => {
+  it("perimeter via edges-outer applies directly to edge cells", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
     g.setAttribute("data-row-heights", "30px,30px");
@@ -101,20 +186,35 @@ describe("grid-renderer", () => {
     addCell(g);
     addCell(g);
     g.setAttribute(
-      "data-border-top",
-      JSON.stringify({ weight: 3, style: "double", color: "green" })
+      "data-edges-outer",
+      JSON.stringify({
+        top: [
+          { weight: 3, style: "double", color: "green" },
+          { weight: 3, style: "double", color: "green" },
+        ],
+        bottom: [null, null],
+        left: [null, null],
+        right: [null, null],
+      })
     );
 
     const m = buildRenderModel(g);
-    // top row cell top edges should be null
-    expect(m.cellBorders[0].top).toBeNull();
-    expect(m.cellBorders[1].top).toBeNull();
-
-    render(g);
-    expect(g.style.getPropertyValue("--grid-border-width")).toBe("3px");
-    expect(g.style.getPropertyValue("--grid-border-style")).toBe("double");
-    expect(g.style.getPropertyValue("--grid-border-color")).toBe("green");
+    // top row cell top edges should be set
+    expect(m.cellBorders[0].top).toEqual({
+      weight: 3,
+      style: "double",
+      color: "green",
+    });
+    expect(m.cellBorders[1].top).toEqual({
+      weight: 3,
+      style: "double",
+      color: "green",
+    });
   });
+
+  // Shorthand/outline no longer used; edges-outer drives perimeter.
+
+  // Per-side perimeter now comes from edges-outer; no outline assertions.
 
   it("applies grid corner radius to outermost cells", () => {
     const g = makeGrid();
@@ -133,15 +233,20 @@ describe("grid-renderer", () => {
     expect((d.style as any).borderBottomRightRadius).toBe("8px");
   });
 
-  it("suppresses nested grid perimeter when parent has perimeter", () => {
+  it("suppresses nested grid outline when parent cell has perimeter", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px");
     g.setAttribute("data-row-heights", "30px");
     const cell = addCell(g);
-    // Parent cell perimeter
-    cell.setAttribute(
-      "data-border-top",
-      JSON.stringify({ weight: 2, style: "solid", color: "black" })
+    // Parent cell perimeter via edges-outer top
+    g.setAttribute(
+      "data-edges-outer",
+      JSON.stringify({
+        top: [{ weight: 2, style: "solid", color: "black" }],
+        right: [null],
+        bottom: [null],
+        left: [null],
+      })
     );
     // Nested grid inside cell
     const nested = document.createElement("div");

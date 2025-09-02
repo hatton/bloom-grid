@@ -8,6 +8,13 @@ import type {
   CornerRadius,
 } from "./BorderControl/logic/types";
 import CornerMenu from "./BorderControl/menus/CornerMenu";
+import { getEdgesOuter } from "../grid-model";
+import {
+  applyUniformOuter,
+  applyUniformInner,
+  setDefaultBorder,
+} from "../edge-utils";
+import { BloomGrid } from "../";
 
 type Props = {
   grid?: HTMLElement;
@@ -27,66 +34,125 @@ const parsePx = (s: string | null | undefined): number => {
 };
 const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
   const cs = getComputedStyle(g);
+  // Outer: read from edges-outer if present, else fallback to computed outline
   const outlineW = snapWeight(parsePx(cs.outlineWidth));
-  const computedOutlineStyle = (cs.outlineStyle || "").trim();
+  const outlineStyleRaw = (cs.outlineStyle || "").trim().toLowerCase();
   const outlineStyle: BorderStyle =
-    computedOutlineStyle === "solid" ||
-    computedOutlineStyle === "dashed" ||
-    computedOutlineStyle === "dotted" ||
-    computedOutlineStyle === "none"
-      ? (computedOutlineStyle as BorderStyle)
+    outlineStyleRaw === "solid" ||
+    outlineStyleRaw === "dashed" ||
+    outlineStyleRaw === "dotted" ||
+    outlineStyleRaw === "double" ||
+    outlineStyleRaw === "none"
+      ? (outlineStyleRaw as BorderStyle)
       : outlineW === 0
       ? "none"
       : "solid";
-  const innerVar = cs.getPropertyValue("--cell-border-width")?.trim();
-  const innerW = snapWeight(parsePx(innerVar));
+
+  const outerSpec = getEdgesOuter(g);
+  const top = outerSpec?.top?.[0] ?? null; // use first as representative for UI
+  const right = outerSpec?.right?.[0] ?? null;
+  const bottom = outerSpec?.bottom?.[0] ?? null;
+  const left = outerSpec?.left?.[0] ?? null;
+
+  const mapOuter = (
+    spec: any
+  ): { weight: BorderWeight; style: BorderStyle } => ({
+    weight: spec ? snapWeight(spec.weight) : outlineW,
+    style: (spec?.style as BorderStyle | undefined) ?? outlineStyle,
+  });
+
+  const outer = {
+    top: mapOuter(top),
+    right: mapOuter(right),
+    bottom: mapOuter(bottom),
+    left: mapOuter(left),
+  } as const;
+
+  // Inner: for now, derive from CSS vars for display only (writer uses applyUniformInner)
+  const innerWVar = cs.getPropertyValue("--cell-border-width")?.trim();
+  const innerWFallback = snapWeight(parsePx(innerWVar));
   const innerStyleVar = cs
     .getPropertyValue("--cell-border-style")
     ?.trim()
     .toLowerCase();
-  const innerStyle: BorderStyle =
+  const innerStyleFallback: BorderStyle =
     innerStyleVar === "solid" ||
     innerStyleVar === "dashed" ||
     innerStyleVar === "dotted" ||
+    innerStyleVar === "double" ||
     innerStyleVar === "none"
       ? (innerStyleVar as BorderStyle)
-      : innerW === 0
+      : innerWFallback === 0
       ? "none"
       : "solid";
-  // Read grid corner radius (use top-left as representative; CornerMenu will handle mixed state separately)
+  const innerH = { weight: innerWFallback, style: innerStyleFallback };
+  const innerV = { weight: innerWFallback, style: innerStyleFallback };
+
+  // Corners from computed style (model value shown via render)
   const radiusPx = parsePx(cs.borderTopLeftRadius);
   const radius: CornerRadius = ([0, 2, 4, 8] as number[]).includes(radiusPx)
     ? (radiusPx as CornerRadius)
     : 0;
+
   return {
-    top: { weight: outlineW, style: outlineStyle, radius },
-    right: { weight: outlineW, style: outlineStyle, radius },
-    bottom: { weight: outlineW, style: outlineStyle, radius },
-    left: { weight: outlineW, style: outlineStyle, radius },
-    innerH: { weight: innerW, style: innerStyle, radius: 0 },
-    innerV: { weight: innerW, style: innerStyle, radius: 0 },
+    top: { weight: outer.top.weight, style: outer.top.style, radius },
+    right: { weight: outer.right.weight, style: outer.right.style, radius },
+    bottom: { weight: outer.bottom.weight, style: outer.bottom.style, radius },
+    left: { weight: outer.left.weight, style: outer.left.style, radius },
+    innerH: { weight: innerH.weight, style: innerH.style, radius: 0 },
+    innerV: { weight: innerV.weight, style: innerV.style, radius: 0 },
   };
 };
-const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
-  const perimeter = map.top;
-  g.style.setProperty(
-    "--grid-border-width",
-    perimeter.weight === 0 ? "0px" : `${perimeter.weight}px`
-  );
-  g.style.setProperty("--grid-border-style", perimeter.style);
 
-  const maxInnerW = Math.max(map.innerH.weight, map.innerV.weight);
-  const innerStyle: BorderStyle =
-    map.innerH.style === "none" && map.innerV.style === "none"
-      ? "none"
-      : map.innerH.style !== "none"
-      ? map.innerH.style
-      : map.innerV.style;
-  g.style.setProperty(
-    "--cell-border-width",
-    innerStyle === "none" || maxInnerW === 0 ? "0px" : `${maxInnerW}px`
+const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
+  const cs = getComputedStyle(g);
+  const outerColor = (
+    cs.getPropertyValue("--grid-border-color") ||
+    cs.outlineColor ||
+    "black"
+  ).trim();
+  const innerColor = (
+    cs.getPropertyValue("--cell-border-color") || "#444"
+  ).trim();
+
+  // Write outer edges uniformly across each side based on the UI map
+  applyUniformOuter(
+    g,
+    { weight: map.top.weight, style: map.top.style, color: outerColor } as any,
+    outerColor
   );
-  g.style.setProperty("--cell-border-style", innerStyle);
+  // Inner edges: write uniform inner H and V
+  applyUniformInner(
+    g,
+    "innerH",
+    {
+      weight: map.innerH.weight,
+      style: map.innerH.style,
+      color: innerColor,
+    } as any,
+    innerColor
+  );
+  applyUniformInner(
+    g,
+    "innerV",
+    {
+      weight: map.innerV.weight,
+      style: map.innerV.style,
+      color: innerColor,
+    } as any,
+    innerColor
+  );
+
+  // Default border as a safety for unspecified edges
+  setDefaultBorder(
+    g,
+    {
+      weight: map.innerH.weight,
+      style: map.innerH.style,
+      color: innerColor,
+    } as any,
+    innerColor
+  );
 };
 
 const menuItemStyle =
@@ -142,7 +208,8 @@ export const TableSection: React.FC<Props> = ({ grid }) => {
                     value={cornerValue}
                     onChange={(v) => {
                       if (!grid) return;
-                      grid.style.borderRadius = v ? `${v}px` : "";
+                      const ctrl = new BloomGrid(grid);
+                      ctrl.setGridCorners(v as number);
                       setCornerValue(v);
                     }}
                     disabled={cornerDisabled}

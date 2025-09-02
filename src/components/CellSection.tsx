@@ -9,6 +9,12 @@ import type {
   BorderValueMap,
   BorderWeight,
 } from "./BorderControl/logic/types";
+import {
+  applyCellPerimeter,
+  ensureEdgesArrays,
+  getGridSize,
+} from "../edge-utils";
+import { getEdgesOuter } from "../grid-model";
 // icons
 // icons are now owned by CellContentType; no direct imports here
 // (leftover icons removed)
@@ -39,8 +45,9 @@ const parsePx = (s: string | null | undefined): number => {
 };
 const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
   const cs = getComputedStyle(c);
+  // Prefer using grid edges where we can infer them; fallback to outline
   const outlineW = snapWeight(parsePx(cs.outlineWidth));
-  const computedOutlineStyle = (cs.outlineStyle || "").trim();
+  const computedOutlineStyle = (cs.outlineStyle || "").trim().toLowerCase();
   const outlineStyle: BorderStyle =
     computedOutlineStyle === "solid" ||
     computedOutlineStyle === "dashed" ||
@@ -51,34 +58,71 @@ const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
       : outlineW === 0
       ? "none"
       : "solid";
+
+  // Determine if this cell is on any outer edges to sample edges-outer
+  const grid = c.closest(".grid") as HTMLElement | null;
+  let top = { weight: outlineW, style: outlineStyle } as const;
+  let right = { weight: outlineW, style: outlineStyle } as const;
+  let bottom = { weight: outlineW, style: outlineStyle } as const;
+  let left = { weight: outlineW, style: outlineStyle } as const;
+  if (grid) {
+    ensureEdgesArrays(grid);
+    const { cols } = getGridSize(grid);
+    const cells = Array.from(grid.children).filter((el) =>
+      (el as HTMLElement).classList.contains("cell")
+    ) as HTMLElement[];
+    const idx = cells.indexOf(c);
+    const r = Math.floor(idx / Math.max(1, cols));
+    const ci = idx % Math.max(1, cols);
+    const outer = getEdgesOuter(grid);
+    const mapOuter = (
+      spec: any,
+      fallback: { weight: BorderWeight; style: BorderStyle }
+    ) => ({
+      weight: (spec?.weight as number) ?? fallback.weight,
+      style: (spec?.style as BorderStyle) ?? fallback.style,
+    });
+    if (outer) {
+      if (r === 0) top = mapOuter(outer.top[ci], top) as any;
+      if (ci === cols - 1) right = mapOuter(outer.right[r], right) as any;
+      if (cells.length > 0) {
+        const rows = Math.ceil(cells.length / Math.max(1, cols));
+        if (r === rows - 1) bottom = mapOuter(outer.bottom[ci], bottom) as any;
+      }
+      if (ci === 0) left = mapOuter(outer.left[r], left) as any;
+    }
+  }
+
   return {
-    top: { weight: outlineW, style: outlineStyle, radius: 0 },
-    right: { weight: outlineW, style: outlineStyle, radius: 0 },
-    bottom: { weight: outlineW, style: outlineStyle, radius: 0 },
-    left: { weight: outlineW, style: outlineStyle, radius: 0 },
+    top: { weight: top.weight, style: top.style, radius: 0 },
+    right: { weight: right.weight, style: right.style, radius: 0 },
+    bottom: { weight: bottom.weight, style: bottom.style, radius: 0 },
+    left: { weight: left.weight, style: left.style, radius: 0 },
     innerH: { weight: 0, style: "none", radius: 0 },
     innerV: { weight: 0, style: "none", radius: 0 },
   };
 };
 const applyBorderMapToCell = (c: HTMLElement, map: BorderValueMap) => {
-  // Cells can't do per-edge outlines; collapse to a single perimeter value.
-  const weights = [
-    map.top.weight,
-    map.right.weight,
-    map.bottom.weight,
-    map.left.weight,
-  ];
-  const maxW = Math.max(...weights);
-  const styles: BorderStyle[] = [
-    map.top.style,
-    map.right.style,
-    map.bottom.style,
-    map.left.style,
-  ];
-  const anyStyle = styles.find((s) => s !== "none") || "none";
-  const finalStyle: BorderStyle = maxW === 0 ? "none" : anyStyle || "solid";
-  c.style.outlineWidth = maxW === 0 ? "0px" : `${maxW}px`;
-  c.style.outlineStyle = finalStyle;
+  // Write via edge model so renderer picks it up deterministically
+  const grid = c.closest(".grid") as HTMLElement | null;
+  if (!grid) return;
+  const cs = getComputedStyle(grid);
+  const outerColor = (
+    cs.getPropertyValue("--grid-border-color") ||
+    cs.outlineColor ||
+    "black"
+  ).trim();
+  const toUI = (w: number, s: BorderStyle) => ({
+    weight: w,
+    style: s,
+    color: outerColor,
+  });
+  applyCellPerimeter(grid, c, {
+    top: toUI(map.top.weight, map.top.style),
+    right: toUI(map.right.weight, map.right.style),
+    bottom: toUI(map.bottom.weight, map.bottom.style),
+    left: toUI(map.left.weight, map.left.style),
+  });
 };
 
 const CellSection: React.FC<Props> = ({

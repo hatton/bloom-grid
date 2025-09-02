@@ -6,14 +6,18 @@ import {
   setRowHeights,
   getSpan,
   setSpan,
-  getGridBorder,
-  setGridBorder,
-  getCellBorder,
-  setCellBorder,
   getGridCorners,
   setGridCorners,
   getCellCorners,
   setCellCorners,
+  getEdgesV,
+  setEdgesV,
+  getEdgesH,
+  setEdgesH,
+  getEdgesOuter,
+  setEdgesOuter,
+  getEdgeDefault,
+  setEdgeDefault,
   type BorderSpec,
 } from "./grid-model";
 
@@ -46,21 +50,48 @@ describe("grid-model", () => {
     expect(getSpan(c)).toEqual({ x: 2, y: 3 });
   });
 
-  it("reads/writes grid borders and cell borders", () => {
+  it("reads/writes edgesH, edgesV, edgesOuter, and edge default", () => {
     const g = makeGrid();
-    const b: BorderSpec = { weight: 2, style: "solid", color: "#000" };
-    setGridBorder(g, "top", b);
-    expect(getGridBorder(g, "top")).toEqual(b);
-    setGridBorder(g, "innerH", { weight: 1, style: "dashed", color: "red" });
-    expect(getGridBorder(g, "innerH")).toEqual({
-      weight: 1,
-      style: "dashed",
-      color: "red",
+    // Vertical edges: 1 row x 1 vertical boundary
+    setEdgesV(g, [
+      [{ west: { weight: 2, style: "solid", color: "#000" }, east: null }],
+    ]);
+    expect(getEdgesV(g)).toEqual([
+      [{ west: { weight: 2, style: "solid", color: "#000" }, east: null }],
+    ]);
+
+    // Horizontal edges: 1 boundary x 2 columns
+    setEdgesH(g, [
+      [
+        { north: null, south: { weight: 1, style: "dashed", color: "red" } },
+        { north: null, south: null },
+      ],
+    ]);
+    expect(getEdgesH(g)).toEqual([
+      [
+        { north: null, south: { weight: 1, style: "dashed", color: "red" } },
+        { north: null, south: null },
+      ],
+    ]);
+
+    // Outer edges
+    setEdgesOuter(g, {
+      top: [{ weight: 3, style: "double", color: "green" }],
+      right: [null],
+      bottom: [null],
+      left: [null],
+    });
+    expect(getEdgesOuter(g)).toEqual({
+      top: [{ weight: 3, style: "double", color: "green" }],
+      right: [null],
+      bottom: [null],
+      left: [null],
     });
 
-    const c = makeCell();
-    setCellBorder(c, "left", b);
-    expect(getCellBorder(c, "left")).toEqual(b);
+    // Edge default
+    const def: BorderSpec = { weight: 1, style: "solid", color: "#888" };
+    setEdgeDefault(g, def);
+    expect(getEdgeDefault(g)).toEqual(def);
   });
 
   it("reads/writes corners JSON", () => {
@@ -79,9 +110,17 @@ describe("grid-model", () => {
     setGridCorners(g, null);
     expect(getGridCorners(g)).toBeNull();
 
-    const c = makeCell();
-    setCellBorder(c, "top", { weight: 1, style: "solid", color: "blue" });
-    setCellBorder(c, "top", null);
-    expect(getCellBorder(c, "top")).toBeNull();
+    setEdgesOuter(g, {
+      top: [{ weight: 1, style: "solid", color: "blue" }],
+      right: [null],
+      bottom: [null],
+      left: [null],
+    });
+    setEdgesOuter(g, null);
+    expect(getEdgesOuter(g)).toBeNull();
+
+    setEdgeDefault(g, { weight: 1, style: "solid", color: "blue" });
+    setEdgeDefault(g, null);
+    expect(getEdgeDefault(g)).toBeNull();
   });
 });

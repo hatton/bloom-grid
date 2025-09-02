@@ -11,6 +11,7 @@
         margin: 24px;
       }
     </style>
+    <link rel="stylesheet" href="../src/bloom-grid.css" />
   </head>
   <body>
     <div id="page" style="background: white; height: 600px; width: 500px">
@@ -148,6 +149,7 @@
                     class="grid"
                     data-column-widths="fill,fill,hug,hug"
                     data-row-heights="fill,fill,hug"
+                    data-border='{"weight":0}'
                   >
                     <div
                       class="cell"
@@ -366,5 +368,10 @@
         </div>
       </div>
     </div>
+    <script type="module">
+      import { attachGrid } from "../src/index.tsx";
+      // Attach renderer to all grids on the page (top-level and nested)
+      document.querySelectorAll(".grid").forEach((g) => attachGrid(g));
+    </script>
   </body>
 </html>

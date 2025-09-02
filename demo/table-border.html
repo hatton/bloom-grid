@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta />
+    <meta charset="UTF-8" />
+    <title>Stack Example</title>
+
+    <style>
+      /* ---------------- Base page styling ---------------- */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="page"
+      style="background: white; height: 600px; width: 500px; display: block"
+    >
+      <!-- This grid should have no borders, unless a cell has a border -->
+      <p>This should show a 2x2 table with no external border.</p>
+      <br />
+      <div
+        id="main-grid"
+        class="grid"
+        data-column-widths="fill,fill"
+        data-row-heights="fill,fill"
+        data-edges-outer='{"top":[null,null],"right":[null,null],"bottom":[null,null],"left":[null,null]}'
+        data-edges-v='[[{"west":{"weight":1,"style":"solid","color":"red"},"east":{"weight":1,"style":"solid","color":"red"}}],[{"west":{"weight":1,"style":"solid","color":"red"},"east":{"weight":1,"style":"solid","color":"red"}}]]'
+        data-edges-h='[[{"north":{"weight":1,"style":"solid","color":"red"},"south":{"weight":1,"style":"solid","color":"red"}},{"north":{"weight":1,"style":"solid","color":"red"},"south":{"weight":1,"style":"solid","color":"red"}}]]'
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c1 red border</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c2</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r2c1</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r2c2 red border</div>
+        </div>
+      </div>
+      <br />
+      <p>This should show a 2x2 table with only an external border.</p>
+
+      <div
+        id="main-grid"
+        class="grid"
+        data-column-widths="fill,fill"
+        data-row-heights="fill,fill"
+        data-edges-outer='{"top":[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],"right":[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],"bottom":[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],"left":[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]}'
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c1</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c2</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r2c1</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r2c2</div>
+        </div>
+      </div>
+      <br />
+      <p>
+        This should show a 1x2 table where the border between the cell is red.
+      </p>
+
+      <div
+        id="main-grid"
+        class="grid"
+        data-column-widths="fill,fill"
+        data-row-heights="fill"
+        data-edges-outer='{"top":[null,null],"right":[null],"bottom":[null,null],"left":[null]}'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"red"}]]'
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c1</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">r1c2</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

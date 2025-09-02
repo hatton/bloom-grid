@@ -11,12 +11,9 @@ const MainContent: React.FC<MainContentProps> = ({ exampleContent }) => {
   useEffect(() => {
     if (containerRef.current && exampleContent) {
       containerRef.current.innerHTML = exampleContent;
-      const gridElement = containerRef.current.querySelector(
-        ".grid"
-      ) as HTMLElement;
-      if (gridElement) {
-        attachGrid(gridElement);
-      }
+      const gridElements =
+        containerRef.current.querySelectorAll<HTMLElement>(".grid");
+      gridElements.forEach((g) => attachGrid(g));
 
       // Dispatch a custom event to notify React components that new content has been loaded
       const event = new CustomEvent("exampleContentLoaded", {

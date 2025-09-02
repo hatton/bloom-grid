@@ -64,16 +64,29 @@ Grid (`div.grid`)
 
 - `data-column-widths`: `hug,fill,100px,...` (list)
 - `data-row-heights`: `hug,fill,50px,...` (list)
-- `data-border-top|right|bottom|left`: JSON `{ weight: number, style: 'none'|'solid'|'dashed'|'dotted'|'double', color: string }`
-- `data-border-inner-h|inner-v`: same JSON shape
+- `data-edges-h`: JSON 2D array (R-1) x C of `{ north?: Edge|null, south?: Edge|null }`
+  - Horizontal boundaries between row r and r+1 at column c
+- `data-edges-v`: JSON 2D array R x (C-1) of `{ west?: Edge|null, east?: Edge|null }`
+  - Vertical boundaries between column c and c+1 at row r
+- `data-edges-outer`: JSON `{ top: Edge[], right: Edge[], bottom: Edge[], left: Edge[] }`
+  - top/bottom arrays length C; left/right arrays length R
+- `data-border-default`: JSON `Edge` used when a specific edge entry is null/omitted
+- `data-gap-x`: CSS length or comma list for per-column gaps (C-1 entries) — optional
+- `data-gap-y`: CSS length or comma list for per-row gaps (R-1 entries) — optional
 - `data-corners`: JSON `{ radius: number }`
 
 Cell (`div.cell`)
 
 - `data-span-x`, `data-span-y`: integers ≥ 1
 - `data-content-type`: `text|image|grid` (existing)
-- `data-border-top|right|bottom|left`: same JSON shape
+- `data-inset` (optional): JSON `{ top?: string, right?: string, bottom?: string, left?: string }`
 - `data-corners`: JSON `{ radius?: number }` (optional; outer corners may be overridden by grid corners)
+
+Notes on borders/edges
+
+- Borders are modeled as grid-owned edges; cells no longer own `data-border-*`.
+- Sided edges allow neighbors to differ when there’s a gap/indent: e.g., west vs east can each render.
+- When the gap at a boundary is 0, the renderer resolves two sided entries to one visible stroke (heaviest wins; left/top tiebreak).
 
 Notes
 

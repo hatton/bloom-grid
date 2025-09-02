@@ -1,20 +1,29 @@
 // Renderer core: converts data-* model to inline styles (no structure mutations)
 import {
-  getCellBorder,
-  getGridBorder,
+  getEdgesH,
+  getEdgesV,
+  getEdgesOuter,
+  getEdgeDefault,
   getGridCorners,
+  getGapX,
+  getGapY,
   type BorderSpec,
+} from "./grid-model";
+import type {
+  HEdgeEntry,
+  VEdgeEntry,
+  HVHorizontalEdgeCellSides,
+  HVVerticalEdgeCellSides,
 } from "./grid-model";
 
 const MIN_COLUMN_WIDTH = "60px";
 const MIN_ROW_HEIGHT = "20px";
 
-// Renderer defaults when data-* attributes are absent
-const DEFAULT_BORDER: BorderSpec = {
-  weight: 1,
-  style: "solid",
-  color: "#000",
-};
+// Note: We avoid hardcoding defaults in the renderer. Instead, we read
+// computed CSS variables from the grid element so stylesheet defaults and
+// table-level overrides participate via normal CSS precedence. Data-*
+// attributes still represent explicit user intent and win over inherited
+// styles.
 
 function makeGridRule(size: string, minimum: string): string {
   const s = (size || "").trim();
@@ -39,6 +48,40 @@ function getCells(grid: HTMLElement): HTMLElement[] {
   return result;
 }
 
+// --- Helpers for reading CSS-derived defaults and normalizing specs ---
+//
+
+// No CSS-derived defaults; borders are explicit via edge model + optional data-border-default.
+
+function normalize(
+  spec:
+    | BorderSpec
+    | (Partial<BorderSpec> & Record<string, any>)
+    | null
+    | undefined
+): BorderSpec | null {
+  if (!spec) return null;
+  // If explicitly 'none', return a normalized none edge
+  if ((spec as any).style === "none") {
+    return { weight: 0, style: "none", color: (spec as any).color || "#000" };
+  }
+  // Accept partials for conciseness: default to 1 solid black unless provided
+  const hasAnyField =
+    Object.prototype.hasOwnProperty.call(spec, "weight") ||
+    Object.prototype.hasOwnProperty.call(spec, "style") ||
+    Object.prototype.hasOwnProperty.call(spec, "color");
+  if (!hasAnyField) return null;
+  const weight = Number.isFinite((spec as any).weight)
+    ? (spec as any).weight
+    : 1;
+  const style = (spec as any).style || "solid";
+  const color = (spec as any).color || "#000";
+  if (style === "none" || weight <= 0) {
+    return { weight: 0, style: "none", color };
+  }
+  return { weight, style, color } as BorderSpec;
+}
+
 export interface RenderModel {
   columnWidths: string[]; // raw tokens from data-*
   rowHeights: string[]; // raw tokens from data-*
@@ -52,13 +95,6 @@ export interface RenderModel {
     bottom?: BorderSpec | null;
     left?: BorderSpec | null;
   }>;
-  // resolved grid perimeter (outline variables)
-  gridPerimeter: {
-    top: BorderSpec | null;
-    right: BorderSpec | null;
-    bottom: BorderSpec | null;
-    left: BorderSpec | null;
-  };
 }
 
 function stylePrecedence(style: string | undefined): number {
@@ -77,23 +113,7 @@ function stylePrecedence(style: string | undefined): number {
   }
 }
 
-function pickHeavier(
-  a: BorderSpec | null | undefined,
-  b: BorderSpec | null | undefined,
-  tieFavor: "leftTop" | "rightBottom"
-): BorderSpec | null {
-  if (!a && !b) return null;
-  if (a && !b) return a;
-  if (!a && b) return b;
-  // both present
-  if (!a || !b) return null; // TS narrow
-  if (a.weight !== b.weight) return a.weight > b.weight ? a : b;
-  const pa = stylePrecedence(a.style);
-  const pb = stylePrecedence(b.style);
-  if (pa !== pb) return pa > pb ? a : b;
-  // tie break
-  return tieFavor === "leftTop" ? a : b;
-}
+//
 
 export function buildRenderModel(grid: HTMLElement): RenderModel {
   const columnWidths = getAttrList(grid, "data-column-widths");
@@ -128,6 +148,55 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     return r * cols + c;
   }
 
+  // Edge inputs
+  const edgesH = getEdgesH(grid) as HEdgeEntry[][] | null; // (R-1) x C of {north,south} or single BorderSpec
+  const edgesV = getEdgesV(grid) as VEdgeEntry[][] | null; // R x (C-1) of {west,east} or single BorderSpec
+  const edgesOuter = getEdgesOuter(grid);
+  const edgeDefault = normalize(getEdgeDefault(grid));
+  const gapX = getGapX(grid);
+  const gapY = getGapY(grid);
+
+  function hasPositiveGapX(c: number): boolean {
+    const token = (gapX[c] || "").trim();
+    if (!token) return false;
+    const n = parseFloat(token);
+    if (!isNaN(n)) return n > 0;
+    return token !== "0" && token !== "0px"; // basic fallback
+  }
+  function hasPositiveGapY(r: number): boolean {
+    const token = (gapY[r] || "").trim();
+    if (!token) return false;
+    const n = parseFloat(token);
+    if (!isNaN(n)) return n > 0;
+    return token !== "0" && token !== "0px";
+  }
+
+  function borderScore(spec: BorderSpec | null | undefined): number[] {
+    // Higher tuple wins lexicographically: [noneWins, weight, stylePrec]
+    // We treat 'none' as dominating any other style per rule
+    const s = spec && spec.style ? spec.style : "none";
+    const w = spec && Number.isFinite(spec.weight) ? spec.weight : 0;
+    const noneWin = s === "none" ? 1 : 0;
+    return [noneWin, w, stylePrecedence(s)];
+  }
+  function pickSide(
+    a: BorderSpec | null | undefined,
+    b: BorderSpec | null | undefined,
+    tieFavor: "leftTop" | "rightBottom"
+  ): "a" | "b" | null {
+    const aPresent = !!a;
+    const bPresent = !!b;
+    if (aPresent && !bPresent) return "a";
+    if (!aPresent && bPresent) return "b";
+    if (!aPresent && !bPresent) return null;
+    const sa = borderScore(a);
+    const sb = borderScore(b);
+    if (sa[0] !== sb[0]) return sa[0] > sb[0] ? "a" : "b"; // 'none' wins
+    if (sa[1] !== sb[1]) return sa[1] > sb[1] ? "a" : "b"; // weight
+    if (sa[2] !== sb[2]) return sa[2] > sb[2] ? "a" : "b"; // style prec
+    return tieFavor === "leftTop" ? "a" : "b";
+  }
+
   // Resolve vertical inner edges (between c and c+1)
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols - 1; c++) {
@@ -135,47 +204,48 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const iRight = idx(r, c + 1);
       const leftCell = cells[iLeft];
       const rightCell = cells[iRight];
-      const leftIsSkip = !!(leftCell && leftCell.classList.contains("skip"));
-      const rightIsSkip = !!(rightCell && rightCell.classList.contains("skip"));
-      const leftSpec =
-        leftCell && !leftCell.classList.contains("skip")
-          ? getCellBorder(leftCell, "right")
-          : null;
-      const rightSpec =
-        rightCell && !rightCell.classList.contains("skip")
-          ? getCellBorder(rightCell, "left")
-          : null;
-      const gridInner = getGridBorder(grid, "innerV") || DEFAULT_BORDER;
-      // First: specific vs specific
-      let winner = pickHeavier(leftSpec, rightSpec, "leftTop");
-      // If no specific winner, compare specific vs inner
-      if (!winner) {
-        // prefer any specific over inner
-        winner = leftSpec || rightSpec || gridInner || null;
+      if (!leftCell || !rightCell) {
+        // No corresponding cells (e.g., empty grid shell): skip
+        continue;
       }
-      if (!winner) continue;
-      // Assign to one side only; prefer non-skip side when using inner default
-      if (winner === leftSpec) {
-        cellBorders[iLeft].right = winner;
-        cellBorders[iRight].left = null;
-      } else if (winner === rightSpec) {
-        cellBorders[iRight].left = winner;
-        cellBorders[iLeft].right = null;
+      const leftIsSkip = leftCell.classList.contains("skip");
+      const rightIsSkip = rightCell.classList.contains("skip");
+      const e = edgesV && edgesV[r] ? (edgesV[r][c] as VEdgeEntry) : undefined;
+      let west: BorderSpec | null = null;
+      let east: BorderSpec | null = null;
+      if (e && typeof (e as any).weight === "number") {
+        // single BorderSpec means same spec on both sides
+        const spec = normalize(e as BorderSpec);
+        west = spec;
+        east = spec;
       } else {
-        // winner came from gridInner default
-        if (leftIsSkip && !rightIsSkip) {
-          cellBorders[iRight].left = winner;
-          cellBorders[iLeft].right = null;
-        } else if (rightIsSkip && !leftIsSkip) {
-          cellBorders[iLeft].right = winner;
-          cellBorders[iRight].left = null;
-        } else if (leftIsSkip && rightIsSkip) {
-          // both skip, don't draw this inner edge
-          // no-op
+        const sv = (e as HVVerticalEdgeCellSides | undefined) ?? undefined;
+        west = normalize(sv?.west ?? null);
+        east = normalize(sv?.east ?? null);
+      }
+      const gap = hasPositiveGapX(c);
+      if (gap) {
+        // Sided painting: each side draws independently
+        if (!leftIsSkip) cellBorders[iLeft].right = west || null;
+        if (!rightIsSkip) cellBorders[iRight].left = east || null;
+      } else {
+        // Zero gap: resolve to a single stroke
+        const a = west || null;
+        const b = east || null;
+        let side = pickSide(a, b, "leftTop");
+        if (!side && edgeDefault) {
+          // neither side provided; fall back to default on left
+          side = "a";
+        }
+        if (!side) continue;
+        const winner = side === "a" ? a || edgeDefault : b || edgeDefault;
+        if (!winner) continue;
+        if (side === "a") {
+          if (!leftIsSkip) cellBorders[iLeft].right = winner;
+          if (!rightIsSkip) cellBorders[iRight].left = null;
         } else {
-          // deterministic default: assign to left cell's right edge
-          cellBorders[iLeft].right = winner;
-          cellBorders[iRight].left = null;
+          if (!rightIsSkip) cellBorders[iRight].left = winner;
+          if (!leftIsSkip) cellBorders[iLeft].right = null;
         }
       }
     }
@@ -188,116 +258,70 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const iBottom = idx(r + 1, c);
       const topCell = cells[iTop];
       const bottomCell = cells[iBottom];
-      const topIsSkip = !!(topCell && topCell.classList.contains("skip"));
-      const bottomIsSkip = !!(
-        bottomCell && bottomCell.classList.contains("skip")
-      );
-      const topSpec =
-        topCell && !topCell.classList.contains("skip")
-          ? getCellBorder(topCell, "bottom")
-          : null;
-      const bottomSpec =
-        bottomCell && !bottomCell.classList.contains("skip")
-          ? getCellBorder(bottomCell, "top")
-          : null;
-      const gridInner = getGridBorder(grid, "innerH") || DEFAULT_BORDER;
-      let winner = pickHeavier(topSpec, bottomSpec, "leftTop");
-      if (!winner) {
-        winner = topSpec || bottomSpec || gridInner || null;
+      if (!topCell || !bottomCell) {
+        continue;
       }
-      if (!winner) continue;
-      if (winner === topSpec) {
-        cellBorders[iTop].bottom = winner;
-        cellBorders[iBottom].top = null;
-      } else if (winner === bottomSpec) {
-        cellBorders[iBottom].top = winner;
-        cellBorders[iTop].bottom = null;
+      const topIsSkip = topCell.classList.contains("skip");
+      const bottomIsSkip = bottomCell.classList.contains("skip");
+      const e = edgesH && edgesH[r] ? (edgesH[r][c] as HEdgeEntry) : undefined;
+      let north: BorderSpec | null = null;
+      let south: BorderSpec | null = null;
+      if (e && typeof (e as any).weight === "number") {
+        const spec = normalize(e as BorderSpec);
+        north = spec;
+        south = spec;
       } else {
-        // winner came from gridInner default
-        if (topIsSkip && !bottomIsSkip) {
-          cellBorders[iBottom].top = winner;
-          cellBorders[iTop].bottom = null;
-        } else if (bottomIsSkip && !topIsSkip) {
-          cellBorders[iTop].bottom = winner;
-          cellBorders[iBottom].top = null;
-        } else if (topIsSkip && bottomIsSkip) {
-          // both skip, don't draw this inner edge
-          // no-op
+        const sh = (e as HVHorizontalEdgeCellSides | undefined) ?? undefined;
+        north = normalize(sh?.north ?? null);
+        south = normalize(sh?.south ?? null);
+      }
+      const gap = hasPositiveGapY(r);
+      if (gap) {
+        if (!topIsSkip) cellBorders[iTop].bottom = north || null;
+        if (!bottomIsSkip) cellBorders[iBottom].top = south || null;
+      } else {
+        const a = north || null;
+        const b = south || null;
+        let side = pickSide(a, b, "leftTop");
+        if (!side && edgeDefault) side = "a";
+        if (!side) continue;
+        const winner = side === "a" ? a || edgeDefault : b || edgeDefault;
+        if (!winner) continue;
+        if (side === "a") {
+          if (!topIsSkip) cellBorders[iTop].bottom = winner;
+          if (!bottomIsSkip) cellBorders[iBottom].top = null;
         } else {
-          // deterministic default: assign to top cell's bottom edge
-          cellBorders[iTop].bottom = winner;
-          cellBorders[iBottom].top = null;
+          if (!bottomIsSkip) cellBorders[iBottom].top = winner;
+          if (!topIsSkip) cellBorders[iTop].bottom = null;
         }
       }
     }
   }
-
-  // Perimeter: outer wins over cells when present
-  const perTop = getGridBorder(grid, "top") || DEFAULT_BORDER;
-  const perRight = getGridBorder(grid, "right") || DEFAULT_BORDER;
-  const perBottom = getGridBorder(grid, "bottom") || DEFAULT_BORDER;
-  const perLeft = getGridBorder(grid, "left") || DEFAULT_BORDER;
-
-  // If a perimeter exists for a side, suppress corresponding cell side borders and let grid draw via outline vars
-  if (perTop) {
+  // Perimeter from edges-outer: apply per-cell sides directly
+  if (edgesOuter) {
+    // top
+    const topArr = edgesOuter.top || [];
     for (let c = 0; c < cols; c++) {
       const i = idx(0, c);
-      cellBorders[i].top = null;
+      cellBorders[i].top = normalize(topArr[c] || null);
     }
-  } else {
-    // no perimeter: use cell-specific tops as-is (already included only in inner edges; add perimeter edges now)
-    for (let c = 0; c < cols; c++) {
-      const i = idx(0, c);
-      const spec =
-        cells[i] && !cells[i].classList.contains("skip")
-          ? getCellBorder(cells[i], "top")
-          : null;
-      if (spec) cellBorders[i].top = spec;
-    }
-  }
-  if (perBottom) {
+    // bottom
+    const bottomArr = edgesOuter.bottom || [];
     for (let c = 0; c < cols; c++) {
       const i = idx(rows - 1, c);
-      cellBorders[i].bottom = null;
+      cellBorders[i].bottom = normalize(bottomArr[c] || null);
     }
-  } else {
-    for (let c = 0; c < cols; c++) {
-      const i = idx(rows - 1, c);
-      const spec =
-        cells[i] && !cells[i].classList.contains("skip")
-          ? getCellBorder(cells[i], "bottom")
-          : null;
-      if (spec) cellBorders[i].bottom = spec;
-    }
-  }
-  if (perLeft) {
+    // left
+    const leftArr = edgesOuter.left || [];
     for (let r = 0; r < rows; r++) {
       const i = idx(r, 0);
-      cellBorders[i].left = null;
+      cellBorders[i].left = normalize(leftArr[r] || null);
     }
-  } else {
-    for (let r = 0; r < rows; r++) {
-      const i = idx(r, 0);
-      const spec =
-        cells[i] && !cells[i].classList.contains("skip")
-          ? getCellBorder(cells[i], "left")
-          : null;
-      if (spec) cellBorders[i].left = spec;
-    }
-  }
-  if (perRight) {
+    // right
+    const rightArr = edgesOuter.right || [];
     for (let r = 0; r < rows; r++) {
       const i = idx(r, cols - 1);
-      cellBorders[i].right = null;
-    }
-  } else {
-    for (let r = 0; r < rows; r++) {
-      const i = idx(r, cols - 1);
-      const spec =
-        cells[i] && !cells[i].classList.contains("skip")
-          ? getCellBorder(cells[i], "right")
-          : null;
-      if (spec) cellBorders[i].right = spec;
+      cellBorders[i].right = normalize(rightArr[r] || null);
     }
   }
 
@@ -308,12 +332,6 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     templateRows,
     spans,
     cellBorders,
-    gridPerimeter: {
-      top: perTop || null,
-      right: perRight || null,
-      bottom: perBottom || null,
-      left: perLeft || null,
-    },
   };
 }
 
@@ -366,25 +384,6 @@ export function render(grid: HTMLElement, _reason?: string): void {
     applySide("Left", b.left);
   });
 
-  // Apply grid perimeter using outline variables when present
-  const gp = model.gridPerimeter;
-  // Use the heaviest of the four to set outline defaults (outline is uniform); if sides differ, outline can't represent that — we prioritize top/right/bottom/left presence.
-  const candidates = [gp.top, gp.right, gp.bottom, gp.left].filter(
-    Boolean
-  ) as BorderSpec[];
-  if (candidates.length > 0) {
-    // pick the visually dominant one
-    let best = candidates[0]!;
-    for (let i = 1; i < candidates.length; i++) {
-      best = pickHeavier(best, candidates[i], "leftTop") || best;
-    }
-    grid.style.setProperty("--grid-border-width", `${best.weight}px`);
-    grid.style.setProperty("--grid-border-style", best.style);
-    grid.style.setProperty("--grid-border-color", best.color);
-  } else {
-    grid.style.setProperty("--grid-border-width", "0");
-  }
-
   // Apply outer corner radii
   const corners = getGridCorners(grid) ?? { radius: 0 };
   if (Number.isFinite(corners.radius)) {
@@ -431,11 +430,20 @@ export function render(grid: HTMLElement, _reason?: string): void {
   // If a cell contains a nested .grid and this cell has any perimeter border, suppress nested grid outline.
   cells.forEach((cell, i) => {
     const b = model.cellBorders[i] ?? {};
-    const hasPerimeter = Boolean(b.top || b.right || b.bottom || b.left);
+    const visible = (s: BorderSpec | null | undefined) =>
+      !!(s && s.weight > 0 && s.style !== "none");
+    const hasPerimeter =
+      visible(b.top) ||
+      visible(b.right) ||
+      visible(b.bottom) ||
+      visible(b.left);
     if (!hasPerimeter) return;
     const nested = cell.querySelector(".grid") as HTMLElement | null;
     if (nested) {
+      // Clear nested outline variables best-effort
       nested.style.setProperty("--grid-border-width", "0");
+      nested.style.removeProperty("--grid-border-style");
+      nested.style.removeProperty("--grid-border-color");
     }
   });
 }

@@ -10,10 +10,10 @@
  * ### HTML Structure:
  * ```html
  * <div class="grid" data-column-widths="100px,fit" data-row-heights="50px,60px">
- *   <div class="cell" data-border-radius="8px">Cell 0,0</div>
- *   <div class="cell"data-border-top='{"width": "4px", "color": "red", "style": "solid"}'>thick red border all around</div>
- *   <div class="cell" data-border-left='{"weight": 0}'>Cell 1,0 No left border</div>
- *   <div class="cell" data-border-bottom='{"style": "double"}'>Cell 1,1</div>
+ *   <div class="cell">Cell 0,0</div>
+ *   <div class="cell">Cell 0,1</div>
+ *   <div class="cell">Cell 1,0</div>
+ *   <div class="cell">Cell 1,1</div>
  * </div>
  * ```
  *
@@ -25,9 +25,16 @@
  *
  * 2. **Cell Elements**: Direct children divs with class "cell"
  *    - Ordered left-to-right, top-to-bottom in the DOM
- *    - Can have CSS custom properties for spanning:
- *      - `--span-x`: Number of columns to span (default: 1)
- *      - `--span-y`: Number of rows to span (default: 1)
+ *    - Spans configured via data attributes on each cell:
+ *      - `data-span-x`: Number of columns to span (default: 1)
+ *      - `data-span-y`: Number of rows to span (default: 1)
+ *
+ * 3. **Borders (edge-based model)**: Borders are defined on the grid as arrays, not per-cell attributes.
+ *    - `data-edges-h`: JSON (R-1 x C) of objects with optional `north` / `south` BorderSpec.
+ *    - `data-edges-v`: JSON (R x C-1) of objects with optional `west` / `east` BorderSpec.
+ *    - `data-edges-outer`: JSON perimeter with arrays: `top[C]`, `right[R]`, `bottom[C]`, `left[R]`.
+ *    - `data-border-default`: optional BorderSpec default used during rendering when an edge side is unspecified.
+ *    - Gaps (optional): `data-gap-x` (C-1 entries) and `data-gap-y` (R-1 entries) enable independent sided painting.
  *
  * ### Cell Positioning:
  * - Cells are positioned in DOM order: [0,0], [0,1], [1,0], [1,1], etc.
