@@ -199,8 +199,12 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   }
 
   // Helper to read a vertical edge entry at row r, at boundary c (0..cols)
-  function readV(r: number, c: number): { west: BorderSpec | null; east: BorderSpec | null } {
-  const row: VEdgeEntry[] | undefined = (edgesV && (edgesV[r] as VEdgeEntry[])) || undefined;
+  function readV(
+    r: number,
+    c: number
+  ): { west: BorderSpec | null; east: BorderSpec | null } {
+    const row: VEdgeEntry[] | undefined =
+      (edgesV && (edgesV[r] as VEdgeEntry[])) || undefined;
     let e: VEdgeEntry | undefined;
     if (row) {
       // Support either full (cols+1) entries including perimeters
@@ -230,25 +234,34 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   }
 
   // Helper to read a horizontal edge entry at boundary r (0..rows), column c
-  function readH(r: number, c: number): { north: BorderSpec | null; south: BorderSpec | null } {
-  const rowsCount = rowHeights.length;
+  function readH(
+    r: number,
+    c: number
+  ): { north: BorderSpec | null; south: BorderSpec | null } {
+    const rowsCount = rowHeights.length;
     let e: HEdgeEntry | undefined;
     if (edgesH) {
       const full = edgesH.length === rowsCount + 1;
       const interiorOnly = edgesH.length === Math.max(0, rowsCount - 1);
       const singleInterior = edgesH.length === 1 && rowsCount >= 2;
       if (full) {
-        e = (edgesH[r] && (edgesH[r][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+        e = (edgesH[r] && (edgesH[r][c] as HEdgeEntry)) as
+          | HEdgeEntry
+          | undefined;
       } else if (interiorOnly) {
         // interior boundaries map r in [1..rows-1] to edgesH[r-1]
         if (r >= 1 && r <= rowsCount - 1) {
           const rr = r - 1;
-          e = (edgesH[rr] && (edgesH[rr][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+          e = (edgesH[rr] && (edgesH[rr][c] as HEdgeEntry)) as
+            | HEdgeEntry
+            | undefined;
         }
       } else if (singleInterior) {
         // Single interior boundary row, applies when r===1
         if (r === 1) {
-          e = (edgesH[0] && (edgesH[0][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+          e = (edgesH[0] && (edgesH[0][c] as HEdgeEntry)) as
+            | HEdgeEntry
+            | undefined;
         }
       }
     }
@@ -279,7 +292,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       }
       const leftIsSkip = leftCell.classList.contains("skip");
       const rightIsSkip = rightCell.classList.contains("skip");
-  const { west, east } = readV(r, c + 1);
+      const { west, east } = readV(r, c + 1);
       const gap = hasPositiveGapX(c);
       if (gap) {
         // Sided painting: each side draws independently
@@ -320,7 +333,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       }
       const topIsSkip = topCell.classList.contains("skip");
       const bottomIsSkip = bottomCell.classList.contains("skip");
-  const { north, south } = readH(r + 1, c);
+      const { north, south } = readH(r + 1, c);
       const gap = hasPositiveGapY(r);
       if (gap) {
         if (!topIsSkip) cellBorders[iTop].bottom = north || null;
@@ -413,27 +426,33 @@ export function render(grid: HTMLElement, _reason?: string): void {
     cell.style.setProperty("--span-y", String(s.y));
   });
 
-  // Apply borders: clear outlines to avoid double paint and set per-side borders
-  cells.forEach((cell, i) => {
-    // clear outline; we will use regular borders per side
-    cell.style.outlineWidth = "0";
-    const b = model.cellBorders[i] ?? {};
-    function applySide(
-      side: "Top" | "Right" | "Bottom" | "Left",
-      spec: BorderSpec | null | undefined
-    ) {
-      (cell.style as any)[`border${side}Width`] = spec
-        ? `${spec.weight}px`
-        : "0";
-      (cell.style as any)[`border${side}Style`] = spec ? spec.style : "none";
-      (cell.style as any)[`border${side}Color`] = spec
-        ? spec.color
-        : "transparent";
+  // Helper function to check if all edges are identical
+  // Removed outline optimization; always apply per-side borders.
+
+  // Helper function to apply individual border sides
+  function applyBorderSide(
+    cell: HTMLElement,
+    side: string,
+    spec: BorderSpec | null | undefined
+  ) {
+    if (spec) {
+      (cell.style as any)[`border${side}Width`] = `${spec.weight}px`;
+      (cell.style as any)[`border${side}Style`] = spec.style;
+      (cell.style as any)[`border${side}Color`] = spec.color;
+    } else {
+      (cell.style as any)[`border${side}Width`] = "0";
+      (cell.style as any)[`border${side}Style`] = "none";
     }
-    applySide("Top", b.top);
-    applySide("Right", b.right);
-    applySide("Bottom", b.bottom);
-    applySide("Left", b.left);
+  }
+
+  // Apply cell border styling using per-side CSS borders only
+  cells.forEach((cell, i) => {
+    const b = model.cellBorders[i] ?? {};
+    // Apply individual border sides
+    applyBorderSide(cell, "Top", b.top);
+    applyBorderSide(cell, "Right", b.right);
+    applyBorderSide(cell, "Bottom", b.bottom);
+    applyBorderSide(cell, "Left", b.left);
   });
 
   // Apply outer corner radii
@@ -478,24 +497,5 @@ export function render(grid: HTMLElement, _reason?: string): void {
     );
   }
 
-  // Nested grid perimeter suppression when parent cell draws perimeter
-  // If a cell contains a nested .grid and this cell has any perimeter border, suppress nested grid outline.
-  cells.forEach((cell, i) => {
-    const b = model.cellBorders[i] ?? {};
-    const visible = (s: BorderSpec | null | undefined) =>
-      !!(s && s.weight > 0 && s.style !== "none");
-    const hasPerimeter =
-      visible(b.top) ||
-      visible(b.right) ||
-      visible(b.bottom) ||
-      visible(b.left);
-    if (!hasPerimeter) return;
-    const nested = cell.querySelector(".grid") as HTMLElement | null;
-    if (nested) {
-      // Clear nested outline variables best-effort
-      nested.style.setProperty("--grid-border-width", "0");
-      nested.style.removeProperty("--grid-border-style");
-      nested.style.removeProperty("--grid-border-color");
-    }
-  });
+  // No special handling for nested grids needed; borders are applied per-cell only.
 }

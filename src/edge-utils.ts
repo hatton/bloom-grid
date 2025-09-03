@@ -103,7 +103,9 @@ export function applyUniformInner(
   const { rows, cols } = getGridSize(grid);
   const spec = toSpec(border, colorFallback);
   if (kind === "innerV") {
-    const v = (getEdgesV(grid) ?? []) as Array<Array<HVVerticalEdgeCellSides | BorderSpec | null>>;
+    const v = (getEdgesV(grid) ?? []) as Array<
+      Array<HVVerticalEdgeCellSides | BorderSpec | null>
+    >;
     for (let r = 0; r < rows; r++) {
       for (let c = 1; c <= Math.max(0, cols - 1); c++) {
         // Write a single-spec for conciseness
@@ -112,7 +114,9 @@ export function applyUniformInner(
     }
     setEdgesV(grid, v);
   } else {
-    const h = (getEdgesH(grid) ?? []) as Array<Array<HVHorizontalEdgeCellSides | BorderSpec | null>>;
+    const h = (getEdgesH(grid) ?? []) as Array<
+      Array<HVHorizontalEdgeCellSides | BorderSpec | null>
+    >;
     for (let r = 1; r <= Math.max(0, rows - 1); r++) {
       for (let c = 0; c < cols; c++) {
         h[r][c] = spec;
@@ -157,8 +161,12 @@ export function applyCellPerimeter(
   const sy = Math.max(1, span.y);
 
   // Fetch arrays
-  const v = (getEdgesV(grid) ?? []) as Array<Array<HVVerticalEdgeCellSides | BorderSpec | null>>;
-  const h = (getEdgesH(grid) ?? []) as Array<Array<HVHorizontalEdgeCellSides | BorderSpec | null>>;
+  const v = (getEdgesV(grid) ?? []) as Array<
+    Array<HVVerticalEdgeCellSides | BorderSpec | null>
+  >;
+  const h = (getEdgesH(grid) ?? []) as Array<
+    Array<HVHorizontalEdgeCellSides | BorderSpec | null>
+  >;
 
   // Left
   if (map.left !== undefined) {
@@ -188,7 +196,7 @@ export function applyCellPerimeter(
     const outerSpec = toSpec(map.top, outerColorFallback);
     // Perimeter if r==0 else interior boundary at row r
     const boundaryRow = r === 0 ? 0 : r;
-    for (let cc = c; cc < Math.min(c + sx, (h[boundaryRow]?.length ?? 0)); cc++) {
+    for (let cc = c; cc < Math.min(c + sx, h[boundaryRow]?.length ?? 0); cc++) {
       h[boundaryRow][cc] = r === 0 ? outerSpec : innerSpec;
     }
   }
@@ -199,7 +207,7 @@ export function applyCellPerimeter(
     const outerSpec = toSpec(map.bottom, outerColorFallback);
     const rrBottom = r + sy - 1;
     const boundaryRow = rrBottom === rows - 1 ? rows : rrBottom + 1;
-    for (let cc = c; cc < Math.min(c + sx, (h[boundaryRow]?.length ?? 0)); cc++) {
+    for (let cc = c; cc < Math.min(c + sx, h[boundaryRow]?.length ?? 0); cc++) {
       h[boundaryRow][cc] = rrBottom === rows - 1 ? outerSpec : innerSpec;
     }
   }

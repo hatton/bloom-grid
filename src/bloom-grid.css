@@ -1,12 +1,6 @@
 :root {
   --cell-bg: #fff;
   --cell-padding: 8px 10px;
-  --cell-border-width: 1px;
-  --cell-border-style: solid;
-  --cell-border-color: #444;
-  --grid-border-width: 1px;
-  --grid-border-style: solid;
-  --grid-border-color: black;
 }
 
 #page {
@@ -21,19 +15,11 @@
 
   gap: var(--gap, 0);
   background: var(--bg, transparent);
-  /* Use separate outline properties so style can be a CSS variable */
-  outline-width: var(--grid-border-width, 0);
-  outline-style: var(--grid-border-style, solid);
-  outline-color: var(--grid-border-color, black);
 }
 
 .cell {
   background: var(--cell-bg);
   padding: var(--cell-padding);
-  /* Use separate outline properties so style can be a CSS variable */
-  outline-width: var(--cell-border-width);
-  outline-style: var(--cell-border-style, solid);
-  outline-color: var(--cell-border-color);
 
   background: var(--this-bg, var(--cell-bg));
   padding: var(--this-padding, var(--cell-padding));
@@ -47,8 +33,7 @@
 }
 /* when cell is focused, set a light blue border */
 .cell:focus {
-  outline: 4px solid #fac918 !important;
-  outline-offset: -4px;
+  box-shadow: inset 0 0 0 4px #fac918;
 }
 
 .cell > div[contenteditable="true"] {
@@ -116,9 +101,7 @@
 .cell:nth-of-type(odd) {
   border-radius: var(--cell-border-radius-odd);
 }
-.grid .cell:nth-of-type(even) {
-  outline-width: var(--cell-border-width-even, var(--cell-border-width));
-}
+/* removed outline-based even-cell override */
 
 /* Ensure nested grids fill their parent cell */
 .cell[data-content-type="grid"] > .grid {

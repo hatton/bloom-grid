@@ -22,6 +22,10 @@ This document defines the current DOM data-\* model used by Bloom Grid, the goal
 - Grid and cell state lives in `data-*` attributes only. No UI writes to `style` or CSS vars directly.
 - Inline styles are render outputs, never inputs.
 
+## Rendering Borders vs Outlines
+
+- We render using CSS borders only. CSS Outlines are not used because outlines cannot be applied per-side. Any previous hybrid outline/border optimization has been removed to keep rendering predictable and per-side accurate.
+
 ## 2) Data-\* schema
 
 Terminology:
@@ -40,16 +44,19 @@ Gaps (optional):
 - `data-gap-y`: comma list or single CSS length for row gaps (R-1 entries if list)
 
 Unified edges (no separate outer object):
+
 - `data-edges-h`: JSON 2D array describing horizontal boundaries. Preferred full shape is (R+1)×C; row 0 is the top perimeter, row R is the bottom perimeter; interior rows are boundaries between r and r+1.
 - `data-edges-v`: JSON 2D array describing vertical boundaries. Preferred full shape is R×(C+1); col 0 is the left perimeter, col C is the right perimeter; interior cols are boundaries between c and c+1.
 
 Authoring forms per entry (applies to both H and V arrays):
-1) Shorthand single edge: `BorderSpec | null` (applies to both sides when gap is zero)
-2) Sided object for gaps/asymmetry:
+
+1. Shorthand single edge: `BorderSpec | null` (applies to both sides when gap is zero; `null` = unspecified)
+2. Sided object for gaps/asymmetry:
    - Horizontal: `{ north?: BorderSpec|null, south?: BorderSpec|null }`
    - Vertical: `{ west?: BorderSpec|null, east?: BorderSpec|null }`
 
 Concise interior-only form:
+
 - For convenience, you may omit perimeters and provide only interior boundaries:
   - `data-edges-h`: shape (R-1)×C
   - `data-edges-v`: shape R×(C-1)
@@ -61,10 +68,19 @@ Defaults:
 - `data-border-default`: `BorderSpec | null`
   - Used only when an interior edge entry is entirely unspecified (both sides absent) and there is zero gap.
 
+Null semantics (vs. explicit none):
+
+- `null` means "unspecified" — the model provides no instruction for that boundary. It does not force absence; it simply omits a value.
+  - Interior edges, zero gap: only when the entire entry is unspecified (both sides absent) may `data-border-default` be used; otherwise use provided sides. If no default, nothing renders.
+  - Interior edges, positive gap: defaults never auto-apply across gaps; each unspecified side renders nothing unless explicitly provided.
+  - Perimeter edges: defaults never apply; unspecified/omitted means no perimeter border.
+- `{ "style": "none" }` is an explicit instruction to render no border. It always suppresses defaults and participates in conflict resolution ("none" wins).
+- Summary: use `style: "none"` to force no stroke; use `null` to say nothing.
+
 Examples:
 
 - 1×2 with a red divider, no perimeter (concise interior-only V):
-  - `data-edges-h='[[null,null]]'`  <!-- (R-1)×C = 0×2 effectively omitted -->
+  - `data-edges-h='[[null,null]]'` <!-- (R-1)×C = 0×2 effectively omitted -->
   - `data-edges-v='[[{"weight":1,"style":"solid","color":"red"}]]'` <!-- R×(C-1) = 1×1 -->
 - 2×2 with only an outer 1px solid black border (full H/V with perimeters):
   - `data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[null,null],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'`

@@ -33,7 +33,7 @@
  *    - `data-edges-h`: JSON (R-1 x C) of objects with optional `north` / `south` BorderSpec.
  *    - `data-edges-v`: JSON (R x C-1) of objects with optional `west` / `east` BorderSpec.
  *    - Unified edges include perimeters: `data-edges-h` is (R+1)xC (top=0, bottom=R), `data-edges-v` is Rx(C+1) (left=0, right=C).
- *    - `data-border-default`: optional BorderSpec default used during rendering when an edge side is unspecified.
+ *    - `data-border-default`: optional BorderSpec default used only when an interior edge entry is entirely unspecified (both sides absent) and there is zero gap. Not applied across gaps or to perimeters.
  *    - Gaps (optional): `data-gap-x` (C-1 entries) and `data-gap-y` (R-1 entries) enable independent sided painting.
  *
  * ### Cell Positioning:

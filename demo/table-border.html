@@ -4,6 +4,7 @@
     <meta />
     <meta charset="UTF-8" />
     <title>Stack Example</title>
+    <link rel="stylesheet" href="../src/bloom-grid.css" />
 
     <style>
       /* ---------------- Base page styling ---------------- */
@@ -19,15 +20,18 @@
       style="background: white; height: 600px; width: 500px; display: block"
     >
       <!-- This grid should have no borders, unless a cell has a border -->
-      <p>This should show a 2x2 table with no external border.</p>
+      <p>
+        This should show a 2x2 table with no external border. the first and last
+        cells should have red borders.
+      </p>
       <br />
       <div
-        id="main-grid"
+        id="grid-with-red-cross"
         class="grid"
         data-column-widths="fill,fill"
-  data-row-heights="fill,fill"
-  data-edges-h='[[null,null],[{"north":{"weight":1,"style":"solid","color":"red"},"south":{"weight":1,"style":"solid","color":"red"}},{"north":{"weight":1,"style":"solid","color":"red"},"south":{"weight":1,"style":"solid","color":"red"}}],[null,null]]'
-  data-edges-v='[[null,{"west":{"weight":1,"style":"solid","color":"red"},"east":{"weight":1,"style":"solid","color":"red"}},null],[null,{"west":{"weight":1,"style":"solid","color":"red"},"east":{"weight":1,"style":"solid","color":"red"}},null]]'
+        data-row-heights="fill,fill"
+        data-edges-h='[[{"weight":1,"style":"solid","color":"red"},null],[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}],[null,{"weight":1,"style":"solid","color":"red"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"},null],[null,{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1 red border</div>
@@ -46,12 +50,12 @@
       <p>This should show a 2x2 table with only an external border.</p>
 
       <div
-        id="main-grid"
+        id="grid-with-external-border"
         class="grid"
         data-column-widths="fill,fill"
-  data-row-heights="fill,fill"
-      data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[null,null],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
-  data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}]]'
+        data-row-heights="fill,fill"
+        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[null,null],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1</div>
@@ -72,12 +76,12 @@
       </p>
 
       <div
-        id="main-grid"
+        id="grid-with-red-border"
         class="grid"
         data-column-widths="fill,fill"
-  data-row-heights="fill"
-  data-edges-h='[[null,null],[null,null]]'
-  data-edges-v='[[null,{"weight":1,"style":"solid","color":"red"},null]]'
+        data-row-heights="fill"
+        data-edges-h="[[null,null],[null,null]]"
+        data-edges-v='[[null,{"weight":1,"style":"solid","color":"red"},null]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1</div>
@@ -87,5 +91,6 @@
         </div>
       </div>
     </div>
+    <script type="module" src="./table-border.ts"></script>
   </body>
 </html>

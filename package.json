@@ -15,7 +15,10 @@
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "vitest run"
+    "test": "yarn vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "preview": "vite preview"
   },
   "keywords": [
     "grid",
@@ -25,6 +28,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

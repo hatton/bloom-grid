@@ -27,43 +27,27 @@ const menuItemStyle =
   "flex items-center gap-2 px-4 py-1 cursor-pointer w-full text-left";
 
 // --- Border helpers for a single cell ---
-const snapWeight = (w: number): BorderWeight => {
-  if (w <= 0) return 0;
-  if (w < 1.5) return 1;
-  if (w < 3) return 2;
-  return 4;
-};
-const parsePx = (s: string | null | undefined): number => {
-  if (!s) return 0;
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
-};
 const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
-  const cs = getComputedStyle(c);
-  // Prefer using grid edges where we can infer them; fallback to outline
-  const outlineW = snapWeight(parsePx(cs.outlineWidth));
-  const computedOutlineStyle = (cs.outlineStyle || "").trim().toLowerCase();
-  const outlineStyle: BorderStyle =
-    computedOutlineStyle === "solid" ||
-    computedOutlineStyle === "dashed" ||
-    computedOutlineStyle === "dotted" ||
-    computedOutlineStyle === "double" ||
-    computedOutlineStyle === "none"
-      ? (computedOutlineStyle as BorderStyle)
-      : outlineW === 0
-      ? "none"
-      : "solid";
-
-  // Determine if this cell is on any outer edges
+  // For now, sampling defaults to none; authoring writes via edge model.
   const grid = c.closest(".grid") as HTMLElement | null;
-  let top = { weight: outlineW, style: outlineStyle } as const;
-  let right = { weight: outlineW, style: outlineStyle } as const;
-  let bottom = { weight: outlineW, style: outlineStyle } as const;
-  let left = { weight: outlineW, style: outlineStyle } as const;
+  let top = {
+    weight: 0 as BorderWeight,
+    style: "none" as BorderStyle,
+  } as const;
+  let right = {
+    weight: 0 as BorderWeight,
+    style: "none" as BorderStyle,
+  } as const;
+  let bottom = {
+    weight: 0 as BorderWeight,
+    style: "none" as BorderStyle,
+  } as const;
+  let left = {
+    weight: 0 as BorderWeight,
+    style: "none" as BorderStyle,
+  } as const;
   if (grid) {
     ensureEdgesArrays(grid);
-  // position not needed for UI sampling after unified edges; renderer reflects outer via computed styles
-  // Outer edges are reflected in computed styles by renderer; for UI sampling we keep outline fallback.
   }
 
   return {
@@ -80,11 +64,7 @@ const applyBorderMapToCell = (c: HTMLElement, map: BorderValueMap) => {
   const grid = c.closest(".grid") as HTMLElement | null;
   if (!grid) return;
   const cs = getComputedStyle(grid);
-  const outerColor = (
-    cs.getPropertyValue("--grid-border-color") ||
-    cs.outlineColor ||
-    "black"
-  ).trim();
+  const outerColor = (cs.color || "black").trim();
   const toUI = (w: number, s: BorderStyle) => ({
     weight: w,
     style: s,

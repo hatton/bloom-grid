@@ -3,3 +3,7 @@ node_modules/
 dist/
 
 .playwright-mcp/
+
+playwright-report/trace/
+
+playwright-report/

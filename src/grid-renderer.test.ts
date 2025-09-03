@@ -177,6 +177,83 @@ describe("grid-renderer", () => {
     expect(m.cellBorders[1].left).toBeNull();
   });
 
+  it("does not apply edge default across positive gaps (sides unspecified render nothing)", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px");
+    g.setAttribute("data-gap-x", "8px");
+    g.setAttribute(
+      "data-border-default",
+      JSON.stringify({ weight: 2, style: "solid", color: "#333" })
+    );
+    const a = addCell(g);
+    const b = addCell(g);
+    // No sides provided at the interior boundary
+    g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
+    render(g);
+    // With a gap, unspecified sides should not inherit default; both sides should be 0/none
+    expect((a.style as any).borderRightWidth).toBe("0px");
+    expect((a.style as any).borderRightStyle).toBe("none");
+    expect((b.style as any).borderLeftWidth).toBe("0px");
+    expect((b.style as any).borderLeftStyle).toBe("none");
+  });
+
+  it("does not apply edge default to perimeters when unspecified", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px");
+    addCell(g);
+    addCell(g);
+    g.setAttribute(
+      "data-border-default",
+      JSON.stringify({ weight: 2, style: "solid", color: "#333" })
+    );
+    // Provide only interior edge; omit perimeters in unified H/V
+    g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
+    // No H array provided at all -> top/bottom perimeters unspecified
+    const m = buildRenderModel(g);
+    // Top and bottom perimeters should remain null (no default applied)
+    expect(m.cellBorders[0].top).toBeNull();
+    expect(m.cellBorders[1].top).toBeNull();
+    expect(m.cellBorders[0].bottom).toBeNull();
+    expect(m.cellBorders[1].bottom).toBeNull();
+  });
+
+  it("null is unspecified (no force); style:none forces no stroke", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px");
+    addCell(g);
+    addCell(g);
+    // Default that would draw a line
+    g.setAttribute(
+      "data-border-default",
+      JSON.stringify({ weight: 1, style: "solid", color: "#000" })
+    );
+    // Case 1: entire entry unspecified (zero gap) -> default applies
+    g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
+    let m = buildRenderModel(g);
+    expect(m.cellBorders[0].right).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].left).toBeNull();
+
+    // Case 2: explicit none on one side forces absence and suppresses default
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([[{ west: { style: "none", weight: 0, color: "#000" } }]])
+    );
+    m = buildRenderModel(g);
+    expect(m.cellBorders[0].right).toEqual({
+      weight: 0,
+      style: "none",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].left).toBeNull();
+  });
+
   it("perimeter via unified H/V applies directly to edge cells", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
@@ -212,9 +289,7 @@ describe("grid-renderer", () => {
     });
   });
 
-  // Shorthand/outline no longer used; unified H/V drives perimeter.
-
-  // Per-side perimeter now comes from unified H/V; no outline assertions.
+  // Borders are applied per-side; no outline usage.
 
   it("applies grid corner radius to outermost cells", () => {
     const g = makeGrid();
@@ -233,27 +308,5 @@ describe("grid-renderer", () => {
     expect((d.style as any).borderBottomRightRadius).toBe("8px");
   });
 
-  it("suppresses nested grid outline when parent cell has perimeter", () => {
-    const g = makeGrid();
-    g.setAttribute("data-column-widths", "100px");
-    g.setAttribute("data-row-heights", "30px");
-    const cell = addCell(g);
-    // Parent cell perimeter via H at r=0
-    g.setAttribute(
-      "data-edges-h",
-      JSON.stringify([
-        [{ weight: 2, style: "solid", color: "black" }],
-        [null],
-      ])
-    );
-    // Nested grid inside cell
-    const nested = document.createElement("div");
-    nested.className = "grid";
-    nested.setAttribute("data-column-widths", "100px");
-    nested.setAttribute("data-row-heights", "30px");
-    cell.appendChild(nested);
-
-    render(g);
-    expect(nested.style.getPropertyValue("--grid-border-width")).toBe("0");
-  });
+  // No special behavior for nested grids in border-only mode.
 });

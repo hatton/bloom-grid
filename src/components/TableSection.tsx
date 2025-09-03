@@ -34,26 +34,19 @@ const parsePx = (s: string | null | undefined): number => {
 };
 const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
   const cs = getComputedStyle(g);
-  // Outer: read from unified edge arrays if present, else fallback to computed outline
-  const outlineW = snapWeight(parsePx(cs.outlineWidth));
-  const outlineStyleRaw = (cs.outlineStyle || "").trim().toLowerCase();
-  const outlineStyle: BorderStyle =
-    outlineStyleRaw === "solid" ||
-    outlineStyleRaw === "dashed" ||
-    outlineStyleRaw === "dotted" ||
-    outlineStyleRaw === "double" ||
-    outlineStyleRaw === "none"
-      ? (outlineStyleRaw as BorderStyle)
-      : outlineW === 0
-      ? "none"
-      : "solid";
 
-  const cols = (g.getAttribute("data-column-widths") || "").split(",").filter(Boolean).length;
-  const rows = (g.getAttribute("data-row-heights") || "").split(",").filter(Boolean).length;
+  const cols = (g.getAttribute("data-column-widths") || "")
+    .split(",")
+    .filter(Boolean).length;
+  const rows = (g.getAttribute("data-row-heights") || "")
+    .split(",")
+    .filter(Boolean).length;
   const edgesH = getEdgesH(g);
   const edgesV = getEdgesV(g);
-  const sample = <T,>(arr: Array<T> | null | undefined, idx: number): T | null =>
-    arr && arr.length > idx ? (arr[idx] as any) : null;
+  const sample = <T,>(
+    arr: Array<T> | null | undefined,
+    idx: number
+  ): T | null => (arr && arr.length > idx ? (arr[idx] as any) : null);
   const top = edgesH ? sample(edgesH[0], 0) : null;
   const right = edgesV ? sample(edgesV[0], cols) : null;
   const bottom = edgesH ? sample(edgesH[rows], 0) : null;
@@ -62,8 +55,9 @@ const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
   const mapOuter = (
     spec: any
   ): { weight: BorderWeight; style: BorderStyle } => ({
-    weight: spec ? snapWeight(spec.weight) : outlineW,
-    style: (spec?.style as BorderStyle | undefined) ?? outlineStyle,
+    weight: spec ? snapWeight(spec.weight) : 0,
+    style:
+      (spec?.style as BorderStyle | undefined) ?? (spec ? spec.style : "none"),
   });
 
   const outer = {
@@ -73,25 +67,9 @@ const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
     left: mapOuter(left),
   } as const;
 
-  // Inner: for now, derive from CSS vars for display only (writer uses applyUniformInner)
-  const innerWVar = cs.getPropertyValue("--cell-border-width")?.trim();
-  const innerWFallback = snapWeight(parsePx(innerWVar));
-  const innerStyleVar = cs
-    .getPropertyValue("--cell-border-style")
-    ?.trim()
-    .toLowerCase();
-  const innerStyleFallback: BorderStyle =
-    innerStyleVar === "solid" ||
-    innerStyleVar === "dashed" ||
-    innerStyleVar === "dotted" ||
-    innerStyleVar === "double" ||
-    innerStyleVar === "none"
-      ? (innerStyleVar as BorderStyle)
-      : innerWFallback === 0
-      ? "none"
-      : "solid";
-  const innerH = { weight: innerWFallback, style: innerStyleFallback };
-  const innerV = { weight: innerWFallback, style: innerStyleFallback };
+  // Inner: not inferable from computed CSS without per-cell, keep 0 defaults for UI until a cell is selected
+  const innerH = { weight: 0 as BorderWeight, style: "none" as BorderStyle };
+  const innerV = { weight: 0 as BorderWeight, style: "none" as BorderStyle };
 
   // Corners from computed style (model value shown via render)
   const radiusPx = parsePx(cs.borderTopLeftRadius);
@@ -111,14 +89,8 @@ const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
 
 const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
   const cs = getComputedStyle(g);
-  const outerColor = (
-    cs.getPropertyValue("--grid-border-color") ||
-    cs.outlineColor ||
-    "black"
-  ).trim();
-  const innerColor = (
-    cs.getPropertyValue("--cell-border-color") || "#444"
-  ).trim();
+  const outerColor = (cs.color || "black").trim();
+  const innerColor = (cs.color || "#444").trim();
 
   // Write outer edges uniformly across each side based on the UI map
   applyUniformOuter(
