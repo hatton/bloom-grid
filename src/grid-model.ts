@@ -76,7 +76,7 @@ export function setSpan(cell: HTMLElement, span: SpanSpec): void {
 }
 
 // Borders
-export type BorderSide = "top" | "right" | "bottom" | "left";
+// Deprecated per-cell/grid border side APIs have been removed in favor of unified edge arrays.
 
 // Edge-based model
 export interface HVHorizontalEdgeCellSides {
@@ -154,52 +154,7 @@ export function setEdgeDefault(
   setJSONAttr(grid, "data-border-default", border);
 }
 
-// Grid-level shorthand perimeter default
-// Deprecated APIs retained temporarily for migration (no-op or passthrough where possible)
-export function getGridBorderDefault(_grid: HTMLElement): BorderSpec | null {
-  return null;
-}
-export function setGridBorderDefault(
-  _grid: HTMLElement,
-  _border: BorderSpec | null
-): void {}
-export type GridBorderSide = never;
-export function getGridBorder(
-  _grid: HTMLElement,
-  _side: GridBorderSide
-): BorderSpec | null {
-  return null;
-}
-export function setGridBorder(
-  _grid: HTMLElement,
-  _side: GridBorderSide,
-  _border: BorderSpec | null
-): void {}
-export function getGridInnerDefault(_grid: HTMLElement): BorderSpec | null {
-  return null;
-}
-export function setGridInnerDefault(
-  _grid: HTMLElement,
-  _border: BorderSpec | null
-): void {}
-export function getCellBorder(
-  _cell: HTMLElement,
-  _side: BorderSide
-): BorderSpec | null {
-  return null;
-}
-export function setCellBorder(
-  _cell: HTMLElement,
-  _side: BorderSide,
-  _border: BorderSpec | null
-): void {}
-export function getCellBorderDefault(_cell: HTMLElement): BorderSpec | null {
-  return null;
-}
-export function setCellBorderDefault(
-  _cell: HTMLElement,
-  _border: BorderSpec | null
-): void {}
+// (Deprecated grid/cell border APIs removed; use unified edge model via get/setEdgesH/V and get/setEdgeDefault.)
 
 // Corners
 export function getGridCorners(grid: HTMLElement): CornersSpec | null {

@@ -24,21 +24,29 @@ This document defines the current DOM data-\* model used by Bloom Grid, the goal
 
 ## Rendering Borders vs Outlines
 
-- We render using CSS borders only. CSS Outlines are not used because outlines cannot be applied per-side. Any previous hybrid outline/border optimization has been removed to keep rendering predictable and per-side accurate.
+- CSS borders have curved outsides but right-angle insides and look ugly. However, CSS Outlines are not a total replacement, because we cannot specify different sides to have different outlines, the way we can with borders. Perhaps in the future we will have a hybrid system, but for now, we are going to only use css borders, no outlines.
 
 ## 2) Data-\* schema
 
 Terminology:
 
-- R = number of rows, C = number of columns
-- Edge = BorderSpec = `{ weight: number, style: 'none'|'solid'|'dashed'|'dotted'|'double', color: string }`
-
 Grid sizing:
 
-- `data-column-widths`: comma list of track tokens (e.g., `fill,fill`, `hug,120px,fill`)
-- `data-row-heights`: comma list of track tokens
+Cell sizing and content:
 
-Gaps (optional):
+- `data-span-x`, `data-span-y`: integers ≥ 1 (default 1) indicating column/row span for a cell
+- `data-content-type`: `text | image | grid` (existing)
+
+- Spans: internal edges under a spanning cell are suppressed; only the span’s perimeter edges render. Covered cells retain DOM presence with class `skip`; the renderer avoids painting borders for `skip` cells and attributes the shared edges to the spanning owner.
+
+Corners:
+
+- Grid corners: `data-corners` on the grid is a JSON object, e.g., `{ "radius": number }`, that applies to the four outer grid corners.
+- Cell corners (optional): cells may have `data-corners` as JSON `{ radius?: number }`. Outer corner radii of perimeter cells are forced to match the grid’s corner radius. Inner cell corners remain unrounded (0) unless future rules specify otherwise.
+
+Nested grids:
+
+- Where a nested grid sits inside a parent cell, the parent grid’s perimeter takes precedence over the nested grid’s perimeter where they coincide (the parent cell defines the visual outer boundary).
 
 - `data-gap-x`: comma list or single CSS length for column gaps (C-1 entries if list)
 - `data-gap-y`: comma list or single CSS length for row gaps (R-1 entries if list)

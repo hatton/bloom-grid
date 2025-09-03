@@ -15,7 +15,8 @@
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "yarn vitest",
+    "//will run and exit": "",
+    "test": "yarn vitest run",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "preview": "vite preview"

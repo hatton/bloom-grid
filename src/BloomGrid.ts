@@ -10,12 +10,8 @@ import {
   setColumnWidths,
   getRowHeights,
   setRowHeights,
-  setGridBorder,
-  setCellBorder,
   setGridCorners,
   setSpan,
-  type BorderSpec,
-  type GridBorderSide,
 } from "./grid-model";
 import { gridHistoryManager } from "./history";
 import { request } from "./render-scheduler";
@@ -125,30 +121,7 @@ export class BloomGrid {
     return getSpan(cell);
   }
 
-  // Borders & corners (model-level attributes)
-  setGridBorder(side: GridBorderSide, border: BorderSpec | null): void {
-    const perform = () => setGridBorder(this.grid, side, border);
-    gridHistoryManager.addHistoryEntry(
-      this.grid,
-      `Set Grid Border ${side}`,
-      perform
-    );
-    this.schedule("setGridBorder");
-  }
-
-  setCellBorder(
-    cell: HTMLElement,
-    side: "top" | "right" | "bottom" | "left",
-    border: BorderSpec | null
-  ): void {
-    const perform = () => setCellBorder(cell, side, border);
-    gridHistoryManager.addHistoryEntry(
-      this.grid,
-      `Set Cell Border ${side}`,
-      perform
-    );
-    this.schedule("setCellBorder");
-  }
+  // Borders are modeled via unified edge arrays; callers should use grid-model setEdgesH/V helpers directly.
 
   setGridCorners(radiusPx: number): void {
     const perform = () => setGridCorners(this.grid, { radius: radiusPx });
