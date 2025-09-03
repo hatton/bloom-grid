@@ -15,6 +15,7 @@ interface ExampleBarProps {
 const ExampleBar: React.FC<ExampleBarProps> = ({ onExampleSelect }) => {
   const [exampleFiles, setExampleFiles] = useState<Example[]>([]);
   const [activeExample, setActiveExample] = useState<string>("");
+  const LOCAL_STORAGE_KEY = "bloom-grid.activeExampleHtml";
 
   // Function to fetch available example files from the API
   const fetchExampleFiles = async (): Promise<void> => {
@@ -23,11 +24,16 @@ const ExampleBar: React.FC<ExampleBarProps> = ({ onExampleSelect }) => {
       if (response.ok) {
         const files: Example[] = await response.json();
         setExampleFiles(files);
-
-        // Set the first example as active by default
+        // Choose saved example if available, otherwise fallback to first
         if (files.length > 0) {
-          setActiveExample(files[0].htmlFile);
-          onExampleSelect(files[0]);
+          const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const selected = saved
+            ? files.find((f) => f.htmlFile === saved) || files[0]
+            : files[0];
+          setActiveExample(selected.htmlFile);
+          onExampleSelect(selected);
+        } else {
+          setActiveExample("");
         }
       } else {
         console.error(
@@ -48,6 +54,12 @@ const ExampleBar: React.FC<ExampleBarProps> = ({ onExampleSelect }) => {
 
   const handleExampleSelect = (example: Example) => {
     setActiveExample(example.htmlFile);
+    // persist selection
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, example.htmlFile);
+    } catch (e) {
+      // ignore storage errors (e.g., privacy mode)
+    }
     onExampleSelect(example);
   };
 

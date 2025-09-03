@@ -1,6 +1,10 @@
 :root {
   --cell-bg: #fff;
   --cell-padding: 8px 10px;
+  /* Default edge border (used by renderer when no data-border-default is provided) */
+  --edge-default-weight: 1;
+  --edge-default-style: solid;
+  --edge-default-color: #000;
 }
 
 #page {
@@ -55,49 +59,6 @@
   outline: none;
 }
 
-/* Ensure headings look like proper headings - override Tailwind reset */
-.cell h1,
-.cell h2,
-.cell h3,
-.cell h4,
-.cell h5,
-.cell h6,
-[contenteditable] h1,
-[contenteditable] h2,
-[contenteditable] h3,
-[contenteditable] h4,
-[contenteditable] h5,
-[contenteditable] h6 {
-  font-weight: bold !important;
-  margin: 0.5em 0 !important;
-}
-
-/* Removed empty h1 ruleset to satisfy linter (font-size was commented out) */
-
-.cell h2,
-[contenteditable] h2 {
-  font-size: 1.5em !important;
-}
-
-.cell h3,
-[contenteditable] h3 {
-  font-size: 1.25em !important;
-}
-
-.cell h4,
-[contenteditable] h4 {
-  font-size: 1.1em !important;
-}
-
-.cell h5,
-[contenteditable] h5 {
-  font-size: 1em !important;
-}
-
-.cell h6,
-[contenteditable] h6 {
-  font-size: 0.9em !important;
-}
 .cell:nth-of-type(odd) {
   border-radius: var(--cell-border-radius-odd);
 }

@@ -50,7 +50,7 @@ function getCells(grid: HTMLElement): HTMLElement[] {
 // --- Helpers for reading CSS-derived defaults and normalizing specs ---
 //
 
-// No CSS-derived defaults; borders are explicit via edge model + optional data-border-default.
+// Defaults can come from data-border-default or CSS variables on the grid element.
 
 function normalize(
   spec:
@@ -150,7 +150,31 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   // Edge inputs
   const edgesH = getEdgesH(grid) as HEdgeEntry[][] | null; // (R+1) x C of entries: interior rows 1..R-1, perimeters at 0 (top) and R (bottom)
   const edgesV = getEdgesV(grid) as VEdgeEntry[][] | null; // R x (C+1) of entries: interior cols 1..C-1, perimeters at 0 (left) and C (right)
-  const edgeDefault = normalize(getEdgeDefault(grid));
+  // Discover default edge: data-border-default wins; else read CSS vars on grid
+  let edgeDefault = normalize(getEdgeDefault(grid));
+  if (!edgeDefault) {
+    const cs = getComputedStyle(grid);
+    let wRaw = cs.getPropertyValue("--edge-default-weight").trim();
+    let sRaw = cs.getPropertyValue("--edge-default-style").trim();
+    let cRaw = cs.getPropertyValue("--edge-default-color").trim();
+    // jsdom may not propagate custom properties via computed style; fall back to inline style
+    if (!wRaw)
+      wRaw = grid.style.getPropertyValue("--edge-default-weight").trim();
+    if (!sRaw)
+      sRaw = grid.style.getPropertyValue("--edge-default-style").trim();
+    if (!cRaw)
+      cRaw = grid.style.getPropertyValue("--edge-default-color").trim();
+    if (wRaw || sRaw || cRaw) {
+      const w = wRaw ? parseFloat(wRaw) : 1;
+      const s = (sRaw || "solid") as BorderSpec["style"];
+      const c = cRaw || "#000";
+      edgeDefault = normalize({
+        weight: isFinite(w) ? w : 1,
+        style: s,
+        color: c,
+      });
+    }
+  }
   const gapX = getGapX(grid);
   const gapY = getGapY(grid);
 
@@ -221,7 +245,13 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     }
     let west: BorderSpec | null = null;
     let east: BorderSpec | null = null;
-    if (e && typeof (e as any).weight === "number") {
+    const isBorderSpec =
+      e &&
+      typeof e === "object" &&
+      (typeof (e as any).weight === "number" ||
+        Object.prototype.hasOwnProperty.call(e as any, "style") ||
+        Object.prototype.hasOwnProperty.call(e as any, "color"));
+    if (isBorderSpec) {
       const spec = normalize(e as BorderSpec);
       west = spec;
       east = spec;
@@ -267,7 +297,13 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     }
     let north: BorderSpec | null = null;
     let south: BorderSpec | null = null;
-    if (e && typeof (e as any).weight === "number") {
+    const isBorderSpec =
+      e &&
+      typeof e === "object" &&
+      (typeof (e as any).weight === "number" ||
+        Object.prototype.hasOwnProperty.call(e as any, "style") ||
+        Object.prototype.hasOwnProperty.call(e as any, "color"));
+    if (isBorderSpec) {
       const spec = normalize(e as BorderSpec);
       north = spec;
       south = spec;
@@ -295,9 +331,11 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const { west, east } = readV(r, c + 1);
       const gap = hasPositiveGapX(c);
       if (gap) {
-        // Sided painting: each side draws independently
-        if (!leftIsSkip) cellBorders[iLeft].right = west || null;
-        if (!rightIsSkip) cellBorders[iRight].left = east || null;
+        // Sided painting: each side draws independently; use default for unspecified sides
+        if (!leftIsSkip)
+          cellBorders[iLeft].right = (west ?? edgeDefault) || null;
+        if (!rightIsSkip)
+          cellBorders[iRight].left = (east ?? edgeDefault) || null;
       } else {
         // Zero gap: resolve to a single stroke
         const a = west || null;
@@ -336,8 +374,11 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       const { north, south } = readH(r + 1, c);
       const gap = hasPositiveGapY(r);
       if (gap) {
-        if (!topIsSkip) cellBorders[iTop].bottom = north || null;
-        if (!bottomIsSkip) cellBorders[iBottom].top = south || null;
+        // Use default for unspecified sides across gaps
+        if (!topIsSkip)
+          cellBorders[iTop].bottom = (north ?? edgeDefault) || null;
+        if (!bottomIsSkip)
+          cellBorders[iBottom].top = (south ?? edgeDefault) || null;
       } else {
         const a = north || null;
         const b = south || null;
@@ -362,7 +403,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     const { north } = readH(0, c);
     const i = idx(0, c);
     if (cells[i]) {
-      cellBorders[i].top = north;
+      cellBorders[i].top = north ?? edgeDefault ?? null;
     }
   }
   // Bottom perimeter: H at r=rows
@@ -370,7 +411,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     const { south } = readH(rows, c);
     const i = idx(Math.max(0, rows - 1), c);
     if (cells[i]) {
-      cellBorders[i].bottom = south;
+      cellBorders[i].bottom = south ?? edgeDefault ?? null;
     }
   }
   // Left perimeter: V at c=0
@@ -378,7 +419,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     const { west } = readV(r, 0);
     const i = idx(r, 0);
     if (cells[i]) {
-      cellBorders[i].left = west;
+      cellBorders[i].left = west ?? edgeDefault ?? null;
     }
   }
   // Right perimeter: V at c=cols
@@ -386,7 +427,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     const { east } = readV(r, cols);
     const i = idx(r, Math.max(0, cols - 1));
     if (cells[i]) {
-      cellBorders[i].right = east;
+      cellBorders[i].right = east ?? edgeDefault ?? null;
     }
   }
 

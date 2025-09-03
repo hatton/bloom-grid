@@ -10,7 +10,7 @@ This document defines the current DOM data-\* model used by Bloom Grid, the goal
 - No visual conflicts: with zero gap between cells, at most one visible stroke is painted per shared edge (deterministic tie-breaks favor left/top).
 - Support gaps/indents: when a positive gap exists between tracks, each side can draw independently.
 - Perimeter borders: outer edges (top/right/bottom/left) set directly on the grid perimeter.
-- Defaults: optional grid-level default edge used when an interior edge is unspecified.
+- Defaults: optional grid-level default edge used when an edge is unspecified.
 - Spans: cell spans suppress internal edges and apply border segments at the span’s outer perimeter.
 - Be concise. For example, don't require us list out specs for each edge when the are all the same. Another example: don't list color:"black" if you know that black is the default. This makes the html much easier to read an reason about.
 
@@ -74,14 +74,19 @@ Concise interior-only form:
 Defaults:
 
 - `data-border-default`: `BorderSpec | null`
-  - Used only when an interior edge entry is entirely unspecified (both sides absent) and there is zero gap.
+  - If present, this is the default border spec the renderer uses when an edge side is unspecified.
+  - If absent, the renderer reads CSS custom properties from the grid element (themeable):
+    - `--edge-default-weight` (number, px)
+    - `--edge-default-style` (solid|dashed|dotted|double|none)
+    - `--edge-default-color` (CSS color)
+  - These CSS vars can be defined globally (e.g., in :root) or overridden per-grid.
 
 Null semantics (vs. explicit none):
 
 - `null` means "unspecified" — the model provides no instruction for that boundary. It does not force absence; it simply omits a value.
-  - Interior edges, zero gap: only when the entire entry is unspecified (both sides absent) may `data-border-default` be used; otherwise use provided sides. If no default, nothing renders.
-  - Interior edges, positive gap: defaults never auto-apply across gaps; each unspecified side renders nothing unless explicitly provided.
-  - Perimeter edges: defaults never apply; unspecified/omitted means no perimeter border.
+  - Interior edges, zero gap: if both sides are unspecified, the default applies (from data-border-default or CSS vars). Conflicts choose a single stroke (none > weight > style; ties favor left/top).
+  - Interior edges, positive gap: each side paints independently. If a side is unspecified, the default applies to that side; explicit `style:"none"` continues to suppress.
+  - Perimeter edges: when unspecified, the default applies to the outer cell sides.
 - `{ "style": "none" }` is an explicit instruction to render no border. It always suppresses defaults and participates in conflict resolution ("none" wins).
 - Summary: use `style: "none"` to force no stroke; use `null` to say nothing.
 
@@ -99,6 +104,18 @@ Examples:
 - 2×2 with inner red lines (shorthand):
   - `data-edges-v='[[{"color":"red"}],[{"color":"red"}]]'` <!-- R×(C-1) = 2×1; defaults: 1 solid -->
   - `data-edges-h='[[{"color":"red"},{"color":"red"}]]'` <!-- (R-1)×C = 1×2; defaults: 1 solid -->
+
+CSS default example (no data-border-default provided):
+
+```css
+:root {
+  --edge-default-weight: 1;
+  --edge-default-style: solid;
+  --edge-default-color: #000;
+}
+```
+
+With the above, a 2×2 grid with no edges specified will render with 1px solid black on all inner edges and perimeters.
 
 Behavior notes:
 

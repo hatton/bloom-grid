@@ -191,14 +191,14 @@ describe("grid-renderer", () => {
     // No sides provided at the interior boundary
     g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
     render(g);
-    // With a gap, unspecified sides should not inherit default; both sides should be 0/none
-    expect((a.style as any).borderRightWidth).toBe("0px");
-    expect((a.style as any).borderRightStyle).toBe("none");
-    expect((b.style as any).borderLeftWidth).toBe("0px");
-    expect((b.style as any).borderLeftStyle).toBe("none");
+    // With a gap, unspecified sides should inherit default independently
+    expect((a.style as any).borderRightWidth).toBe("2px");
+    expect((a.style as any).borderRightStyle).toBe("solid");
+    expect((b.style as any).borderLeftWidth).toBe("2px");
+    expect((b.style as any).borderLeftStyle).toBe("solid");
   });
 
-  it("does not apply edge default to perimeters when unspecified", () => {
+  it("applies default to perimeters when unspecified", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
     g.setAttribute("data-row-heights", "30px");
@@ -212,11 +212,27 @@ describe("grid-renderer", () => {
     g.setAttribute("data-edges-v", JSON.stringify([[{}]]));
     // No H array provided at all -> top/bottom perimeters unspecified
     const m = buildRenderModel(g);
-    // Top and bottom perimeters should remain null (no default applied)
-    expect(m.cellBorders[0].top).toBeNull();
-    expect(m.cellBorders[1].top).toBeNull();
-    expect(m.cellBorders[0].bottom).toBeNull();
-    expect(m.cellBorders[1].bottom).toBeNull();
+    // Top and bottom perimeters should receive default now
+    expect(m.cellBorders[0].top).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#333",
+    });
+    expect(m.cellBorders[1].top).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#333",
+    });
+    expect(m.cellBorders[0].bottom).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#333",
+    });
+    expect(m.cellBorders[1].bottom).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#333",
+    });
   });
 
   it("null is unspecified (no force); style:none forces no stroke", () => {
@@ -289,6 +305,105 @@ describe("grid-renderer", () => {
     });
   });
 
+  it("renders only external border when interior is none", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px,30px");
+    // 2x2 cells
+    addCell(g);
+    addCell(g);
+    addCell(g);
+    addCell(g);
+    // Perimeters solid black; interior boundaries none
+    g.setAttribute(
+      "data-edges-h",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [{ style: "none" }, { style: "none" }],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { style: "none" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { style: "none" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    const m = buildRenderModel(g);
+    // Top row perimeters
+    expect(m.cellBorders[0].top).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].top).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    // Bottom row perimeters
+    expect(m.cellBorders[2].bottom).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[3].bottom).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    // Left and right perimeters
+    expect(m.cellBorders[0].left).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[2].left).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].right).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    expect(m.cellBorders[3].right).toEqual({
+      weight: 1,
+      style: "solid",
+      color: "#000",
+    });
+    // Inner edges must not draw; with zero gap and both sides 'none',
+    // the winner is 'none' applied to the left/top side only.
+    expect(m.cellBorders[0].right).toEqual({
+      weight: 0,
+      style: "none",
+      color: "#000",
+    });
+    expect(m.cellBorders[1].left).toBeNull();
+    expect(m.cellBorders[0].bottom).toEqual({
+      weight: 0,
+      style: "none",
+      color: "#000",
+    });
+    expect(m.cellBorders[2].top).toBeNull();
+  });
+
   // Borders are applied per-side; no outline usage.
 
   it("applies grid corner radius to outermost cells", () => {
@@ -309,4 +424,30 @@ describe("grid-renderer", () => {
   });
 
   // No special behavior for nested grids in border-only mode.
+
+  it("falls back to CSS var defaults when data-border-default is absent", () => {
+    const g = makeGrid();
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px,30px");
+    // Simulate :root CSS variables in jsdom by setting them on the grid
+    g.style.setProperty("--edge-default-weight", "1");
+    g.style.setProperty("--edge-default-style", "solid");
+    g.style.setProperty("--edge-default-color", "#000");
+    addCell(g);
+    addCell(g);
+    addCell(g);
+    addCell(g);
+    // No data-border-default and no explicit edges
+    const m = buildRenderModel(g);
+    // Expect 1px solid #000 from :root CSS vars on all perimeters (top row top, bottom row bottom, left col left, right col right)
+    const def = { weight: 1, style: "solid", color: "#000" };
+    expect(m.cellBorders[0].top).toEqual(def);
+    expect(m.cellBorders[1].top).toEqual(def);
+    expect(m.cellBorders[2].bottom).toEqual(def);
+    expect(m.cellBorders[3].bottom).toEqual(def);
+    expect(m.cellBorders[0].left).toEqual(def);
+    expect(m.cellBorders[2].left).toEqual(def);
+    expect(m.cellBorders[1].right).toEqual(def);
+    expect(m.cellBorders[3].right).toEqual(def);
+  });
 });

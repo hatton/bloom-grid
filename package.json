@@ -17,8 +17,8 @@
     "clean": "rm -rf dist",
     "//will run and exit": "",
     "test": "yarn vitest run",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
+    "e2e": "npx playwright test",
+    "e2e:ui": "npx playwright test --ui",
     "preview": "vite preview"
   },
   "keywords": [

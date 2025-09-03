@@ -6,7 +6,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  // Use html reporter but never auto-open UI to avoid hanging
+  reporter: [["html", { open: "never" }]],
   use: {
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
@@ -19,9 +20,5 @@ export default defineConfig({
     },
   ],
 
-  // webServer: {
-  //   command: 'yarn preview',
-  //   url: 'http://localhost:4173',
-  //   reuseExistingServer: true,
-  // },
+  // No webServer here; we assume you start/stop it yourself (unchanged behavior)
 });

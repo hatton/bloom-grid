@@ -1,13 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta />
     <meta charset="UTF-8" />
-    <title>Stack Example</title>
+    <title>Table Border Demo</title>
     <link rel="stylesheet" href="../src/bloom-grid.css" />
-
     <style>
-      /* ---------------- Base page styling ---------------- */
       body {
         font-family: Arial, sans-serif;
         margin: 24px;
@@ -19,7 +16,6 @@
       id="page"
       style="background: white; height: 600px; width: 500px; display: block"
     >
-      <!-- This grid should have no borders, unless a cell has a border -->
       <p>
         This should show a 2x2 table with no external border. the first and last
         cells should have red borders.
@@ -46,16 +42,16 @@
           <div contenteditable="true">r2c2 red border</div>
         </div>
       </div>
+
       <br />
       <p>This should show a 2x2 table with only an external border.</p>
-
       <div
         id="grid-with-external-border"
         class="grid"
         data-column-widths="fill,fill"
         data-row-heights="fill,fill"
-        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[null,null],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
-        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},null,{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"style":"none"},{"style":"none"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1</div>
@@ -70,11 +66,11 @@
           <div contenteditable="true">r2c2</div>
         </div>
       </div>
+
       <br />
       <p>
         This should show a 1x2 table where the border between the cell is red.
       </p>
-
       <div
         id="grid-with-red-border"
         class="grid"
