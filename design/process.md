@@ -7,7 +7,6 @@ This document explains the major parts of Bloom Grid, how they interact, and the
 - Single source of truth in `data-*` attributes on the DOM. Renderer reads these; it never writes them.
 - Deterministic, testable rendering. Conflict rules produce a single, stable visual result.
 - Clear public surface for UI and features via `BloomGrid` plus focused helpers.
-- Explicit render scheduling (no MutationObservers). Operations coalesce into one render.
 
 ## Key modules
 
@@ -37,15 +36,23 @@ This document explains the major parts of Bloom Grid, how they interact, and the
     - Determinism: 'none' beats any other style; else weight (px); else style precedence (double > solid > dashed > dotted); ties favor left/top.
   - Does not mutate `data-*` and never changes DOM structure.
 
-- `render-scheduler.ts` — Coalesced, explicit render requests
+- `grid-renderer.ts` — Pure rendering function from DOM data to visual styles
 
-  - API: `request(grid, reason?, { immediate?, raf? })`, `cancel(grid)`, and `setRenderer(rendererFn)`.
-  - Coalesces multiple operations per grid; supports immediate sync for tests or RAF for UI.
-  - No observers; rendering happens only when requested by operations.
+  - Pure function: reads `data-*` from DOM → writes inline CSS styles.
+  - Capabilities:
+    - Templates: `grid-template-columns/rows` from track tokens (supporting `hug` and `fill`).
+    - Spans: reads `data-span-x/y` on cells and sets CSS vars `--span-x/--span-y` used by CSS.
+    - Edges: per-cell, per-side border resolution from H/V edges + defaults.
+    - Corners: applies outer grid corner radius to the four perimeter cells and resets others to 0.
+  - Conflict rules:
+    - Zero gap: reconcile sided entries to a single visible stroke for the shared edge.
+    - Positive gap: each side paints independently.
+    - Determinism: 'none' beats any other style; else weight (px); else style precedence (double > solid > dashed > dotted); ties favor left/top.
+  - Does not mutate `data-*` and never changes DOM structure.
 
 - `BloomGrid.ts` — Controller for high-level operations
 
-  - Wraps structural and model updates and then schedules a render.
+  - Wraps structural and model updates and then renders immediately.
   - Structure: `addRow`, `removeLastRow`, `addColumn`, `removeLastColumn`, and positioned variants (via `structure.ts`).
   - Sizing: `setColumnWidth`, `setRowHeight` using `grid-model` helpers.
   - Borders & corners: `setGridBorder`/`setCellBorder` (present placeholders), `setGridCorners`.
@@ -67,7 +74,7 @@ This document explains the major parts of Bloom Grid, how they interact, and the
 
 1. UI or caller invokes a `BloomGrid` method (e.g., `addColumn()`, `setRowHeight(i, '120px')`, `setSpan(cell, 2, 1)`).
 2. Method updates DOM attributes and/or structure via `grid-model` and `structure` and records history.
-3. Method calls `render-scheduler.request(grid, reason)` to coalesce and trigger rendering.
+3. Method calls `render(grid)` directly to apply visual changes immediately.
 4. Renderer reads `data-*` and current DOM (cells), computes per-cell styles, and writes inline CSS only.
 
 ## Contracts and invariants

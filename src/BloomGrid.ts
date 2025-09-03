@@ -19,7 +19,7 @@ import {
   getSpan,
 } from "./grid-model";
 import { gridHistoryManager } from "./history";
-import { request } from "./render-scheduler";
+import { render } from "./grid-renderer";
 
 export class BloomGrid {
   constructor(private grid: HTMLElement) {
@@ -31,43 +31,43 @@ export class BloomGrid {
   // Structure ops (already history-wrapped in structure.ts)
   addRow(): void {
     structAddRow(this.grid);
-    this.schedule("addRow");
+    render(this.grid);
   }
 
   removeLastRow(): void {
     structRemoveLastRow(this.grid);
-    this.schedule("removeLastRow");
+    render(this.grid);
   }
 
   addColumn(): void {
     structAddColumn(this.grid);
-    this.schedule("addColumn");
+    render(this.grid);
   }
 
   removeLastColumn(): void {
     structRemoveLastColumn(this.grid);
-    this.schedule("removeLastColumn");
+    render(this.grid);
   }
 
   // Positioned structure ops
   addRowAt(index: number): void {
     structAddRowAt(this.grid, index);
-    this.schedule("addRowAt");
+    render(this.grid);
   }
 
   addColumnAt(index: number): void {
     structAddColumnAt(this.grid, index);
-    this.schedule("addColumnAt");
+    render(this.grid);
   }
 
   removeRowAt(index: number): void {
     structRemoveRowAt(this.grid, index);
-    this.schedule("removeRowAt");
+    render(this.grid);
   }
 
   removeColumnAt(index: number): void {
     structRemoveColumnAt(this.grid, index);
-    this.schedule("removeColumnAt");
+    render(this.grid);
   }
 
   // Column/Row sizing with history integration
@@ -83,7 +83,7 @@ export class BloomGrid {
       `Set Column ${index} Width`,
       perform
     );
-    this.schedule("setColumnWidth");
+    render(this.grid);
   }
 
   setRowHeight(index: number, value: string): void {
@@ -98,7 +98,7 @@ export class BloomGrid {
       `Set Row ${index} Height`,
       perform
     );
-    this.schedule("setRowHeight");
+    render(this.grid);
   }
 
   // Getters to read current specs for UI
@@ -121,7 +121,7 @@ export class BloomGrid {
   setGridCorners(radiusPx: number): void {
     const perform = () => setGridCorners(this.grid, { radius: radiusPx });
     gridHistoryManager.addHistoryEntry(this.grid, "Set Grid Corners", perform);
-    this.schedule("setGridCorners");
+    render(this.grid);
   }
 
   // Spans: write data-*, and call structure's setCellSpan to maintain skip semantics today
@@ -136,11 +136,7 @@ export class BloomGrid {
       `Set Cell Span ${x}x${y}`,
       perform
     );
-    this.schedule("setSpan");
-  }
-
-  private schedule(reason: string) {
-    request(this.grid, reason);
+    render(this.grid);
   }
 }
 

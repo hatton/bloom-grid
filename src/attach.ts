@@ -3,7 +3,6 @@ import { gridHistoryManager } from "./history";
 import { addColumn, addRow } from "./structure";
 import { migrateGrid } from "./migrate";
 import { attachTextEditing } from "./text-editing";
-import { setRenderer, request } from "./render-scheduler";
 import { render } from "./grid-renderer";
 
 export function attachGrid(gridDiv: HTMLElement): void {
@@ -11,8 +10,6 @@ export function attachGrid(gridDiv: HTMLElement): void {
 
   // Ensure the grid has the correct class and attributes
   gridDiv.classList.add("grid");
-  // Ensure renderer is configured (idempotent)
-  setRenderer(render);
   if (!gridDiv.hasAttribute("data-column-widths")) {
     gridDiv.setAttribute("data-column-widths", "");
     // add two columns by default
@@ -35,8 +32,8 @@ export function attachGrid(gridDiv: HTMLElement): void {
 
   attachTextEditing(gridDiv);
 
-  // Schedule an initial render so styles (borders, corners, spans) are applied immediately
-  request(gridDiv, "attach:initial", { immediate: true });
+  // Apply initial render so styles (borders, corners, spans) are applied immediately
+  render(gridDiv);
 }
 
 export function detachGrid(gridDiv: HTMLElement): void {

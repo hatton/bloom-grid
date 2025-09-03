@@ -93,7 +93,7 @@ describe("grid-renderer", () => {
     const a = addCell(g, 2, 1);
     const b = addCell(g, 1, 3); // y will clamp later by CSS usage; renderer just writes vars
 
-    render(g, "test");
+    render(g);
 
     expect(g.style.gridTemplateColumns).toBe("100px 100px");
     expect(g.style.gridTemplateRows).toBe("30px 30px");

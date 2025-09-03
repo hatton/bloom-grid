@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import BloomGrid from "./BloomGrid";
-import { setRenderer } from "./render-scheduler";
-import { render } from "./grid-renderer";
 import { attachGrid } from "./attach";
 import { gridHistoryManager } from "./history";
 
@@ -9,7 +7,6 @@ describe("BloomGrid controller", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     gridHistoryManager.reset?.();
-    setRenderer(render);
   });
 
   function setupGrid(): { grid: HTMLElement; ctrl: BloomGrid } {
@@ -20,16 +17,13 @@ describe("BloomGrid controller", () => {
     return { grid, ctrl };
   }
 
-  it("schedules one render per operation (coalesced)", async () => {
+  it("renders immediately on each operation", () => {
     const { grid, ctrl } = setupGrid();
 
     const spy = vi.spyOn(grid.style, "setProperty");
 
     ctrl.setColumnWidth(0, "120px");
     ctrl.setRowHeight(0, "34px");
-
-    // wait a macrotask
-    await new Promise((r) => setTimeout(r, 0));
 
     // renderer should have applied template props at least once
     const calls = spy.mock.calls.filter(
@@ -38,24 +32,22 @@ describe("BloomGrid controller", () => {
     expect(calls.length).toBeGreaterThan(0);
   });
 
-  it("updates data attributes for sizes via history-wrapped ops", async () => {
+  it("updates data attributes for sizes via history-wrapped ops", () => {
     const { grid, ctrl } = setupGrid();
     const before = grid.getAttribute("data-column-widths");
     ctrl.setColumnWidth(0, "200px");
-    await new Promise((r) => setTimeout(r, 0));
     expect(grid.getAttribute("data-column-widths")).not.toBe(before);
     expect(grid.getAttribute("data-column-widths")?.startsWith("200px")).toBe(
       true
     );
   });
 
-  it("sets spans and maintains skip semantics", async () => {
+  it("sets spans and maintains skip semantics", () => {
     const { grid, ctrl } = setupGrid();
     const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
     expect(cells.length).toBeGreaterThan(0);
     const first = cells[0];
     ctrl.setSpan(first, 2, 1);
-    await new Promise((r) => setTimeout(r, 0));
     expect(first.getAttribute("data-span-x")).toBe("2");
     // structure.setCellSpan should add skip to covered neighbor if present
     const neighbor = cells[1];
@@ -64,22 +56,20 @@ describe("BloomGrid controller", () => {
     }
   });
 
-  it("supports add/remove row/column and schedules renders", async () => {
+  it("supports add/remove row/column and renders", () => {
     const { grid, ctrl } = setupGrid();
     const initialCells = grid.querySelectorAll(".cell").length;
     ctrl.addRow();
     ctrl.addColumn();
-    await new Promise((r) => setTimeout(r, 0));
     const afterAdd = grid.querySelectorAll(".cell").length;
     expect(afterAdd).toBeGreaterThan(initialCells);
     ctrl.removeLastColumn();
     ctrl.removeLastRow();
-    await new Promise((r) => setTimeout(r, 0));
     const afterRemove = grid.querySelectorAll(".cell").length;
     expect(afterRemove).toBeLessThan(afterAdd);
   });
 
-  it("addColumnAt inserts columns at correct positions", async () => {
+  it("addColumnAt inserts columns at correct positions", () => {
     const { grid, ctrl } = setupGrid();
     const initialCellCount = grid.querySelectorAll(".cell").length;
     const initialColumnCount =
@@ -87,7 +77,6 @@ describe("BloomGrid controller", () => {
 
     // Add column at start
     ctrl.addColumnAt(0);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterStart = grid.querySelectorAll(".cell").length;
     const startColumnCount =
@@ -97,7 +86,6 @@ describe("BloomGrid controller", () => {
 
     // Add column in middle
     ctrl.addColumnAt(1);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterMiddle = grid.querySelectorAll(".cell").length;
     const middleColumnCount =
@@ -107,7 +95,6 @@ describe("BloomGrid controller", () => {
 
     // Add column at end
     ctrl.addColumnAt(middleColumnCount);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterEnd = grid.querySelectorAll(".cell").length;
     const endColumnCount =
@@ -116,7 +103,7 @@ describe("BloomGrid controller", () => {
     expect(afterEnd).toBeGreaterThan(afterMiddle);
   });
 
-  it("addRowAt inserts rows at correct positions", async () => {
+  it("addRowAt inserts rows at correct positions", () => {
     const { grid, ctrl } = setupGrid();
     const initialCellCount = grid.querySelectorAll(".cell").length;
     const initialRowCount =
@@ -124,7 +111,6 @@ describe("BloomGrid controller", () => {
 
     // Add row at start
     ctrl.addRowAt(0);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterStart = grid.querySelectorAll(".cell").length;
     const startRowCount =
@@ -134,7 +120,6 @@ describe("BloomGrid controller", () => {
 
     // Add row in middle
     ctrl.addRowAt(1);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterMiddle = grid.querySelectorAll(".cell").length;
     const middleRowCount =
@@ -143,7 +128,7 @@ describe("BloomGrid controller", () => {
     expect(afterMiddle).toBeGreaterThan(afterStart);
   });
 
-  it("removeColumnAt and removeRowAt work correctly", async () => {
+  it("removeColumnAt and removeRowAt work correctly", () => {
     const { grid, ctrl } = setupGrid();
 
     // Add some extra columns and rows first
@@ -151,7 +136,6 @@ describe("BloomGrid controller", () => {
     ctrl.addColumn();
     ctrl.addRow();
     ctrl.addRow();
-    await new Promise((r) => setTimeout(r, 0));
 
     const beforeRemove = grid.querySelectorAll(".cell").length;
     const beforeColumnCount =
@@ -161,7 +145,6 @@ describe("BloomGrid controller", () => {
 
     // Remove column
     ctrl.removeColumnAt(1);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterColumnRemove = grid.querySelectorAll(".cell").length;
     const afterColumnCount =
@@ -171,7 +154,6 @@ describe("BloomGrid controller", () => {
 
     // Remove row
     ctrl.removeRowAt(0);
-    await new Promise((r) => setTimeout(r, 0));
 
     const afterRowRemove = grid.querySelectorAll(".cell").length;
     const afterRowCount =
@@ -181,7 +163,7 @@ describe("BloomGrid controller", () => {
   });
 
   describe("Cell merging and splitting", () => {
-    it("can merge cells horizontally", async () => {
+    it("can merge cells horizontally", () => {
       const { grid, ctrl } = setupGrid();
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
@@ -196,7 +178,6 @@ describe("BloomGrid controller", () => {
 
       // Merge first cell to span 2 columns horizontally
       ctrl.setSpan(firstCell, 2, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Check span attributes
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
@@ -207,14 +188,15 @@ describe("BloomGrid controller", () => {
       expect(firstCell.classList.contains("skip")).toBe(false);
     });
 
-    it("can merge cells vertically", async () => {
+    it("can merge cells vertically", () => {
       const { grid, ctrl } = setupGrid();
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
-      
+
       // Find the cell directly below the first cell
       // In default grid setup, this should be at position based on column count
-      const columnCount = grid.getAttribute("data-column-widths")?.split(",").length || 2;
+      const columnCount =
+        grid.getAttribute("data-column-widths")?.split(",").length || 2;
       const cellBelow = cells[columnCount]; // Next row, same column
 
       expect(firstCell).toBeTruthy();
@@ -226,7 +208,6 @@ describe("BloomGrid controller", () => {
 
       // Merge first cell to span 2 rows vertically
       ctrl.setSpan(firstCell, 1, 2);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Check span attributes
       expect(firstCell.getAttribute("data-span-x")).toBe("1");
@@ -237,18 +218,18 @@ describe("BloomGrid controller", () => {
       expect(firstCell.classList.contains("skip")).toBe(false);
     });
 
-    it("can merge cells in both directions (2x2 block)", async () => {
+    it("can merge cells in both directions (2x2 block)", () => {
       const { grid, ctrl } = setupGrid();
-      
+
       // Add extra rows and columns to ensure we have enough cells
       ctrl.addRow();
       ctrl.addColumn();
-      await new Promise((r) => setTimeout(r, 0));
 
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
-      const columnCount = grid.getAttribute("data-column-widths")?.split(",").length || 3;
-      
+      const columnCount =
+        grid.getAttribute("data-column-widths")?.split(",").length || 3;
+
       // Find the cells that should be covered by a 2x2 span
       const rightCell = cells[1];
       const belowCell = cells[columnCount];
@@ -261,7 +242,6 @@ describe("BloomGrid controller", () => {
 
       // Merge first cell to span 2x2
       ctrl.setSpan(firstCell, 2, 2);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Check span attributes
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
@@ -274,7 +254,7 @@ describe("BloomGrid controller", () => {
       expect(firstCell.classList.contains("skip")).toBe(false);
     });
 
-    it("can split merged cells back to individual cells", async () => {
+    it("can split merged cells back to individual cells", () => {
       const { grid, ctrl } = setupGrid();
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
@@ -282,7 +262,6 @@ describe("BloomGrid controller", () => {
 
       // First merge the cells
       ctrl.setSpan(firstCell, 2, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Verify they are merged
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
@@ -290,7 +269,6 @@ describe("BloomGrid controller", () => {
 
       // Now split them back
       ctrl.setSpan(firstCell, 1, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Check that span is reset
       expect(firstCell.getAttribute("data-span-x")).toBe("1");
@@ -301,25 +279,24 @@ describe("BloomGrid controller", () => {
       expect(firstCell.classList.contains("skip")).toBe(false);
     });
 
-    it("can split a 2x2 merged cell back to individual cells", async () => {
+    it("can split a 2x2 merged cell back to individual cells", () => {
       const { grid, ctrl } = setupGrid();
-      
+
       // Add extra rows and columns to ensure we have enough cells
       ctrl.addRow();
       ctrl.addColumn();
-      await new Promise((r) => setTimeout(r, 0));
 
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
-      const columnCount = grid.getAttribute("data-column-widths")?.split(",").length || 3;
-      
+      const columnCount =
+        grid.getAttribute("data-column-widths")?.split(",").length || 3;
+
       const rightCell = cells[1];
       const belowCell = cells[columnCount];
       const diagonalCell = cells[columnCount + 1];
 
       // First merge to 2x2
       ctrl.setSpan(firstCell, 2, 2);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Verify all cells are in merged state
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
@@ -330,7 +307,6 @@ describe("BloomGrid controller", () => {
 
       // Now split back to 1x1
       ctrl.setSpan(firstCell, 1, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Check that all cells are now individual
       expect(firstCell.getAttribute("data-span-x")).toBe("1");
@@ -340,21 +316,20 @@ describe("BloomGrid controller", () => {
       expect(diagonalCell.classList.contains("skip")).toBe(false);
     });
 
-    it("can modify span from one configuration to another", async () => {
+    it("can modify span from one configuration to another", () => {
       const { grid, ctrl } = setupGrid();
-      
+
       // Add extra rows and columns for flexibility
       ctrl.addRow();
       ctrl.addColumn();
-      await new Promise((r) => setTimeout(r, 0));
 
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
-      const columnCount = grid.getAttribute("data-column-widths")?.split(",").length || 3;
+      const columnCount =
+        grid.getAttribute("data-column-widths")?.split(",").length || 3;
 
       // Start with horizontal span (1x2 -> 2 columns)
       ctrl.setSpan(firstCell, 2, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
       expect(firstCell.getAttribute("data-span-y")).toBe("1");
@@ -363,7 +338,6 @@ describe("BloomGrid controller", () => {
 
       // Change to vertical span (2x1 -> 2 rows)
       ctrl.setSpan(firstCell, 1, 2);
-      await new Promise((r) => setTimeout(r, 0));
 
       expect(firstCell.getAttribute("data-span-x")).toBe("1");
       expect(firstCell.getAttribute("data-span-y")).toBe("2");
@@ -372,7 +346,6 @@ describe("BloomGrid controller", () => {
 
       // Change to 2x2 span
       ctrl.setSpan(firstCell, 2, 2);
-      await new Promise((r) => setTimeout(r, 0));
 
       expect(firstCell.getAttribute("data-span-x")).toBe("2");
       expect(firstCell.getAttribute("data-span-y")).toBe("2");
@@ -381,7 +354,7 @@ describe("BloomGrid controller", () => {
       expect(cells[columnCount + 1].classList.contains("skip")).toBe(true);
     });
 
-    it("maintains proper getSpan functionality", async () => {
+    it("maintains proper getSpan functionality", () => {
       const { grid, ctrl } = setupGrid();
       const firstCell = grid.querySelector<HTMLElement>(".cell");
       expect(firstCell).toBeTruthy();
@@ -391,16 +364,20 @@ describe("BloomGrid controller", () => {
       expect(span.x).toBe(1);
       expect(span.y).toBe(1);
 
+      // Add extra rows and columns for the 2x3 span
+      ctrl.addRow();
+      ctrl.addRow();
+      ctrl.addColumn();
+
       // After setting span to 2x3
       ctrl.setSpan(firstCell!, 2, 3);
-      await new Promise((r) => setTimeout(r, 0));
 
       span = ctrl.getSpan(firstCell!);
       expect(span.x).toBe(2);
       expect(span.y).toBe(3);
     });
 
-    it("schedules renders when merging and splitting", async () => {
+    it("renders when merging and splitting", () => {
       const { grid, ctrl } = setupGrid();
       const cells = Array.from(grid.querySelectorAll<HTMLElement>(".cell"));
       const firstCell = cells[0];
@@ -409,11 +386,9 @@ describe("BloomGrid controller", () => {
 
       // Merge cells
       ctrl.setSpan(firstCell, 2, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Split cells back
       ctrl.setSpan(firstCell, 1, 1);
-      await new Promise((r) => setTimeout(r, 0));
 
       // Should have triggered renders (grid properties should be set)
       const calls = spy.mock.calls.filter(

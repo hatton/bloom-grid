@@ -441,8 +441,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   };
 }
 
-export function render(grid: HTMLElement, _reason?: string): void {
-  // _reason is currently informational only
+export function render(grid: HTMLElement): void {
   const model = buildRenderModel(grid);
 
   // Apply grid templates
