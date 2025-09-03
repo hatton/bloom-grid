@@ -32,7 +32,7 @@
  * 3. **Borders (edge-based model)**: Borders are defined on the grid as arrays, not per-cell attributes.
  *    - `data-edges-h`: JSON (R-1 x C) of objects with optional `north` / `south` BorderSpec.
  *    - `data-edges-v`: JSON (R x C-1) of objects with optional `west` / `east` BorderSpec.
- *    - `data-edges-outer`: JSON perimeter with arrays: `top[C]`, `right[R]`, `bottom[C]`, `left[R]`.
+ *    - Unified edges include perimeters: `data-edges-h` is (R+1)xC (top=0, bottom=R), `data-edges-v` is Rx(C+1) (left=0, right=C).
  *    - `data-border-default`: optional BorderSpec default used during rendering when an edge side is unspecified.
  *    - Gaps (optional): `data-gap-x` (C-1 entries) and `data-gap-y` (R-1 entries) enable independent sided painting.
  *

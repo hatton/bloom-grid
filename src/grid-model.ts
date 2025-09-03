@@ -91,12 +91,6 @@ export interface HVVerticalEdgeCellSides {
 // or as a single BorderSpec applied to the edge. This enables simpler authoring when there is no gap.
 export type VEdgeEntry = HVVerticalEdgeCellSides | BorderSpec | null;
 export type HEdgeEntry = HVHorizontalEdgeCellSides | BorderSpec | null;
-export interface EdgesOuterSpec {
-  top: Array<BorderSpec | null>; // length C
-  right: Array<BorderSpec | null>; // length R
-  bottom: Array<BorderSpec | null>; // length C
-  left: Array<BorderSpec | null>; // length R
-}
 
 // Defaults and gaps
 export type EdgeDefaultSpec = BorderSpec | null; // data-border-default
@@ -146,18 +140,6 @@ export function setEdgesV(
 ): void {
   assert(grid.classList.contains("grid"), "setEdgesV: not a grid");
   setJSONAttr(grid, "data-edges-v", edges);
-}
-
-export function getEdgesOuter(grid: HTMLElement): EdgesOuterSpec | null {
-  assert(grid.classList.contains("grid"), "getEdgesOuter: not a grid");
-  return parseJSONAttr<EdgesOuterSpec>(grid, "data-edges-outer");
-}
-export function setEdgesOuter(
-  grid: HTMLElement,
-  outer: EdgesOuterSpec | null
-): void {
-  assert(grid.classList.contains("grid"), "setEdgesOuter: not a grid");
-  setJSONAttr(grid, "data-edges-outer", outer);
 }
 
 export function getEdgeDefault(grid: HTMLElement): EdgeDefaultSpec {

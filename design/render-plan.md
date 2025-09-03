@@ -68,7 +68,9 @@ Grid (`div.grid`)
   - Horizontal boundaries between row r and r+1 at column c
 - `data-edges-v`: JSON 2D array R x (C-1) of `{ west?: Edge|null, east?: Edge|null }`
   - Vertical boundaries between column c and c+1 at row r
-- `data-edges-outer`: JSON `{ top: Edge[], right: Edge[], bottom: Edge[], left: Edge[] }`
+Unified edges (no `data-edges-outer`):
+- `data-edges-h`: (R+1)×C; top at index 0, bottom at index R
+- `data-edges-v`: R×(C+1); left at index 0, right at index C
   - top/bottom arrays length C; left/right arrays length R
 - `data-border-default`: JSON `Edge` used when a specific edge entry is null/omitted
 - `data-gap-x`: CSS length or comma list for per-column gaps (C-1 entries) — optional

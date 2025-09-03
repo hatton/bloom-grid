@@ -8,7 +8,7 @@ import type {
   CornerRadius,
 } from "./BorderControl/logic/types";
 import CornerMenu from "./BorderControl/menus/CornerMenu";
-import { getEdgesOuter } from "../grid-model";
+import { getEdgesH, getEdgesV } from "../grid-model";
 import {
   applyUniformOuter,
   applyUniformInner,
@@ -34,7 +34,7 @@ const parsePx = (s: string | null | undefined): number => {
 };
 const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
   const cs = getComputedStyle(g);
-  // Outer: read from edges-outer if present, else fallback to computed outline
+  // Outer: read from unified edge arrays if present, else fallback to computed outline
   const outlineW = snapWeight(parsePx(cs.outlineWidth));
   const outlineStyleRaw = (cs.outlineStyle || "").trim().toLowerCase();
   const outlineStyle: BorderStyle =
@@ -48,11 +48,16 @@ const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
       ? "none"
       : "solid";
 
-  const outerSpec = getEdgesOuter(g);
-  const top = outerSpec?.top?.[0] ?? null; // use first as representative for UI
-  const right = outerSpec?.right?.[0] ?? null;
-  const bottom = outerSpec?.bottom?.[0] ?? null;
-  const left = outerSpec?.left?.[0] ?? null;
+  const cols = (g.getAttribute("data-column-widths") || "").split(",").filter(Boolean).length;
+  const rows = (g.getAttribute("data-row-heights") || "").split(",").filter(Boolean).length;
+  const edgesH = getEdgesH(g);
+  const edgesV = getEdgesV(g);
+  const sample = <T,>(arr: Array<T> | null | undefined, idx: number): T | null =>
+    arr && arr.length > idx ? (arr[idx] as any) : null;
+  const top = edgesH ? sample(edgesH[0], 0) : null;
+  const right = edgesV ? sample(edgesV[0], cols) : null;
+  const bottom = edgesH ? sample(edgesH[rows], 0) : null;
+  const left = edgesV ? sample(edgesV[0], 0) : null;
 
   const mapOuter = (
     spec: any

@@ -2,7 +2,6 @@
 import {
   getEdgesH,
   getEdgesV,
-  getEdgesOuter,
   getEdgeDefault,
   getGridCorners,
   getGapX,
@@ -149,22 +148,24 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   }
 
   // Edge inputs
-  const edgesH = getEdgesH(grid) as HEdgeEntry[][] | null; // (R-1) x C of {north,south} or single BorderSpec
-  const edgesV = getEdgesV(grid) as VEdgeEntry[][] | null; // R x (C-1) of {west,east} or single BorderSpec
-  const edgesOuter = getEdgesOuter(grid);
+  const edgesH = getEdgesH(grid) as HEdgeEntry[][] | null; // (R+1) x C of entries: interior rows 1..R-1, perimeters at 0 (top) and R (bottom)
+  const edgesV = getEdgesV(grid) as VEdgeEntry[][] | null; // R x (C+1) of entries: interior cols 1..C-1, perimeters at 0 (left) and C (right)
   const edgeDefault = normalize(getEdgeDefault(grid));
   const gapX = getGapX(grid);
   const gapY = getGapY(grid);
 
   function hasPositiveGapX(c: number): boolean {
-    const token = (gapX[c] || "").trim();
+    // Allow a single value to apply to all boundaries, or provide per-boundary values
+    const gi = Math.min(Math.max(0, c), Math.max(0, (gapX.length || 1) - 1));
+    const token = (gapX[gi] || "").trim();
     if (!token) return false;
     const n = parseFloat(token);
     if (!isNaN(n)) return n > 0;
     return token !== "0" && token !== "0px"; // basic fallback
   }
   function hasPositiveGapY(r: number): boolean {
-    const token = (gapY[r] || "").trim();
+    const gi = Math.min(Math.max(0, r), Math.max(0, (gapY.length || 1) - 1));
+    const token = (gapY[gi] || "").trim();
     if (!token) return false;
     const n = parseFloat(token);
     if (!isNaN(n)) return n > 0;
@@ -197,7 +198,75 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     return tieFavor === "leftTop" ? "a" : "b";
   }
 
-  // Resolve vertical inner edges (between c and c+1)
+  // Helper to read a vertical edge entry at row r, at boundary c (0..cols)
+  function readV(r: number, c: number): { west: BorderSpec | null; east: BorderSpec | null } {
+  const row: VEdgeEntry[] | undefined = (edgesV && (edgesV[r] as VEdgeEntry[])) || undefined;
+    let e: VEdgeEntry | undefined;
+    if (row) {
+      // Support either full (cols+1) entries including perimeters
+      // or concise interior-only arrays of length (cols-1)
+      if (row.length === cols + 1) {
+        e = row[c];
+      } else if (row.length === Math.max(0, cols - 1)) {
+        // interior boundaries map c in [1..cols-1] to row[c-1]
+        if (c >= 1 && c <= cols - 1) e = row[c - 1];
+      } else if (row.length === 1 && cols >= 2) {
+        // Special case: single interior boundary (e.g., 1x2 grid)
+        if (c === 1) e = row[0];
+      }
+    }
+    let west: BorderSpec | null = null;
+    let east: BorderSpec | null = null;
+    if (e && typeof (e as any).weight === "number") {
+      const spec = normalize(e as BorderSpec);
+      west = spec;
+      east = spec;
+    } else {
+      const sv = (e as HVVerticalEdgeCellSides | undefined) ?? undefined;
+      west = normalize(sv?.west ?? null);
+      east = normalize(sv?.east ?? null);
+    }
+    return { west, east };
+  }
+
+  // Helper to read a horizontal edge entry at boundary r (0..rows), column c
+  function readH(r: number, c: number): { north: BorderSpec | null; south: BorderSpec | null } {
+  const rowsCount = rowHeights.length;
+    let e: HEdgeEntry | undefined;
+    if (edgesH) {
+      const full = edgesH.length === rowsCount + 1;
+      const interiorOnly = edgesH.length === Math.max(0, rowsCount - 1);
+      const singleInterior = edgesH.length === 1 && rowsCount >= 2;
+      if (full) {
+        e = (edgesH[r] && (edgesH[r][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+      } else if (interiorOnly) {
+        // interior boundaries map r in [1..rows-1] to edgesH[r-1]
+        if (r >= 1 && r <= rowsCount - 1) {
+          const rr = r - 1;
+          e = (edgesH[rr] && (edgesH[rr][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+        }
+      } else if (singleInterior) {
+        // Single interior boundary row, applies when r===1
+        if (r === 1) {
+          e = (edgesH[0] && (edgesH[0][c] as HEdgeEntry)) as HEdgeEntry | undefined;
+        }
+      }
+    }
+    let north: BorderSpec | null = null;
+    let south: BorderSpec | null = null;
+    if (e && typeof (e as any).weight === "number") {
+      const spec = normalize(e as BorderSpec);
+      north = spec;
+      south = spec;
+    } else {
+      const sh = (e as HVHorizontalEdgeCellSides | undefined) ?? undefined;
+      north = normalize(sh?.north ?? null);
+      south = normalize(sh?.south ?? null);
+    }
+    return { north, south };
+  }
+
+  // Resolve vertical inner edges (between c and c+1), boundary index b=c+1 in [1..cols-1]
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols - 1; c++) {
       const iLeft = idx(r, c);
@@ -210,19 +279,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       }
       const leftIsSkip = leftCell.classList.contains("skip");
       const rightIsSkip = rightCell.classList.contains("skip");
-      const e = edgesV && edgesV[r] ? (edgesV[r][c] as VEdgeEntry) : undefined;
-      let west: BorderSpec | null = null;
-      let east: BorderSpec | null = null;
-      if (e && typeof (e as any).weight === "number") {
-        // single BorderSpec means same spec on both sides
-        const spec = normalize(e as BorderSpec);
-        west = spec;
-        east = spec;
-      } else {
-        const sv = (e as HVVerticalEdgeCellSides | undefined) ?? undefined;
-        west = normalize(sv?.west ?? null);
-        east = normalize(sv?.east ?? null);
-      }
+  const { west, east } = readV(r, c + 1);
       const gap = hasPositiveGapX(c);
       if (gap) {
         // Sided painting: each side draws independently
@@ -251,7 +308,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     }
   }
 
-  // Resolve horizontal inner edges (between r and r+1)
+  // Resolve horizontal inner edges (between r and r+1), boundary index b=r+1 in [1..rows-1]
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < cols; c++) {
       const iTop = idx(r, c);
@@ -263,18 +320,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       }
       const topIsSkip = topCell.classList.contains("skip");
       const bottomIsSkip = bottomCell.classList.contains("skip");
-      const e = edgesH && edgesH[r] ? (edgesH[r][c] as HEdgeEntry) : undefined;
-      let north: BorderSpec | null = null;
-      let south: BorderSpec | null = null;
-      if (e && typeof (e as any).weight === "number") {
-        const spec = normalize(e as BorderSpec);
-        north = spec;
-        south = spec;
-      } else {
-        const sh = (e as HVHorizontalEdgeCellSides | undefined) ?? undefined;
-        north = normalize(sh?.north ?? null);
-        south = normalize(sh?.south ?? null);
-      }
+  const { north, south } = readH(r + 1, c);
       const gap = hasPositiveGapY(r);
       if (gap) {
         if (!topIsSkip) cellBorders[iTop].bottom = north || null;
@@ -297,31 +343,37 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
       }
     }
   }
-  // Perimeter from edges-outer: apply per-cell sides directly
-  if (edgesOuter) {
-    // top
-    const topArr = edgesOuter.top || [];
-    for (let c = 0; c < cols; c++) {
-      const i = idx(0, c);
-      cellBorders[i].top = normalize(topArr[c] || null);
+  // Perimeter from unified H/V edges: apply per-cell sides directly
+  // Top perimeter: H at r=0
+  for (let c = 0; c < cols; c++) {
+    const { north } = readH(0, c);
+    const i = idx(0, c);
+    if (cells[i]) {
+      cellBorders[i].top = north;
     }
-    // bottom
-    const bottomArr = edgesOuter.bottom || [];
-    for (let c = 0; c < cols; c++) {
-      const i = idx(rows - 1, c);
-      cellBorders[i].bottom = normalize(bottomArr[c] || null);
+  }
+  // Bottom perimeter: H at r=rows
+  for (let c = 0; c < cols; c++) {
+    const { south } = readH(rows, c);
+    const i = idx(Math.max(0, rows - 1), c);
+    if (cells[i]) {
+      cellBorders[i].bottom = south;
     }
-    // left
-    const leftArr = edgesOuter.left || [];
-    for (let r = 0; r < rows; r++) {
-      const i = idx(r, 0);
-      cellBorders[i].left = normalize(leftArr[r] || null);
+  }
+  // Left perimeter: V at c=0
+  for (let r = 0; r < rows; r++) {
+    const { west } = readV(r, 0);
+    const i = idx(r, 0);
+    if (cells[i]) {
+      cellBorders[i].left = west;
     }
-    // right
-    const rightArr = edgesOuter.right || [];
-    for (let r = 0; r < rows; r++) {
-      const i = idx(r, cols - 1);
-      cellBorders[i].right = normalize(rightArr[r] || null);
+  }
+  // Right perimeter: V at c=cols
+  for (let r = 0; r < rows; r++) {
+    const { east } = readV(r, cols);
+    const i = idx(r, Math.max(0, cols - 1));
+    if (cells[i]) {
+      cellBorders[i].right = east;
     }
   }
 

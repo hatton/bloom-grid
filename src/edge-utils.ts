@@ -1,6 +1,5 @@
 import type {
   BorderSpec,
-  EdgesOuterSpec,
   HVHorizontalEdgeCellSides,
   HVVerticalEdgeCellSides,
   HEdgeEntry,
@@ -9,8 +8,6 @@ import type {
 import {
   getColumnWidths,
   getRowHeights,
-  getEdgesOuter,
-  setEdgesOuter,
   getEdgesV,
   setEdgesV,
   getEdgesH,
@@ -49,39 +46,25 @@ export function getGridSize(grid: HTMLElement): { rows: number; cols: number } {
 // Ensure edges arrays are sized to grid
 export function ensureEdgesArrays(grid: HTMLElement) {
   const { rows, cols } = getGridSize(grid);
-  // V edges: R x (C-1)
+  // V edges: R x (C+1) including perimeters
   let v = (getEdgesV(grid) ?? []) as VEdgeEntry[][];
   while (v.length < rows) v.push([]);
   for (let r = 0; r < rows; r++) {
-    while ((v[r] ?? (v[r] = [])).length < Math.max(0, cols - 1)) v[r].push({});
-    v[r] = v[r].slice(0, Math.max(0, cols - 1));
+    while ((v[r] ?? (v[r] = [])).length < cols + 1) v[r].push({});
+    v[r] = v[r].slice(0, cols + 1);
   }
   v = v.slice(0, rows);
   setEdgesV(grid, v as VEdgeEntry[][]);
 
-  // H edges: (R-1) x C
+  // H edges: (R+1) x C including perimeters
   let h = (getEdgesH(grid) ?? []) as HEdgeEntry[][];
-  while (h.length < Math.max(0, rows - 1)) h.push([]);
-  for (let r = 0; r < Math.max(0, rows - 1); r++) {
+  while (h.length < rows + 1) h.push([]);
+  for (let r = 0; r < rows + 1; r++) {
     while ((h[r] ?? (h[r] = [])).length < cols) h[r].push({});
     h[r] = h[r].slice(0, cols);
   }
-  h = h.slice(0, Math.max(0, rows - 1));
+  h = h.slice(0, rows + 1);
   setEdgesH(grid, h as HEdgeEntry[][]);
-
-  // Outer arrays
-  const outer =
-    getEdgesOuter(grid) ??
-    ({ top: [], right: [], bottom: [], left: [] } as EdgesOuterSpec);
-  while (outer.top.length < cols) outer.top.push(null);
-  while (outer.bottom.length < cols) outer.bottom.push(null);
-  while (outer.left.length < rows) outer.left.push(null);
-  while (outer.right.length < rows) outer.right.push(null);
-  outer.top = outer.top.slice(0, cols);
-  outer.bottom = outer.bottom.slice(0, cols);
-  outer.left = outer.left.slice(0, rows);
-  outer.right = outer.right.slice(0, rows);
-  setEdgesOuter(grid, outer);
 }
 
 // Apply a uniform outer border to all four sides
@@ -93,17 +76,20 @@ export function applyUniformOuter(
   ensureEdgesArrays(grid);
   const { rows, cols } = getGridSize(grid);
   const spec = toSpec(border, colorFallback);
-  const outer = (getEdgesOuter(grid) ?? {
-    top: [],
-    right: [],
-    bottom: [],
-    left: [],
-  }) as EdgesOuterSpec;
-  outer.top = Array(cols).fill(spec);
-  outer.bottom = Array(cols).fill(spec);
-  outer.left = Array(rows).fill(spec);
-  outer.right = Array(rows).fill(spec);
-  setEdgesOuter(grid, outer);
+  // Top and Bottom perimeters via H at r=0 and r=rows
+  const h = (getEdgesH(grid) ?? []) as HEdgeEntry[][];
+  for (let c = 0; c < cols; c++) {
+    h[0][c] = spec;
+    h[rows][c] = spec;
+  }
+  setEdgesH(grid, h);
+  // Left and Right perimeters via V at c=0 and c=cols
+  const v = (getEdgesV(grid) ?? []) as VEdgeEntry[][];
+  for (let r = 0; r < rows; r++) {
+    v[r][0] = spec;
+    v[r][cols] = spec;
+  }
+  setEdgesV(grid, v);
 }
 
 // Apply uniform inner vertical/horizontal borders (between cells)
@@ -117,20 +103,19 @@ export function applyUniformInner(
   const { rows, cols } = getGridSize(grid);
   const spec = toSpec(border, colorFallback);
   if (kind === "innerV") {
-    const v = (getEdgesV(grid) ?? []) as HVVerticalEdgeCellSides[][];
+    const v = (getEdgesV(grid) ?? []) as Array<Array<HVVerticalEdgeCellSides | BorderSpec | null>>;
     for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < Math.max(0, cols - 1); c++) {
-        v[r][c].west = spec;
-        v[r][c].east = spec;
+      for (let c = 1; c <= Math.max(0, cols - 1); c++) {
+        // Write a single-spec for conciseness
+        v[r][c] = spec;
       }
     }
     setEdgesV(grid, v);
   } else {
-    const h = (getEdgesH(grid) ?? []) as HVHorizontalEdgeCellSides[][];
-    for (let r = 0; r < Math.max(0, rows - 1); r++) {
+    const h = (getEdgesH(grid) ?? []) as Array<Array<HVHorizontalEdgeCellSides | BorderSpec | null>>;
+    for (let r = 1; r <= Math.max(0, rows - 1); r++) {
       for (let c = 0; c < cols; c++) {
-        h[r][c].north = spec;
-        h[r][c].south = spec;
+        h[r][c] = spec;
       }
     }
     setEdgesH(grid, h);
@@ -147,7 +132,7 @@ export function setDefaultBorder(
 }
 
 // Apply borders around a single cell's perimeter.
-// For interior sides, writes to inner edges (both sided); for outer edges, writes to edges-outer.
+// Uses unified edges: interior sides to inner boundaries; outer to perimeters in H/V arrays.
 export function applyCellPerimeter(
   grid: HTMLElement,
   cell: HTMLElement,
@@ -172,30 +157,17 @@ export function applyCellPerimeter(
   const sy = Math.max(1, span.y);
 
   // Fetch arrays
-  const v = (getEdgesV(grid) ?? []) as HVVerticalEdgeCellSides[][];
-  const h = (getEdgesH(grid) ?? []) as HVHorizontalEdgeCellSides[][];
-  const outer = (getEdgesOuter(grid) ?? {
-    top: [],
-    right: [],
-    bottom: [],
-    left: [],
-  }) as EdgesOuterSpec;
+  const v = (getEdgesV(grid) ?? []) as Array<Array<HVVerticalEdgeCellSides | BorderSpec | null>>;
+  const h = (getEdgesH(grid) ?? []) as Array<Array<HVHorizontalEdgeCellSides | BorderSpec | null>>;
 
   // Left
   if (map.left !== undefined) {
     const innerSpec = toSpec(map.left, innerColorFallback);
     const outerSpec = toSpec(map.left, outerColorFallback);
-    if (c === 0) {
-      for (let rr = r; rr < Math.min(r + sy, outer.left.length); rr++) {
-        outer.left[rr] = outerSpec;
-      }
-    } else {
-      for (let rr = r; rr < Math.min(r + sy, v.length); rr++) {
-        if (c - 1 >= 0 && c - 1 < (v[rr]?.length ?? 0)) {
-          v[rr][c - 1].west = innerSpec;
-          v[rr][c - 1].east = innerSpec;
-        }
-      }
+    // Perimeter if c==0 else interior boundary at column c
+    for (let rr = r; rr < Math.min(r + sy, v.length); rr++) {
+      const boundary = c === 0 ? 0 : c;
+      v[rr][boundary] = c === 0 ? outerSpec : innerSpec;
     }
   }
 
@@ -204,17 +176,9 @@ export function applyCellPerimeter(
     const innerSpec = toSpec(map.right, innerColorFallback);
     const outerSpec = toSpec(map.right, outerColorFallback);
     const rc = c + sx - 1;
-    if (rc === cols - 1) {
-      for (let rr = r; rr < Math.min(r + sy, outer.right.length); rr++) {
-        outer.right[rr] = outerSpec;
-      }
-    } else {
-      for (let rr = r; rr < Math.min(r + sy, v.length); rr++) {
-        if (rc >= 0 && rc < (v[rr]?.length ?? 0)) {
-          v[rr][rc].west = innerSpec;
-          v[rr][rc].east = innerSpec;
-        }
-      }
+    for (let rr = r; rr < Math.min(r + sy, v.length); rr++) {
+      const boundary = rc === cols - 1 ? cols : rc + 1;
+      v[rr][boundary] = rc === cols - 1 ? outerSpec : innerSpec;
     }
   }
 
@@ -222,15 +186,10 @@ export function applyCellPerimeter(
   if (map.top !== undefined) {
     const innerSpec = toSpec(map.top, innerColorFallback);
     const outerSpec = toSpec(map.top, outerColorFallback);
-    if (r === 0) {
-      for (let cc = c; cc < Math.min(c + sx, outer.top.length); cc++) {
-        outer.top[cc] = outerSpec;
-      }
-    } else if (r - 1 >= 0 && r - 1 < h.length) {
-      for (let cc = c; cc < Math.min(c + sx, h[r - 1]?.length ?? 0); cc++) {
-        h[r - 1][cc].north = innerSpec;
-        h[r - 1][cc].south = innerSpec;
-      }
+    // Perimeter if r==0 else interior boundary at row r
+    const boundaryRow = r === 0 ? 0 : r;
+    for (let cc = c; cc < Math.min(c + sx, (h[boundaryRow]?.length ?? 0)); cc++) {
+      h[boundaryRow][cc] = r === 0 ? outerSpec : innerSpec;
     }
   }
 
@@ -239,19 +198,12 @@ export function applyCellPerimeter(
     const innerSpec = toSpec(map.bottom, innerColorFallback);
     const outerSpec = toSpec(map.bottom, outerColorFallback);
     const rrBottom = r + sy - 1;
-    if (rrBottom === rows - 1) {
-      for (let cc = c; cc < Math.min(c + sx, outer.bottom.length); cc++) {
-        outer.bottom[cc] = outerSpec;
-      }
-    } else if (rrBottom >= 0 && rrBottom < h.length) {
-      for (let cc = c; cc < Math.min(c + sx, h[rrBottom]?.length ?? 0); cc++) {
-        h[rrBottom][cc].north = innerSpec;
-        h[rrBottom][cc].south = innerSpec;
-      }
+    const boundaryRow = rrBottom === rows - 1 ? rows : rrBottom + 1;
+    for (let cc = c; cc < Math.min(c + sx, (h[boundaryRow]?.length ?? 0)); cc++) {
+      h[boundaryRow][cc] = rrBottom === rows - 1 ? outerSpec : innerSpec;
     }
   }
 
   setEdgesV(grid, v);
   setEdgesH(grid, h);
-  setEdgesOuter(grid, outer);
 }

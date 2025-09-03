@@ -177,7 +177,7 @@ describe("grid-renderer", () => {
     expect(m.cellBorders[1].left).toBeNull();
   });
 
-  it("perimeter via edges-outer applies directly to edge cells", () => {
+  it("perimeter via unified H/V applies directly to edge cells", () => {
     const g = makeGrid();
     g.setAttribute("data-column-widths", "100px,100px");
     g.setAttribute("data-row-heights", "30px,30px");
@@ -185,17 +185,17 @@ describe("grid-renderer", () => {
     addCell(g);
     addCell(g);
     addCell(g);
+    // Top perimeter via H at r=0
     g.setAttribute(
-      "data-edges-outer",
-      JSON.stringify({
-        top: [
+      "data-edges-h",
+      JSON.stringify([
+        [
           { weight: 3, style: "double", color: "green" },
           { weight: 3, style: "double", color: "green" },
         ],
-        bottom: [null, null],
-        left: [null, null],
-        right: [null, null],
-      })
+        [null, null],
+        [null, null],
+      ])
     );
 
     const m = buildRenderModel(g);
@@ -212,9 +212,9 @@ describe("grid-renderer", () => {
     });
   });
 
-  // Shorthand/outline no longer used; edges-outer drives perimeter.
+  // Shorthand/outline no longer used; unified H/V drives perimeter.
 
-  // Per-side perimeter now comes from edges-outer; no outline assertions.
+  // Per-side perimeter now comes from unified H/V; no outline assertions.
 
   it("applies grid corner radius to outermost cells", () => {
     const g = makeGrid();
@@ -238,15 +238,13 @@ describe("grid-renderer", () => {
     g.setAttribute("data-column-widths", "100px");
     g.setAttribute("data-row-heights", "30px");
     const cell = addCell(g);
-    // Parent cell perimeter via edges-outer top
+    // Parent cell perimeter via H at r=0
     g.setAttribute(
-      "data-edges-outer",
-      JSON.stringify({
-        top: [{ weight: 2, style: "solid", color: "black" }],
-        right: [null],
-        bottom: [null],
-        left: [null],
-      })
+      "data-edges-h",
+      JSON.stringify([
+        [{ weight: 2, style: "solid", color: "black" }],
+        [null],
+      ])
     );
     // Nested grid inside cell
     const nested = document.createElement("div");

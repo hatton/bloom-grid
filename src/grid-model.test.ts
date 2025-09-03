@@ -14,8 +14,6 @@ import {
   setEdgesV,
   getEdgesH,
   setEdgesH,
-  getEdgesOuter,
-  setEdgesOuter,
   getEdgeDefault,
   setEdgeDefault,
   type BorderSpec,
@@ -50,43 +48,31 @@ describe("grid-model", () => {
     expect(getSpan(c)).toEqual({ x: 2, y: 3 });
   });
 
-  it("reads/writes edgesH, edgesV, edgesOuter, and edge default", () => {
+  it("reads/writes edgesH, edgesV, and edge default", () => {
     const g = makeGrid();
-    // Vertical edges: 1 row x 1 vertical boundary
+    // Vertical edges: 1 row x 3 vertical boundaries (including perimeters)
     setEdgesV(g, [
-      [{ west: { weight: 2, style: "solid", color: "#000" }, east: null }],
+      [null, { west: { weight: 2, style: "solid", color: "#000" }, east: null }, null],
     ]);
     expect(getEdgesV(g)).toEqual([
-      [{ west: { weight: 2, style: "solid", color: "#000" }, east: null }],
+      [null, { west: { weight: 2, style: "solid", color: "#000" }, east: null }, null],
     ]);
 
-    // Horizontal edges: 1 boundary x 2 columns
+    // Horizontal edges: 2 boundaries x 2 columns (including perimeters)
     setEdgesH(g, [
+      [null, null],
       [
         { north: null, south: { weight: 1, style: "dashed", color: "red" } },
         { north: null, south: null },
       ],
     ]);
     expect(getEdgesH(g)).toEqual([
+      [null, null],
       [
         { north: null, south: { weight: 1, style: "dashed", color: "red" } },
         { north: null, south: null },
       ],
     ]);
-
-    // Outer edges
-    setEdgesOuter(g, {
-      top: [{ weight: 3, style: "double", color: "green" }],
-      right: [null],
-      bottom: [null],
-      left: [null],
-    });
-    expect(getEdgesOuter(g)).toEqual({
-      top: [{ weight: 3, style: "double", color: "green" }],
-      right: [null],
-      bottom: [null],
-      left: [null],
-    });
 
     // Edge default
     const def: BorderSpec = { weight: 1, style: "solid", color: "#888" };
@@ -110,14 +96,7 @@ describe("grid-model", () => {
     setGridCorners(g, null);
     expect(getGridCorners(g)).toBeNull();
 
-    setEdgesOuter(g, {
-      top: [{ weight: 1, style: "solid", color: "blue" }],
-      right: [null],
-      bottom: [null],
-      left: [null],
-    });
-    setEdgesOuter(g, null);
-    expect(getEdgesOuter(g)).toBeNull();
+  // No outer anymore; only test edge default removal
 
     setEdgeDefault(g, { weight: 1, style: "solid", color: "blue" });
     setEdgeDefault(g, null);

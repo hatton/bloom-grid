@@ -9,12 +9,7 @@ import type {
   BorderValueMap,
   BorderWeight,
 } from "./BorderControl/logic/types";
-import {
-  applyCellPerimeter,
-  ensureEdgesArrays,
-  getGridSize,
-} from "../edge-utils";
-import { getEdgesOuter } from "../grid-model";
+import { applyCellPerimeter, ensureEdgesArrays } from "../edge-utils";
 // icons
 // icons are now owned by CellContentType; no direct imports here
 // (leftover icons removed)
@@ -59,7 +54,7 @@ const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
       ? "none"
       : "solid";
 
-  // Determine if this cell is on any outer edges to sample edges-outer
+  // Determine if this cell is on any outer edges
   const grid = c.closest(".grid") as HTMLElement | null;
   let top = { weight: outlineW, style: outlineStyle } as const;
   let right = { weight: outlineW, style: outlineStyle } as const;
@@ -67,30 +62,8 @@ const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
   let left = { weight: outlineW, style: outlineStyle } as const;
   if (grid) {
     ensureEdgesArrays(grid);
-    const { cols } = getGridSize(grid);
-    const cells = Array.from(grid.children).filter((el) =>
-      (el as HTMLElement).classList.contains("cell")
-    ) as HTMLElement[];
-    const idx = cells.indexOf(c);
-    const r = Math.floor(idx / Math.max(1, cols));
-    const ci = idx % Math.max(1, cols);
-    const outer = getEdgesOuter(grid);
-    const mapOuter = (
-      spec: any,
-      fallback: { weight: BorderWeight; style: BorderStyle }
-    ) => ({
-      weight: (spec?.weight as number) ?? fallback.weight,
-      style: (spec?.style as BorderStyle) ?? fallback.style,
-    });
-    if (outer) {
-      if (r === 0) top = mapOuter(outer.top[ci], top) as any;
-      if (ci === cols - 1) right = mapOuter(outer.right[r], right) as any;
-      if (cells.length > 0) {
-        const rows = Math.ceil(cells.length / Math.max(1, cols));
-        if (r === rows - 1) bottom = mapOuter(outer.bottom[ci], bottom) as any;
-      }
-      if (ci === 0) left = mapOuter(outer.left[r], left) as any;
-    }
+  // position not needed for UI sampling after unified edges; renderer reflects outer via computed styles
+  // Outer edges are reflected in computed styles by renderer; for UI sampling we keep outline fallback.
   }
 
   return {
