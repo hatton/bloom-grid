@@ -4,6 +4,10 @@ import {
   addColumn as structAddColumn,
   removeLastColumn as structRemoveLastColumn,
   setCellSpan as structSetCellSpan,
+  addRowAt as structAddRowAt,
+  addColumnAt as structAddColumnAt,
+  removeRowAt as structRemoveRowAt,
+  removeColumnAt as structRemoveColumnAt,
 } from "./structure";
 import {
   getColumnWidths,
@@ -12,6 +16,7 @@ import {
   setRowHeights,
   setGridCorners,
   setSpan,
+  getSpan,
 } from "./grid-model";
 import { gridHistoryManager } from "./history";
 import { request } from "./render-scheduler";
@@ -46,30 +51,22 @@ export class BloomGrid {
 
   // Positioned structure ops
   addRowAt(index: number): void {
-    // reuse structure's history-wrapped op
-    const { addRowAt } = require("./structure") as typeof import("./structure");
-    addRowAt(this.grid, index);
+    structAddRowAt(this.grid, index);
     this.schedule("addRowAt");
   }
 
   addColumnAt(index: number): void {
-    const { addColumnAt } =
-      require("./structure") as typeof import("./structure");
-    addColumnAt(this.grid, index);
+    structAddColumnAt(this.grid, index);
     this.schedule("addColumnAt");
   }
 
   removeRowAt(index: number): void {
-    const { removeRowAt } =
-      require("./structure") as typeof import("./structure");
-    removeRowAt(this.grid, index);
+    structRemoveRowAt(this.grid, index);
     this.schedule("removeRowAt");
   }
 
   removeColumnAt(index: number): void {
-    const { removeColumnAt } =
-      require("./structure") as typeof import("./structure");
-    removeColumnAt(this.grid, index);
+    structRemoveColumnAt(this.grid, index);
     this.schedule("removeColumnAt");
   }
 
@@ -116,8 +113,6 @@ export class BloomGrid {
   }
 
   getSpan(cell: HTMLElement): { x: number; y: number } {
-    const { getSpan } =
-      require("./grid-model") as typeof import("./grid-model");
     return getSpan(cell);
   }
 
