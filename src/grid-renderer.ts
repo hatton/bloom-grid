@@ -428,7 +428,7 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     const { west } = readV(r, cols);
     const i = idx(r, Math.max(0, cols - 1));
     if (cells[i]) {
-      cellBorders[i].right = west ?? null;
+      cellBorders[i].right = west ?? edgeDefault ?? null;
     }
   }
 
