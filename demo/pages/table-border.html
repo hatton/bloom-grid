@@ -26,8 +26,8 @@
         class="grid"
         data-column-widths="fill,fill"
         data-row-heights="fill,fill"
-        data-edges-h='[[{"weight":1,"style":"solid","color":"red"},null],[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}],[null,{"weight":1,"style":"solid","color":"red"}]]'
-        data-edges-v='[[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"},null],[null,{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}]]'
+        data-edges-h='[[{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1 red border</div>
@@ -69,15 +69,16 @@
 
       <br />
       <p>
-        This should show a 1x2 table where the border between the cell is red.
+        This should show a 1x2 table with black border around it and a red
+        border between the cells.
       </p>
       <div
         id="grid-with-red-border"
         class="grid"
         data-column-widths="fill,fill"
         data-row-heights="fill"
-        data-edges-h="[[null,null],[null,null]]"
-        data-edges-v='[[null,{"weight":1,"style":"solid","color":"red"},null]]'
+        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"#000"}]]'
       >
         <div class="cell" data-content-type="text">
           <div contenteditable="true">r1c1</div>

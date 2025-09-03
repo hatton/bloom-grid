@@ -12,6 +12,36 @@ test.describe("Table Border Visual Validation", () => {
     // Manually attach grids since we removed script tags from HTML files
     await attachGridsToPage(page);
 
+    // Debug: Log the edge data for the first grid
+    const gridEdgeData = await page.evaluate(() => {
+      const grid = document.querySelector("#grid-with-red-cross");
+      return {
+        edgesH: grid?.getAttribute("data-edges-h"),
+        edgesV: grid?.getAttribute("data-edges-v"),
+        columnWidths: grid?.getAttribute("data-column-widths"),
+        rowHeights: grid?.getAttribute("data-row-heights"),
+      };
+    });
+    console.log("Grid edge data:", gridEdgeData);
+
+    // Debug: Log what borders are actually applied to each cell
+    const cellBorderDebug = await page.evaluate(() => {
+      const cells = Array.from(
+        document.querySelectorAll("#grid-with-red-cross .cell")
+      );
+      return cells.map((cell, index) => {
+        const computed = getComputedStyle(cell);
+        return {
+          cellIndex: index,
+          borderTop: `${computed.borderTopStyle} ${computed.borderTopWidth} ${computed.borderTopColor}`,
+          borderRight: `${computed.borderRightStyle} ${computed.borderRightWidth} ${computed.borderRightColor}`,
+          borderBottom: `${computed.borderBottomStyle} ${computed.borderBottomWidth} ${computed.borderBottomColor}`,
+          borderLeft: `${computed.borderLeftStyle} ${computed.borderLeftWidth} ${computed.borderLeftColor}`,
+        };
+      });
+    });
+    console.log("Actual cell borders:", cellBorderDebug);
+
     // === Grid 1: Red Cross Pattern (should apply per-side borders) ===
     const grid1 = page.locator("#grid-with-red-cross");
     await expect(grid1).toBeVisible();
@@ -34,8 +64,18 @@ test.describe("Table Border Visual Validation", () => {
         borderRightColor: computed.borderRightColor,
         borderBottomColor: computed.borderBottomColor,
         borderLeftColor: computed.borderLeftColor,
+        // Additional debugging info
+        borderTopWidth: computed.borderTopWidth,
+        borderRightWidth: computed.borderRightWidth,
+        borderBottomWidth: computed.borderBottomWidth,
+        borderLeftWidth: computed.borderLeftWidth,
       };
     });
+
+    console.log(
+      "r1c1 actual computed styles:",
+      JSON.stringify(r1c1Styles, null, 2)
+    );
 
     // Verify r1c1 has solid red borders on all sides per the cross pattern
     expect(r1c1Styles.borderTopStyle).toBe("solid");
@@ -115,17 +155,27 @@ test.describe("Table Border Visual Validation", () => {
         borderRightStyle: computed.borderRightStyle,
         borderRightColor: computed.borderRightColor,
         borderTopStyle: computed.borderTopStyle,
+        borderTopColor: computed.borderTopColor,
         borderBottomStyle: computed.borderBottomStyle,
+        borderBottomColor: computed.borderBottomColor,
         borderLeftStyle: computed.borderLeftStyle,
+        borderLeftColor: computed.borderLeftColor,
       };
     });
 
-    // Should have right border only
+    // Should have black borders on top, bottom, left and red border on right
     expect(grid3Styles.borderRightStyle).toBe("solid");
     expect(grid3Styles.borderRightColor).toMatch(redPattern);
-    expect(grid3Styles.borderTopStyle).toBe("none");
-    expect(grid3Styles.borderBottomStyle).toBe("none");
-    expect(grid3Styles.borderLeftStyle).toBe("none");
+    expect(grid3Styles.borderTopStyle).toBe("solid");
+    expect(grid3Styles.borderBottomStyle).toBe("solid");
+    expect(grid3Styles.borderLeftStyle).toBe("solid");
+
+    // Check that top, bottom, left borders are black
+    const blackPattern =
+      /(rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))|(#000000)|(#000)|\bblack\b/i;
+    expect(grid3Styles.borderTopColor).toMatch(blackPattern);
+    expect(grid3Styles.borderBottomColor).toMatch(blackPattern);
+    expect(grid3Styles.borderLeftColor).toMatch(blackPattern);
   });
 
   test("visual regression - grid rendering", async ({ page }) => {

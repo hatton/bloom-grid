@@ -235,7 +235,18 @@ test.describe("GridMenu Integration Tests", () => {
     // Remove 1 column and 1 row
     await page.locator('button[aria-label="Delete Column"]').click();
     await page.waitForTimeout(100);
-    await page.locator('button[aria-label="Delete Row"]').click();
+
+    // Ensure a cell is still focused after column deletion
+    const cellAfterColumnDelete = page
+      .locator("#example-container .cell")
+      .first();
+    await cellAfterColumnDelete.click();
+    await page.waitForTimeout(100);
+
+    // Check if Delete Row button exists before clicking
+    const deleteRowButton = page.locator('button[aria-label="Delete Row"]');
+    await expect(deleteRowButton).toBeVisible({ timeout: 5000 });
+    await deleteRowButton.click();
     await page.waitForTimeout(100);
 
     const finalColumnCount = await getColumnCount(page);

@@ -398,36 +398,37 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     }
   }
   // Perimeter from unified H/V edges: apply per-cell sides directly
-  // Top perimeter: H at r=0
+  // Note: Per design spec, defaults are "Not applied across gaps or to perimeters"
+  // Top perimeter: H at r=0 - use south side (faces the cells)
   for (let c = 0; c < cols; c++) {
-    const { north } = readH(0, c);
+    const { south } = readH(0, c);
     const i = idx(0, c);
     if (cells[i]) {
-      cellBorders[i].top = north ?? edgeDefault ?? null;
+      cellBorders[i].top = south ?? edgeDefault ?? null;
     }
   }
-  // Bottom perimeter: H at r=rows
+  // Bottom perimeter: H at r=rows - use north side (faces the cells)
   for (let c = 0; c < cols; c++) {
-    const { south } = readH(rows, c);
+    const { north } = readH(rows, c);
     const i = idx(Math.max(0, rows - 1), c);
     if (cells[i]) {
-      cellBorders[i].bottom = south ?? edgeDefault ?? null;
+      cellBorders[i].bottom = north ?? edgeDefault ?? null;
     }
   }
-  // Left perimeter: V at c=0
+  // Left perimeter: V at c=0 - use east side (faces the cells)
   for (let r = 0; r < rows; r++) {
-    const { west } = readV(r, 0);
+    const { east } = readV(r, 0);
     const i = idx(r, 0);
     if (cells[i]) {
-      cellBorders[i].left = west ?? edgeDefault ?? null;
+      cellBorders[i].left = east ?? edgeDefault ?? null;
     }
   }
-  // Right perimeter: V at c=cols
+  // Right perimeter: V at c=cols - use west side (faces the cells)
   for (let r = 0; r < rows; r++) {
-    const { east } = readV(r, cols);
+    const { west } = readV(r, cols);
     const i = idx(r, Math.max(0, cols - 1));
     if (cells[i]) {
-      cellBorders[i].right = east ?? edgeDefault ?? null;
+      cellBorders[i].right = west ?? null;
     }
   }
 
