@@ -4,7 +4,7 @@ import { attachGridsToPage } from "./utils/grid-attachment";
 test.describe("Embedded Grids", () => {
   test("validates embedded grid rendering and layout", async ({ page }) => {
     // Navigate to the embedded grids demo
-    await page.goto("/demo/embedded-grids.html");
+    await page.goto("/demo/pages/embedded-grids.html");
 
     // Wait for the page to load
     await page.waitForSelector(".grid");
@@ -186,7 +186,7 @@ test.describe("Embedded Grids", () => {
   test("validates that embedded grids fill their parent cell", async ({
     page,
   }) => {
-    await page.goto("/demo/embedded-grids.html");
+    await page.goto("/demo/pages/embedded-grids.html");
     await page.waitForSelector(".grid");
 
     const parentCell = page.locator(

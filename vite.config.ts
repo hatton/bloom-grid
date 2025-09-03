@@ -4,7 +4,7 @@ import dts from "vite-plugin-dts";
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
-import { getExamples, handleSaveExampleRequest } from "./demo/example-api";
+import { getExamples, handleSaveExampleRequest } from "./demo/api";
 
 export default defineConfig(({ command }) => {
   const isProduction = command === "build";

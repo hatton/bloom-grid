@@ -4,7 +4,7 @@ import { attachGridsToPage } from "./utils/grid-attachment";
 test.describe("Table Border Visual Validation", () => {
   test("validates border rendering in real browser", async ({ page }) => {
     // Navigate to the table-border demo
-    await page.goto("/demo/table-border.html");
+    await page.goto("/demo/pages/table-border.html");
 
     // Wait for the page to load
     await page.waitForSelector(".grid");
@@ -129,7 +129,7 @@ test.describe("Table Border Visual Validation", () => {
   });
 
   test("visual regression - grid rendering", async ({ page }) => {
-    await page.goto("/demo/table-border.html");
+    await page.goto("/demo/pages/table-border.html");
     await page.waitForSelector(".grid");
 
     // Manually attach grids since we removed script tags from HTML files

@@ -93,18 +93,12 @@ export async function handleSaveExampleRequest(req, res) {
       }
 
       // Determine the file path
-      const filePath = path.resolve(
-        __dirname,
-        "pages",
-        `${safeExampleName}.html`
-      );
+      const filePath = path.resolve(__dirname, "pages", `${safeExampleName}.html`);
 
       console.log(`[API] Attempting to save to file: ${filePath}`);
       console.log(`[API] Current directory: ${__dirname}`);
       console.log(
-        `[API] Available files: ${(
-          await fs.readdir(path.join(__dirname, "pages"))
-        ).join(", ")}`
+        `[API] Available files: ${(await fs.readdir(path.join(__dirname, "pages"))).join(", ")}`
       );
 
       try {

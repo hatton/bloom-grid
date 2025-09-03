@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite --open /demo/index.html",
+    "dev": "vite --open /demo/pages/index.html",
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
