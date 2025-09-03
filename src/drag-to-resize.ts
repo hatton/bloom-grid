@@ -5,6 +5,7 @@ import {
   getGridInfo,
   getRowAndColumn,
 } from "./structure";
+import { render } from "./grid-renderer";
 
 interface DragState {
   isDragging: boolean;
@@ -367,6 +368,9 @@ export class DragToResize {
     if (this.dragState.targetIndex < widthArray.length) {
       widthArray[this.dragState.targetIndex] = `${newWidth}px`;
       grid.setAttribute("data-column-widths", widthArray.join(","));
+
+      // Re-render the grid to update the visual layout during drag
+      render(grid);
     }
   }
   private updateRowHeightPreview(grid: HTMLElement, deltaY: number): void {
@@ -408,6 +412,10 @@ export class DragToResize {
       // Store in mm for rows
       rowHeights[this.dragState.targetIndex] = formatMm(newHeightPx);
       grid.setAttribute("data-row-heights", rowHeights.join(","));
+
+      // Re-render the grid to update the visual layout during drag
+      render(grid);
+
       // Debug preview write
       // eslint-disable-next-line no-console
       console.log(

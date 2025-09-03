@@ -8,7 +8,7 @@ export async function attachGridsToPage(page: Page): Promise<void> {
   await page.addScriptTag({
     type: "module",
     content: `
-      import { attachGrid } from "../src/attach.js";
+      import { attachGrid } from "/src/attach.js";
       document.querySelectorAll(".grid").forEach((grid) => {
         attachGrid(grid);
       });
