@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { attachGrid } from "../../src";
+import { attachGridsAfterContentLoad } from "../utils/gridAttachment";
 
 interface MainContentProps {
   exampleContent: string;
@@ -11,15 +11,7 @@ const MainContent: React.FC<MainContentProps> = ({ exampleContent }) => {
   useEffect(() => {
     if (containerRef.current && exampleContent) {
       containerRef.current.innerHTML = exampleContent;
-      const gridElements =
-        containerRef.current.querySelectorAll<HTMLElement>(".grid");
-      gridElements.forEach((g) => attachGrid(g));
-
-      // Dispatch a custom event to notify React components that new content has been loaded
-      const event = new CustomEvent("exampleContentLoaded", {
-        detail: { container: containerRef.current },
-      });
-      document.dispatchEvent(event);
+      attachGridsAfterContentLoad(containerRef.current);
     }
   }, [exampleContent]);
 

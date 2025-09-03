@@ -8,6 +8,7 @@ import tableIcon from "./components/icons/cell-content-table.svg";
 import imageIcon from "./components/icons/cell-content-image.svg";
 import videoIcon from "./components/icons/cell-content-video.svg";
 import { gridHistoryManager } from "./history";
+import { attachGrid } from "./attach";
 
 export function contentTypeOptions(): {
   id: string;
@@ -124,15 +125,21 @@ export function setupContentsOfCell(
 
     // if we just inserted a grid, set each of its cells to the default content type
     if (targetType === "grid") {
-      const gridCells = cell.querySelectorAll<HTMLElement>(".cell");
-      gridCells.forEach((gridCell) => {
-        gridCell.dataset.contentType = defaultCellContentTypeId;
+      const embeddedGrid = cell.querySelector<HTMLElement>(".grid");
+      if (embeddedGrid) {
+        const gridCells = embeddedGrid.querySelectorAll<HTMLElement>(".cell");
+        gridCells.forEach((gridCell) => {
+          gridCell.dataset.contentType = defaultCellContentTypeId;
 
-        gridCell.innerHTML =
-          defaultCellContentsForEachType.find(
-            (c) => c.id === defaultCellContentTypeId
-          )?.templateHtml || "!!!";
-      });
+          gridCell.innerHTML =
+            defaultCellContentsForEachType.find(
+              (c) => c.id === defaultCellContentTypeId
+            )?.templateHtml || "!!!";
+        });
+
+        // Attach the embedded grid to enable all grid functionality
+        attachGrid(embeddedGrid);
+      }
       // set tabindex to -1 so that it's possible to focus the parent cell
       cell.tabIndex = -1;
     }

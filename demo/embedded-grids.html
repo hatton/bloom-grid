@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Embedded Grids Demo</title>
+    <link rel="stylesheet" href="../src/bloom-grid.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="page"
+      style="background: white; height: 600px; width: 800px; display: block"
+    >
+      <p>
+        This should show a single row table with the first cell containing an
+        embedded 2x2 grid with default borders.
+      </p>
+      <br />
+      <div
+        id="main-grid"
+        class="grid"
+        data-column-widths="200px,200px,200px"
+        data-row-heights="150px"
+        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+      >
+        <div class="cell" data-content-type="grid">
+          <div
+            class="grid"
+            data-column-widths="fill,fill"
+            data-row-heights="fill,fill"
+            data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+            data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+          >
+            <div class="cell" data-content-type="text">
+              <div contenteditable="true">A1</div>
+            </div>
+            <div class="cell" data-content-type="text">
+              <div contenteditable="true">A2</div>
+            </div>
+            <div class="cell" data-content-type="text">
+              <div contenteditable="true">B1</div>
+            </div>
+            <div class="cell" data-content-type="text">
+              <div contenteditable="true">B2</div>
+            </div>
+          </div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Regular Cell 1</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Regular Cell 2</div>
+        </div>
+      </div>
+
+      <br />
+      <p>
+        This should show an embedded grid that was created without explicit edge
+        data (reproducing the problem).
+      </p>
+      <div
+        id="problematic-grid"
+        class="grid"
+        data-column-widths="200px,200px"
+        data-row-heights="150px"
+        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+      >
+        <div class="cell" data-content-type="grid">
+          <div
+            class="grid"
+            data-column-widths="fill,fill"
+            data-row-heights="fill,fill"
+            data-edges-v="[[{},{},{}],[{},{},{}]]"
+            data-edges-h="[[{},{}],[{},{}],[{},{}]]"
+          >
+            <div class="cell" data-content-type="text" style="cursor: default">
+              <div contenteditable="true"></div>
+            </div>
+            <div
+              class="cell"
+              data-content-type="text"
+              style="cursor: ew-resize"
+            >
+              <div contenteditable="true" style="cursor: default"></div>
+            </div>
+            <div class="cell" data-content-type="text" style="cursor: default">
+              <div contenteditable="true" style="cursor: default"></div>
+            </div>
+            <div class="cell" data-content-type="text" style="cursor: default">
+              <div contenteditable="true" style="cursor: default"></div>
+            </div>
+          </div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Regular Cell</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

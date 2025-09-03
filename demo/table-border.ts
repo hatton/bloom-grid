@@ -1,6 +1,6 @@
-import { attachGrid } from "../src";
+import { attachAllGrids } from "./utils/gridAttachment";
 
 // Attach after DOMContentLoaded to ensure elements are present
 window.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll<HTMLElement>(".grid").forEach((g) => attachGrid(g));
+  attachAllGrids();
 });

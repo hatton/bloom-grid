@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { attachGridsToPage } from "./utils/grid-attachment";
 
-test.describe("Bloom Grid Visual Validation", () => {
+test.describe("Table Border Visual Validation", () => {
   test("validates border rendering in real browser", async ({ page }) => {
     // Navigate to the table-border demo
     await page.goto("/demo/table-border.html");
@@ -9,18 +10,7 @@ test.describe("Bloom Grid Visual Validation", () => {
     await page.waitForSelector(".grid");
 
     // Manually attach grids since we removed script tags from HTML files
-    await page.addScriptTag({
-      type: "module",
-      content: `
-        import { attachGrid } from "../src/attach.js";
-        document.querySelectorAll(".grid").forEach((grid) => {
-          attachGrid(grid);
-        });
-      `,
-    });
-
-    // Wait a bit for grid attachment to complete
-    await page.waitForTimeout(100);
+    await attachGridsToPage(page);
 
     // === Grid 1: Red Cross Pattern (should apply per-side borders) ===
     const grid1 = page.locator("#grid-with-red-cross");
@@ -143,18 +133,7 @@ test.describe("Bloom Grid Visual Validation", () => {
     await page.waitForSelector(".grid");
 
     // Manually attach grids since we removed script tags from HTML files
-    await page.addScriptTag({
-      type: "module",
-      content: `
-        import { attachGrid } from "../src/attach.js";
-        document.querySelectorAll(".grid").forEach((grid) => {
-          attachGrid(grid);
-        });
-      `,
-    });
-
-    // Wait a bit for grid attachment to complete
-    await page.waitForTimeout(100);
+    await attachGridsToPage(page);
 
     // Take a screenshot for visual regression testing
     await expect(page).toHaveScreenshot("table-border-grids.png", {
