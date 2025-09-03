@@ -12,7 +12,7 @@ const Demo: React.FC = () => {
   // Function to load and parse HTML content
   const loadExampleContent = async (filename: string): Promise<string> => {
     try {
-      const response = await fetch(`./${filename}`);
+      const response = await fetch(`./pages/${filename}`);
       const htmlContent = await response.text();
 
       // Parse the HTML and extract the body content
@@ -31,7 +31,9 @@ const Demo: React.FC = () => {
     console.log(`Loading example: ${example.name} (${example.htmlFile})`);
     const exampleHtml = await loadExampleContent(example.htmlFile);
     setExampleHtmlContent(exampleHtml);
-    setExamplePngPath(example.pngFile);
+    setExamplePngPath(
+      example.pngFile ? `./pages/${example.pngFile}` : undefined
+    );
   };
 
   return (

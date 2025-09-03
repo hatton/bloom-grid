@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Column Fill Test</title>
+    <link rel="stylesheet" href="../../src/bloom-grid.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+
+      .test-container {
+        border: 2px solid red;
+        width: 600px;
+        height: 300px;
+        margin: 20px 0;
+      }
+
+      .test-grid {
+        width: 100%;
+        height: 100%;
+      }
+
+      h3 {
+        margin: 20px 0 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Column Fill vs Hug Test</h1>
+
+    <h3>Test 1: Two columns - hug, hug (baseline)</h3>
+    <div class="test-container">
+      <div
+        id="grid1"
+        class="grid test-grid"
+        data-column-widths="hug,hug"
+        data-row-heights="hug"
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Short</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Longer content</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Test 2: Two columns - fill, hug (first should expand)</h3>
+    <div class="test-container">
+      <div
+        id="grid2"
+        class="grid test-grid"
+        data-column-widths="fill,hug"
+        data-row-heights="hug"
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Short</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Longer content</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Test 3: Two columns - hug, fill (second should expand)</h3>
+    <div class="test-container">
+      <div
+        id="grid3"
+        class="grid test-grid"
+        data-column-widths="hug,fill"
+        data-row-heights="hug"
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Short</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Longer content</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Test 4: Two columns - fill, fill (both should expand equally)</h3>
+    <div class="test-container">
+      <div
+        id="grid4"
+        class="grid test-grid"
+        data-column-widths="fill,fill"
+        data-row-heights="hug"
+      >
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Short</div>
+        </div>
+        <div class="cell" data-content-type="text">
+          <div contenteditable="true">Longer content</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import and attach grids
+      import { attachGrid } from "../../src/attach.ts";
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const grids = document.querySelectorAll(".grid");
+        grids.forEach((grid) => {
+          attachGrid(grid);
+          console.log(`Grid ${grid.id}:`, {
+            dataColumnWidths: grid.getAttribute("data-column-widths"),
+            gridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

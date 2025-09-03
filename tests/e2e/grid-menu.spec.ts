@@ -3,7 +3,7 @@ import { test, expect, Page } from "@playwright/test";
 test.describe("GridMenu Integration Tests", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the main demo page which includes React components
-    await page.goto("/demo/pages/index.html");
+    await page.goto("/demo/index.html");
 
     // Wait for the React app to load
     await page.waitForSelector("#root", { timeout: 10000 });

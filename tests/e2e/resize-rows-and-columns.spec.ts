@@ -237,7 +237,7 @@ test.describe("Resize Rows and Columns", () => {
 
   test("verify fix works in live demo", async ({ page }) => {
     // Navigate to the main demo which has the dev server running
-    await page.goto("/demo/pages/index.html");
+    await page.goto("/demo/index.html");
     await page.waitForSelector("#root");
 
     // Wait for the demo to load
