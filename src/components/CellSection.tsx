@@ -4,12 +4,9 @@ import { contentTypeOptions, getCurrentContentTypeId } from "../cell-contents";
 import RadioGroup from "./RadioGroup";
 import IconButton from "./IconButton";
 import { BorderControl } from "./BorderControl/BorderControl";
-import type {
-  BorderStyle,
-  BorderValueMap,
-  BorderWeight,
-} from "./BorderControl/logic/types";
+import type { BorderStyle, BorderValueMap } from "./BorderControl/logic/types";
 import { applyCellPerimeter, ensureEdgesArrays } from "../edge-utils";
+import { getCellPerimeterValueMap } from "../border-state";
 import { render } from "../grid-renderer";
 // icons
 // icons are now owned by CellContentType; no direct imports here
@@ -29,36 +26,9 @@ const menuItemStyle =
 
 // --- Border helpers for a single cell ---
 const buildBorderMapFromCell = (c: HTMLElement): BorderValueMap => {
-  // For now, sampling defaults to none; authoring writes via edge model.
   const grid = c.closest(".grid") as HTMLElement | null;
-  let top = {
-    weight: 0 as BorderWeight,
-    style: "none" as BorderStyle,
-  } as const;
-  let right = {
-    weight: 0 as BorderWeight,
-    style: "none" as BorderStyle,
-  } as const;
-  let bottom = {
-    weight: 0 as BorderWeight,
-    style: "none" as BorderStyle,
-  } as const;
-  let left = {
-    weight: 0 as BorderWeight,
-    style: "none" as BorderStyle,
-  } as const;
-  if (grid) {
-    ensureEdgesArrays(grid);
-  }
-
-  return {
-    top: { weight: top.weight, style: top.style, radius: 0 },
-    right: { weight: right.weight, style: right.style, radius: 0 },
-    bottom: { weight: bottom.weight, style: bottom.style, radius: 0 },
-    left: { weight: left.weight, style: left.style, radius: 0 },
-    innerH: { weight: 0, style: "none", radius: 0 },
-    innerV: { weight: 0, style: "none", radius: 0 },
-  };
+  if (grid) ensureEdgesArrays(grid);
+  return getCellPerimeterValueMap(c);
 };
 const applyBorderMapToCell = (c: HTMLElement, map: BorderValueMap) => {
   // Write via edge model so renderer picks it up deterministically
@@ -96,6 +66,19 @@ const CellSection: React.FC<Props> = ({
     return buildBorderMapFromCell(currentCell);
   }, [currentCell]);
 
+  // Compute a stable key for the current cell to remount BorderControl on cell change
+  const borderControlKey: string | undefined = useMemo(() => {
+    if (!currentCell) return undefined;
+    const grid = currentCell.closest(".grid") as HTMLElement | null;
+    if (!grid) return undefined;
+    const cells = Array.from(grid.children).filter(
+      (c): c is HTMLElement =>
+        c instanceof HTMLElement && c.classList.contains("cell")
+    );
+    const idx = cells.indexOf(currentCell);
+    return idx >= 0 ? String(idx) : undefined;
+  }, [currentCell]);
+
   return (
     <Section label="Cell">
       {/* Content type selector */}
@@ -126,6 +109,7 @@ const CellSection: React.FC<Props> = ({
         <div className="text-sm opacity-80 mb-2">Borders</div>
         {currentCell && borderValueMap && (
           <BorderControl
+            key={borderControlKey}
             valueMap={borderValueMap}
             showInner={false}
             onChange={(next) => applyBorderMapToCell(currentCell, next)}

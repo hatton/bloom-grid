@@ -40,13 +40,13 @@ test.describe("Borders changing - visual expectation", () => {
       .locator('button[aria-label="Weight"]')
       .getAttribute("title");
 
-  // Expect solid and 1. This currently fails (shows Ø/Mixed).
+    // Expect solid and 1. This currently fails (shows Ø/Mixed).
     expect(styleTitle?.toLowerCase()).toContain("solid");
     expect(weightTitle).toMatch(/\b1\b/);
 
-  // All edges (inner + outer) should be selected initially when they are uniform; menus should not show Mixed
-  expect(styleTitle?.toLowerCase()).not.toContain("mixed");
-  expect(weightTitle?.toLowerCase()).not.toContain("mixed");
+    // All edges (inner + outer) should be selected initially when they are uniform; menus should not show Mixed
+    expect(styleTitle?.toLowerCase()).not.toContain("mixed");
+    expect(weightTitle?.toLowerCase()).not.toContain("mixed");
   });
   test("changing table style to dashed applies dashed borders (BUG)", async ({
     page,
@@ -115,8 +115,6 @@ test.describe("Borders changing - visual expectation", () => {
       [computed.right, computed.bottom, computed.top, computed.left].some(
         (s) => s === "dashed"
       )
-    ).toBe(
-      true
-    );
+    ).toBe(true);
   });
 });
