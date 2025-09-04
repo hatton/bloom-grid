@@ -10,9 +10,9 @@ import type {
 import CornerMenu from "./BorderControl/menus/CornerMenu";
 import { getEdgesH, getEdgesV } from "../grid-model";
 import {
-  applyUniformOuter,
   applyUniformInner,
   setDefaultBorder,
+  applyOuterBorders,
 } from "../edge-utils";
 import { BloomGrid } from "../";
 
@@ -92,10 +92,27 @@ const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
   const outerColor = (cs.color || "black").trim();
   const innerColor = (cs.color || "#444").trim();
 
-  // Write outer edges uniformly across each side based on the UI map
-  applyUniformOuter(
+  // Write outer edges individually for each side based on the UI map
+  applyOuterBorders(
     g,
-    { weight: map.top.weight, style: map.top.style, color: outerColor } as any,
+    {
+      top: { weight: map.top.weight, style: map.top.style, color: outerColor },
+      right: {
+        weight: map.right.weight,
+        style: map.right.style,
+        color: outerColor,
+      },
+      bottom: {
+        weight: map.bottom.weight,
+        style: map.bottom.style,
+        color: outerColor,
+      },
+      left: {
+        weight: map.left.weight,
+        style: map.left.style,
+        color: outerColor,
+      },
+    },
     outerColor
   );
   // Inner edges: write uniform inner H and V
@@ -202,3 +219,6 @@ export const TableSection: React.FC<Props> = ({ grid }) => {
 };
 
 export default TableSection;
+
+// Export for testing
+export { buildBorderMapFromGrid, applyBorderMapToGrid };

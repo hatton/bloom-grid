@@ -92,6 +92,59 @@ export function applyUniformOuter(
   setEdgesV(grid, v);
 }
 
+// Apply individual borders to each side of the outer perimeter
+export function applyOuterBorders(
+  grid: HTMLElement,
+  borders: {
+    top?: UIBorder | null;
+    right?: UIBorder | null;
+    bottom?: UIBorder | null;
+    left?: UIBorder | null;
+  },
+  colorFallback = "#000"
+) {
+  ensureEdgesArrays(grid);
+  const { rows, cols } = getGridSize(grid);
+
+  const h = (getEdgesH(grid) ?? []) as HEdgeEntry[][];
+  const v = (getEdgesV(grid) ?? []) as VEdgeEntry[][];
+
+  // Top perimeter (H at r=0)
+  if (borders.top !== undefined) {
+    const spec = toSpec(borders.top, colorFallback);
+    for (let c = 0; c < cols; c++) {
+      h[0][c] = spec;
+    }
+  }
+
+  // Bottom perimeter (H at r=rows)
+  if (borders.bottom !== undefined) {
+    const spec = toSpec(borders.bottom, colorFallback);
+    for (let c = 0; c < cols; c++) {
+      h[rows][c] = spec;
+    }
+  }
+
+  // Left perimeter (V at c=0)
+  if (borders.left !== undefined) {
+    const spec = toSpec(borders.left, colorFallback);
+    for (let r = 0; r < rows; r++) {
+      v[r][0] = spec;
+    }
+  }
+
+  // Right perimeter (V at c=cols)
+  if (borders.right !== undefined) {
+    const spec = toSpec(borders.right, colorFallback);
+    for (let r = 0; r < rows; r++) {
+      v[r][cols] = spec;
+    }
+  }
+
+  setEdgesH(grid, h);
+  setEdgesV(grid, v);
+}
+
 // Apply uniform inner vertical/horizontal borders (between cells)
 export function applyUniformInner(
   grid: HTMLElement,
