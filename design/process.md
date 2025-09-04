@@ -36,6 +36,12 @@ This document explains the major parts of Bloom Grid, how they interact, and the
     - Determinism: 'none' beats any other style; else weight (px); else style precedence (double > solid > dashed > dotted); ties favor left/top.
   - Does not mutate `data-*` and never changes DOM structure.
 
+- `border-state.ts` — Derived UI-facing state helpers
+
+  - Provides read-only helpers for UI components to reflect current border state without duplicating renderer logic.
+  - Example: `getGridOuterBorderValueMap(grid)` derives the outer (table) border control values by building the render model and sampling perimeter cell sides. It honors `data-border-default` and CSS custom properties (`--edge-default-*`).
+  - Keeps defaults centralized and out of UI code; UI reads from these helpers instead of inferring from the raw DOM.
+
 - `grid-renderer.ts` — Pure rendering function from DOM data to visual styles
 
   - Pure function: reads `data-*` from DOM → writes inline CSS styles.

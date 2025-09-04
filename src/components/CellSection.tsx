@@ -10,6 +10,7 @@ import type {
   BorderWeight,
 } from "./BorderControl/logic/types";
 import { applyCellPerimeter, ensureEdgesArrays } from "../edge-utils";
+import { render } from "../grid-renderer";
 // icons
 // icons are now owned by CellContentType; no direct imports here
 // (leftover icons removed)
@@ -76,6 +77,8 @@ const applyBorderMapToCell = (c: HTMLElement, map: BorderValueMap) => {
     bottom: toUI(map.bottom.weight, map.bottom.style),
     left: toUI(map.left.weight, map.left.style),
   });
+  // Re-render to reflect the updated edge model
+  render(grid);
 };
 
 const CellSection: React.FC<Props> = ({

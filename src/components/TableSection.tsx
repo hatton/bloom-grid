@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { BorderControl } from "./BorderControl/BorderControl";
 import Section from "./Section";
-import type {
-  BorderValueMap,
-  BorderWeight,
-  BorderStyle,
-  CornerRadius,
-} from "./BorderControl/logic/types";
+import type { BorderValueMap, CornerRadius } from "./BorderControl/logic/types";
 import CornerMenu from "./BorderControl/menus/CornerMenu";
-import { getEdgesH, getEdgesV } from "../grid-model";
+// no grid-model reads here; we derive current state via border-state/renderer
 import {
   applyUniformInner,
   setDefaultBorder,
   applyOuterBorders,
 } from "../edge-utils";
+import { render } from "../grid-renderer";
+import { getGridOuterBorderValueMap } from "../border-state";
 import { BloomGrid } from "../";
 
 type Props = {
@@ -21,12 +18,6 @@ type Props = {
 };
 
 // --- BorderControl wiring helpers (moved from GridMenu) ---
-const snapWeight = (w: number): BorderWeight => {
-  if (w <= 0) return 0;
-  if (w < 1.5) return 1;
-  if (w < 3) return 2;
-  return 4;
-};
 const parsePx = (s: string | null | undefined): number => {
   if (!s) return 0;
   const n = parseFloat(s);
@@ -34,56 +25,21 @@ const parsePx = (s: string | null | undefined): number => {
 };
 const buildBorderMapFromGrid = (g: HTMLElement): BorderValueMap => {
   const cs = getComputedStyle(g);
+  const base = getGridOuterBorderValueMap(g);
 
-  const cols = (g.getAttribute("data-column-widths") || "")
-    .split(",")
-    .filter(Boolean).length;
-  const rows = (g.getAttribute("data-row-heights") || "")
-    .split(",")
-    .filter(Boolean).length;
-  const edgesH = getEdgesH(g);
-  const edgesV = getEdgesV(g);
-  const sample = <T,>(
-    arr: Array<T> | null | undefined,
-    idx: number
-  ): T | null => (arr && arr.length > idx ? (arr[idx] as any) : null);
-  const top = edgesH ? sample(edgesH[0], 0) : null;
-  const right = edgesV ? sample(edgesV[0], cols) : null;
-  const bottom = edgesH ? sample(edgesH[rows], 0) : null;
-  const left = edgesV ? sample(edgesV[0], 0) : null;
-
-  const mapOuter = (
-    spec: any
-  ): { weight: BorderWeight; style: BorderStyle } => ({
-    weight: spec ? snapWeight(spec.weight) : 0,
-    style:
-      (spec?.style as BorderStyle | undefined) ?? (spec ? spec.style : "none"),
-  });
-
-  const outer = {
-    top: mapOuter(top),
-    right: mapOuter(right),
-    bottom: mapOuter(bottom),
-    left: mapOuter(left),
-  } as const;
-
-  // Inner: not inferable from computed CSS without per-cell, keep 0 defaults for UI until a cell is selected
-  const innerH = { weight: 0 as BorderWeight, style: "none" as BorderStyle };
-  const innerV = { weight: 0 as BorderWeight, style: "none" as BorderStyle };
-
-  // Corners from computed style (model value shown via render)
+  // Preserve corner radius reading from computed style (render owns setting)
   const radiusPx = parsePx(cs.borderTopLeftRadius);
   const radius: CornerRadius = ([0, 2, 4, 8] as number[]).includes(radiusPx)
     ? (radiusPx as CornerRadius)
     : 0;
 
   return {
-    top: { weight: outer.top.weight, style: outer.top.style, radius },
-    right: { weight: outer.right.weight, style: outer.right.style, radius },
-    bottom: { weight: outer.bottom.weight, style: outer.bottom.style, radius },
-    left: { weight: outer.left.weight, style: outer.left.style, radius },
-    innerH: { weight: innerH.weight, style: innerH.style, radius: 0 },
-    innerV: { weight: innerV.weight, style: innerV.style, radius: 0 },
+    top: { ...base.top, radius },
+    right: { ...base.right, radius },
+    bottom: { ...base.bottom, radius },
+    left: { ...base.left, radius },
+    innerH: base.innerH,
+    innerV: base.innerV,
   };
 };
 
@@ -147,6 +103,9 @@ const applyBorderMapToGrid = (g: HTMLElement, map: BorderValueMap) => {
     } as any,
     innerColor
   );
+
+  // Re-render so the per-cell inline styles reflect the updated model
+  render(g);
 };
 
 const menuItemStyle =

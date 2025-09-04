@@ -13,6 +13,7 @@ This document defines the current DOM data-\* model used by Bloom Grid, the goal
 - Defaults: optional grid-level default edge used when an edge is unspecified.
 - Spans: cell spans suppress internal edges and apply border segments at the span’s outer perimeter.
 - Be concise. For example, don't require us list out specs for each edge when the are all the same. Another example: don't list color:"black" if you know that black is the default. This makes the html much easier to read an reason about.
+  - UI must not compute defaults on its own. It should query centralized helpers that build upon the renderer (e.g., `border-state.ts`) to present current state.
 
 ## Approach
 

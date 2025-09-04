@@ -6,7 +6,7 @@ The model/schema is defined in design/model.md. Implementation information is av
 # Tests
 
 Use the run_tests tool to run tests.
-We are doing test-driven development, so if I point out a bug and ask you to make test or find out why tests didn't catch it, it means I want a test to FAIL, not lock in the current behavior. If I point out a bug and don't mention tests, I usually want a test to catch it first. Unit test if that's possible, e2e test otherwise. Ask me if it's not clear.
+We are doing test-driven development. This means I do not want you to fix a bug and then add test. Instead, I want you to add a test, see it fail, and only then fix the bug. If I point out a bug and don't mention tests, I still usually want a test to catch it first. Unit test if that's possible, e2e test otherwise. Ask me if you think we might not want a test. Look to see if there is reasonable test file to add to before you add new ones.
 
 # Hard UI Issues
 
@@ -22,3 +22,7 @@ If you can't quite figure out something that happens at UI-time, you may use the
 For example, you might `yarn dev` with `isBackground: false` but then you would need yarn e2e with `isBackground: true` in order to give that its own terminal.
 
 Before starting a server, test to see if it is already running. You can do that by doing a CURL for some known path, e.g. http://localhost:5173/demo/pages/new-grid.html. E.g. the dev server is normally at http://localhost:5173. If you run another one without checking, you'll just create a new one at 5174 and then get confused.
+
+# Communication
+
+Let's keep this collaborative. I appreciate it when you tell me I'm wrong or you've been given contradictory instructions. As soon as you have a plan, tell me. Don't go changing code and then only the end tell me what you did. Use ❓ to draw my attention to something you want me to look at. Use ⚠️ to indicate a problem that you want me to know about.

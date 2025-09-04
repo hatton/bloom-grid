@@ -8,6 +8,7 @@ import {
   getGapY,
   type BorderSpec,
 } from "./grid-model";
+import { EDGE_DEFAULT } from "./defaults";
 import type {
   HEdgeEntry,
   VEdgeEntry,
@@ -165,14 +166,17 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     if (!cRaw)
       cRaw = grid.style.getPropertyValue("--edge-default-color").trim();
     if (wRaw || sRaw || cRaw) {
-      const w = wRaw ? parseFloat(wRaw) : 1;
-      const s = (sRaw || "solid") as BorderSpec["style"];
-      const c = cRaw || "#000";
+      const w = wRaw ? parseFloat(wRaw) : EDGE_DEFAULT.weight;
+      const s = (sRaw || EDGE_DEFAULT.style) as BorderSpec["style"];
+      const c = cRaw || EDGE_DEFAULT.color;
       edgeDefault = normalize({
-        weight: isFinite(w) ? w : 1,
+        weight: isFinite(w) ? w : EDGE_DEFAULT.weight,
         style: s,
         color: c,
       });
+    } else {
+      // Fallback to TS defaults if CSS variables are not set
+      edgeDefault = normalize({ ...EDGE_DEFAULT });
     }
   }
   const gapX = getGapX(grid);
