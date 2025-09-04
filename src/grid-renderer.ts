@@ -144,6 +144,17 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
   const rows = rowHeights.length;
   const cols = columnWidths.length;
 
+  // Detect if this grid is embedded inside a parent cell. If so, we suppress
+  // its perimeter painting so that the shared boundary between the parent
+  // cell and this nested grid is represented by a single edge (the parent).
+  // This keeps the mental model "one edge, one stroke" and avoids double 1px
+  // borders showing side-by-side.
+  const isNestedGrid = !!(
+    grid.parentElement &&
+    grid.parentElement.classList &&
+    grid.parentElement.classList.contains("cell")
+  );
+
   function idx(r: number, c: number): number {
     return r * cols + c;
   }
@@ -402,37 +413,42 @@ export function buildRenderModel(grid: HTMLElement): RenderModel {
     }
   }
   // Perimeter from unified H/V edges: apply per-cell sides directly
-  // Note: Per design spec, defaults are "Not applied across gaps or to perimeters"
-  // Top perimeter: H at r=0 - use south side (faces the cells)
-  for (let c = 0; c < cols; c++) {
-    const { south } = readH(0, c);
-    const i = idx(0, c);
-    if (cells[i]) {
-      cellBorders[i].top = south ?? edgeDefault ?? null;
+  // Note: Per design spec, defaults are "Not applied across gaps or to perimeters".
+  // Additionally, when this grid is nested inside a parent cell, we suppress
+  // all perimeter painting so that the shared edge is drawn only once by the
+  // parent grid. Interior edges of the nested grid are still resolved above.
+  if (!isNestedGrid) {
+    // Top perimeter: H at r=0 - use south side (faces the cells)
+    for (let c = 0; c < cols; c++) {
+      const { south } = readH(0, c);
+      const i = idx(0, c);
+      if (cells[i]) {
+        cellBorders[i].top = south ?? edgeDefault ?? null;
+      }
     }
-  }
-  // Bottom perimeter: H at r=rows - use north side (faces the cells)
-  for (let c = 0; c < cols; c++) {
-    const { north } = readH(rows, c);
-    const i = idx(Math.max(0, rows - 1), c);
-    if (cells[i]) {
-      cellBorders[i].bottom = north ?? edgeDefault ?? null;
+    // Bottom perimeter: H at r=rows - use north side (faces the cells)
+    for (let c = 0; c < cols; c++) {
+      const { north } = readH(rows, c);
+      const i = idx(Math.max(0, rows - 1), c);
+      if (cells[i]) {
+        cellBorders[i].bottom = north ?? edgeDefault ?? null;
+      }
     }
-  }
-  // Left perimeter: V at c=0 - use east side (faces the cells)
-  for (let r = 0; r < rows; r++) {
-    const { east } = readV(r, 0);
-    const i = idx(r, 0);
-    if (cells[i]) {
-      cellBorders[i].left = east ?? edgeDefault ?? null;
+    // Left perimeter: V at c=0 - use east side (faces the cells)
+    for (let r = 0; r < rows; r++) {
+      const { east } = readV(r, 0);
+      const i = idx(r, 0);
+      if (cells[i]) {
+        cellBorders[i].left = east ?? edgeDefault ?? null;
+      }
     }
-  }
-  // Right perimeter: V at c=cols - use west side (faces the cells)
-  for (let r = 0; r < rows; r++) {
-    const { west } = readV(r, cols);
-    const i = idx(r, Math.max(0, cols - 1));
-    if (cells[i]) {
-      cellBorders[i].right = west ?? edgeDefault ?? null;
+    // Right perimeter: V at c=cols - use west side (faces the cells)
+    for (let r = 0; r < rows; r++) {
+      const { west } = readV(r, cols);
+      const i = idx(r, Math.max(0, cols - 1));
+      if (cells[i]) {
+        cellBorders[i].right = west ?? edgeDefault ?? null;
+      }
     }
   }
 
@@ -542,5 +558,5 @@ export function render(grid: HTMLElement): void {
     );
   }
 
-  // No special handling for nested grids needed; borders are applied per-cell only.
+  // Nested grids: perimeters suppressed in buildRenderModel to avoid double borders with parent.
 }

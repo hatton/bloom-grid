@@ -17,6 +17,114 @@ function addCell(grid: HTMLElement, spanX = 1, spanY = 1): HTMLElement {
 }
 
 describe("grid-renderer", () => {
+  it("suppresses nested grid perimeters to avoid double borders with parent cell", () => {
+    // Parent grid: 1 row x 2 cols; left cell will contain a nested grid
+    const parent = document.createElement("div");
+    parent.className = "grid";
+    parent.setAttribute("data-column-widths", "200px,200px");
+    parent.setAttribute("data-row-heights", "120px");
+
+    // Give parent explicit perimeters so its cell borders are visible
+    parent.setAttribute(
+      "data-edges-h",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    parent.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+
+    const leftCell = document.createElement("div");
+    leftCell.className = "cell";
+    leftCell.dataset.contentType = "grid";
+    parent.appendChild(leftCell);
+
+    const rightCell = document.createElement("div");
+    rightCell.className = "cell";
+    parent.appendChild(rightCell);
+
+    // Build a nested grid inside left cell with its own perimeters
+    const nested = document.createElement("div");
+    nested.className = "grid";
+    nested.setAttribute("data-column-widths", "fill,fill");
+    nested.setAttribute("data-row-heights", "fill,fill");
+    nested.setAttribute(
+      "data-edges-h",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    nested.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+
+    // Add four cells to nested grid
+    for (let i = 0; i < 4; i++) {
+      const c = document.createElement("div");
+      c.className = "cell";
+      nested.appendChild(c);
+    }
+    leftCell.appendChild(nested);
+
+    // Build models but do not render to DOM styles (model check is enough)
+    const nestedModel = buildRenderModel(nested);
+
+    // Expect that nested grid perimeters are suppressed (no top/left/right/bottom on its outer cells)
+    // Cell order in 2x2: [0,1,2,3]
+    // Top row top should be null, bottom row bottom null, left col left null, right col right null
+    expect(nestedModel.cellBorders[0].top).toBeNull();
+    expect(nestedModel.cellBorders[1].top).toBeNull();
+    expect(nestedModel.cellBorders[2].bottom).toBeNull();
+    expect(nestedModel.cellBorders[3].bottom).toBeNull();
+    expect(nestedModel.cellBorders[0].left).toBeNull();
+    expect(nestedModel.cellBorders[2].left).toBeNull();
+    expect(nestedModel.cellBorders[1].right).toBeNull();
+    expect(nestedModel.cellBorders[3].right).toBeNull();
+
+    // But inner edges inside the nested grid should still exist (at least one side assigned)
+    // Shared edge between [0] and [1]
+    const innerTopRight = nestedModel.cellBorders[0].right;
+    const innerTopLeft = nestedModel.cellBorders[1].left;
+    expect(innerTopRight === null && innerTopLeft === null).toBe(false);
+  });
   it("sided edges with gap allow neighbors to differ", () => {
     const grid = document.createElement("div");
     grid.className = "grid";

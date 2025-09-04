@@ -17,7 +17,7 @@ function tupleForEdge(v: {
 }
 
 /**
- * TODO: This wasn't a human decision: I (JH) am not clear
+ * REVIEW: This wasn't a human decision: I (JH) am not clear
  * if it's better to try to be smart like this, or better to
  * always select everything? I think we'll only know after
  * working with it for a while.
