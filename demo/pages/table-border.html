@@ -21,49 +21,53 @@
         cells should have red borders.
       </p>
       <br />
-      <div
-        id="grid-with-red-cross"
-        class="grid"
-        data-column-widths="fill,fill"
-        data-row-heights="fill,fill"
-        data-edges-h='[[{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"}]]'
-        data-edges-v='[[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}]]'
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c1 red border</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c2</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r2c1</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r2c2 red border</div>
+      <div style="height: 150px; width: 100%">
+        <div
+          id="grid-with-red-cross"
+          class="grid"
+          data-column-widths="fill,fill"
+          data-row-heights="fill,fill"
+          data-edges-h='[[{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"}]]'
+          data-edges-v='[[{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"},{"style":"none"}],[{"style":"none"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"red"}]]'
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c1 red border</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c2</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r2c1</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r2c2 red border</div>
+          </div>
         </div>
       </div>
 
       <br />
       <p>This should show a 2x2 table with only an external border.</p>
-      <div
-        id="grid-with-external-border"
-        class="grid"
-        data-column-widths="fill,fill"
-        data-row-heights="fill,fill"
-        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"style":"none"},{"style":"none"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
-        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}]]'
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c1</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c2</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r2c1</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r2c2</div>
+      <div style="height: 150px; width: 100%">
+        <div
+          id="grid-with-external-border"
+          class="grid"
+          data-column-widths="fill,fill"
+          data-row-heights="fill,fill"
+          data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"style":"none"},{"style":"none"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+          data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"style":"none"},{"weight":1,"style":"solid","color":"#000"}]]'
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c1</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c2</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r2c1</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r2c2</div>
+          </div>
         </div>
       </div>
 
@@ -72,19 +76,21 @@
         This should show a 1x2 table with black border around it and a red
         border between the cells.
       </p>
-      <div
-        id="grid-with-red-border"
-        class="grid"
-        data-column-widths="fill,fill"
-        data-row-heights="fill"
-        data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
-        data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"#000"}]]'
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c1</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">r1c2</div>
+      <div style="height: 100px; width: 100%">
+        <div
+          id="grid-with-red-border"
+          class="grid"
+          data-column-widths="fill,fill"
+          data-row-heights="fill"
+          data-edges-h='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}],[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"#000"}]]'
+          data-edges-v='[[{"weight":1,"style":"solid","color":"#000"},{"weight":1,"style":"solid","color":"red"},{"weight":1,"style":"solid","color":"#000"}]]'
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c1</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">r1c2</div>
+          </div>
         </div>
       </div>
     </div>
