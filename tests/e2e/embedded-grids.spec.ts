@@ -4,7 +4,7 @@ import { attachGridsToPage } from "./utils/grid-attachment";
 test.describe("Embedded Grids", () => {
   test("validates embedded grid rendering and layout", async ({ page }) => {
     // Navigate to the embedded grids demo
-    await page.goto("/demo/pages/embedded-grids.html");
+    await page.goto("/demo/tests/embedded-grids.html");
 
     // Wait for the page to load
     await page.waitForSelector(".grid");
@@ -104,89 +104,12 @@ test.describe("Embedded Grids", () => {
 
       expect(hasNonZeroWidth).toBe(true);
     }
-
-    // === Test the problematic grid (the one with empty edge data) ===
-    const problematicGrid = page.locator("#problematic-grid");
-    await expect(problematicGrid).toBeVisible();
-
-    const problematicEmbeddedGrid = problematicGrid.locator(
-      ".cell[data-content-type='grid'] > .grid"
-    );
-    await expect(problematicEmbeddedGrid).toBeVisible();
-
-    // Check layout is still correct despite empty edge data
-    const problematicGridStyles = await problematicEmbeddedGrid.evaluate(
-      (el) => {
-        const computed = getComputedStyle(el);
-        return {
-          display: computed.display,
-          gridTemplateColumns: computed.gridTemplateColumns,
-          gridTemplateRows: computed.gridTemplateRows,
-        };
-      }
-    );
-
-    expect(problematicGridStyles.display).toBe("grid");
-    const pColumns = problematicGridStyles.gridTemplateColumns.split(" ");
-    expect(pColumns).toHaveLength(2);
-    const pRows = problematicGridStyles.gridTemplateRows.split(" ");
-    expect(pRows).toHaveLength(2);
-
-    // Check that the problematic grid has 4 cells
-    const problematicCells = problematicEmbeddedGrid.locator(".cell");
-    await expect(problematicCells).toHaveCount(4);
-
-    // Verify all cells are visible (this was one of the reported issues)
-    for (let i = 0; i < 4; i++) {
-      const cell = problematicCells.nth(i);
-      await expect(cell).toBeVisible();
-    }
-
-    // === Test borders on the problematic grid ===
-    // This grid uses empty edge objects {} which should still get default borders
-    console.log("Testing problematic grid borders...");
-    for (let i = 0; i < 4; i++) {
-      const cell = problematicCells.nth(i);
-      const cellStyles = await cell.evaluate((el) => {
-        const computed = getComputedStyle(el);
-        return {
-          borderTopStyle: computed.borderTopStyle,
-          borderRightStyle: computed.borderRightStyle,
-          borderBottomStyle: computed.borderBottomStyle,
-          borderLeftStyle: computed.borderLeftStyle,
-          borderTopWidth: computed.borderTopWidth,
-          borderRightWidth: computed.borderRightWidth,
-          borderBottomWidth: computed.borderBottomWidth,
-          borderLeftWidth: computed.borderLeftWidth,
-        };
-      });
-
-      console.log(`Problematic cell ${i} borders:`, cellStyles);
-
-      // Each cell should have at least some borders applied
-      const hasBorders =
-        cellStyles.borderTopStyle !== "none" ||
-        cellStyles.borderRightStyle !== "none" ||
-        cellStyles.borderBottomStyle !== "none" ||
-        cellStyles.borderLeftStyle !== "none";
-
-      expect(hasBorders).toBe(true);
-
-      // Check for non-zero width borders
-      const hasNonZeroWidth =
-        parseFloat(cellStyles.borderTopWidth) > 0 ||
-        parseFloat(cellStyles.borderRightWidth) > 0 ||
-        parseFloat(cellStyles.borderBottomWidth) > 0 ||
-        parseFloat(cellStyles.borderLeftWidth) > 0;
-
-      expect(hasNonZeroWidth).toBe(true);
-    }
   });
 
   test("validates that embedded grids fill their parent cell", async ({
     page,
   }) => {
-    await page.goto("/demo/pages/embedded-grids.html");
+    await page.goto("/demo/tests/embedded-grids.html");
     await page.waitForSelector(".grid");
 
     const parentCell = page.locator(

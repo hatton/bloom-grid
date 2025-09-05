@@ -6,7 +6,7 @@ test.describe("Resize Rows and Columns", () => {
     page,
   }) => {
     // Navigate to new-grid demo
-    await page.goto("/demo/pages/new-grid.html");
+    await page.goto("/demo/exercises/new-grid.html");
     await page.waitForSelector(".grid");
     await attachGridsToPage(page);
 
@@ -38,7 +38,7 @@ test.describe("Resize Rows and Columns", () => {
 
   test("updates row height and UI during drag operations", async ({ page }) => {
     // Navigate to new-grid demo
-    await page.goto("/demo/pages/new-grid.html");
+    await page.goto("/demo/exercises/new-grid.html");
 
     // Wait for the page to load
     await page.waitForSelector(".grid");
@@ -338,7 +338,7 @@ test.describe("Resize Rows and Columns", () => {
   // for now we don't support undoing resize operations
   test.skip("reverts row height on undo", async ({ page }) => {
     // Navigate to new-grid demo
-    await page.goto("/demo/pages/new-grid.html");
+    await page.goto("/demo/exercises/new-grid.html");
     await page.waitForSelector(".grid");
     await attachGridsToPage(page);
 
@@ -383,7 +383,7 @@ test.describe("Resize Rows and Columns", () => {
   });
 
   test("documents the drag resize fix implementation", async ({ page }) => {
-    await page.goto("/demo/pages/new-grid.html");
+    await page.goto("/demo/exercises/new-grid.html");
 
     const documentation = await page.evaluate(() => {
       return {

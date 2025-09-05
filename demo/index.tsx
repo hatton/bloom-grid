@@ -10,9 +10,12 @@ const Demo: React.FC = () => {
   const [examplePngPath, setExamplePngPath] = useState<string | undefined>();
 
   // Function to load and parse HTML content
-  const loadExampleContent = async (filename: string): Promise<string> => {
+  const loadExampleContent = async (
+    group: "exercises" | "tests",
+    filename: string
+  ): Promise<string> => {
     try {
-      const response = await fetch(`./pages/${filename}`);
+      const response = await fetch(`./${group}/${filename}`);
       const htmlContent = await response.text();
 
       // Parse the HTML and extract the body content
@@ -28,12 +31,15 @@ const Demo: React.FC = () => {
   };
 
   const handleExampleSelect = async (example: Example) => {
-    console.log(`Loading example: ${example.name} (${example.htmlFile})`);
-    const exampleHtml = await loadExampleContent(example.htmlFile);
-    setExampleHtmlContent(exampleHtml);
-    setExamplePngPath(
-      example.pngFile ? `./pages/${example.pngFile}` : undefined
+    console.log(
+      `Loading example: ${example.name} (${example.group}/${example.htmlFile})`
     );
+    const exampleHtml = await loadExampleContent(
+      example.group,
+      example.htmlFile
+    );
+    setExampleHtmlContent(exampleHtml);
+    setExamplePngPath(example.pngPath);
   };
 
   return (

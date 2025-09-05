@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { gridHistoryManager } from "../../src";
 
 interface SaveButtonProps {
-  currentExampleFile: string;
+  // e.g. "tests/table-border.html" or "exercises/alphabet.html"
+  currentExamplePath: string;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ currentExampleFile }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
   const [canUndo, setCanUndo] = useState(gridHistoryManager.canUndo());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -19,8 +20,8 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExampleFile }) => {
 
     setIsSaving(true);
     try {
-      // Use the current example file name without extension
-      const exampleName = currentExampleFile.replace(".html", "");
+      // Use the current example path (group/filename) without extension
+      const exampleName = currentExamplePath.replace(/\.html$/, "");
       const content = pageElement.innerHTML;
 
       console.log(`Saving example: ${exampleName}`);

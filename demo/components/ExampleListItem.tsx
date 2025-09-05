@@ -14,7 +14,7 @@ const ExampleListItem: React.FC<ExampleListItemProps> = ({
 }) => {
   return (
     <div
-      className={`example-list-item ${isActive ? "active" : ""}`}
+      className={`example-item example-list-item ${isActive ? "active" : ""}`}
       onClick={onSelect}
     >
       {example.name}
