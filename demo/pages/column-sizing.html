@@ -28,90 +28,79 @@
     </style>
   </head>
   <body>
-    <h1>Column Fill vs Hug Test</h1>
-
-    <h3>Test 1: Two columns - hug, hug (baseline)</h3>
-    <div class="test-container">
-      <div
-        id="grid1"
-        class="grid test-grid"
-        data-column-widths="hug,hug"
-        data-row-heights="hug"
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Short</div>
+    <div
+      id="page"
+      style="background: white; height: 700px; width: 500px; display: block"
+    >
+      <h1>Column Fill vs Hug Test</h1>
+      <br />
+      <h3>Test 1: Two columns - hug, hug (baseline)</h3>
+      <div class="test-container">
+        <div
+          id="grid1"
+          class="grid test-grid"
+          data-column-widths="hug,hug"
+          data-row-heights="hug"
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Short</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Longer content</div>
+          </div>
         </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Longer content</div>
+      </div>
+      <br />
+      <h3>Test 2: Two columns - fill, hug (first should expand)</h3>
+      <div class="test-container">
+        <div
+          id="grid2"
+          class="grid test-grid"
+          data-column-widths="fill,hug"
+          data-row-heights="hug"
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Short</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Longer content</div>
+          </div>
+        </div>
+      </div>
+      <br />
+      <h3>Test 3: Two columns - hug, fill (second should expand)</h3>
+      <div class="test-container">
+        <div
+          id="grid3"
+          class="grid test-grid"
+          data-column-widths="hug,fill"
+          data-row-heights="hug"
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Short</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Longer content</div>
+          </div>
+        </div>
+      </div>
+      <br />
+      <h3>Test 4: Two columns - fill, fill (both should expand equally)</h3>
+      <div class="test-container">
+        <div
+          id="grid4"
+          class="grid test-grid"
+          data-column-widths="fill,fill"
+          data-row-heights="hug"
+        >
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Short</div>
+          </div>
+          <div class="cell" data-content-type="text">
+            <div contenteditable="true">Longer content</div>
+          </div>
         </div>
       </div>
     </div>
-
-    <h3>Test 2: Two columns - fill, hug (first should expand)</h3>
-    <div class="test-container">
-      <div
-        id="grid2"
-        class="grid test-grid"
-        data-column-widths="fill,hug"
-        data-row-heights="hug"
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Short</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Longer content</div>
-        </div>
-      </div>
-    </div>
-
-    <h3>Test 3: Two columns - hug, fill (second should expand)</h3>
-    <div class="test-container">
-      <div
-        id="grid3"
-        class="grid test-grid"
-        data-column-widths="hug,fill"
-        data-row-heights="hug"
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Short</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Longer content</div>
-        </div>
-      </div>
-    </div>
-
-    <h3>Test 4: Two columns - fill, fill (both should expand equally)</h3>
-    <div class="test-container">
-      <div
-        id="grid4"
-        class="grid test-grid"
-        data-column-widths="fill,fill"
-        data-row-heights="hug"
-      >
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Short</div>
-        </div>
-        <div class="cell" data-content-type="text">
-          <div contenteditable="true">Longer content</div>
-        </div>
-      </div>
-    </div>
-
-    <script type="module">
-      // Import and attach grids
-      import { attachGrid } from "../../src/attach.ts";
-
-      window.addEventListener("DOMContentLoaded", () => {
-        const grids = document.querySelectorAll(".grid");
-        grids.forEach((grid) => {
-          attachGrid(grid);
-          console.log(`Grid ${grid.id}:`, {
-            dataColumnWidths: grid.getAttribute("data-column-widths"),
-            gridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
-          });
-        });
-      });
-    </script>
   </body>
 </html>
