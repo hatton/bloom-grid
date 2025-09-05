@@ -25,7 +25,14 @@ This document defines the current DOM data-\* model used by Bloom Grid, the goal
 
 ## Rendering Borders vs Outlines
 
-- CSS borders have curved outsides but right-angle insides and look ugly. However, CSS Outlines are not a total replacement, because we cannot specify different sides to have different outlines, the way we can with borders. Perhaps in the future we will have a hybrid system, but for now, we are going to only use css borders, no outlines.
+- CSS borders have curved outsides but right-angle insides and look ugly. However, CSS Outlines are not a total replacement, because we cannot specify different sides to have different outlines, the way we can with borders. Perhaps in the future we will have a hybrid system, but for now, we are going to only use css borders, no outlines, for content borders.
+
+Selection highlighting (non-model):
+
+- For usability, we add purely presentational classes when focus enters a cell:
+  - `cell--selected` on the active `.cell` (styled with a blue CSS `outline`)
+  - `grid--selected` on the containing `.grid` (styled with a purple `outline`)
+- These do not affect the data-\* model and are applied by a global listener installed at attach time. The outlines avoid layout shifts and are distinct from renderer-managed borders.
 
 ## 2) Data-\* schema
 

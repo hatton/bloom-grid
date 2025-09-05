@@ -5,6 +5,14 @@
   --edge-default-weight: 1;
   --edge-default-style: solid;
   --edge-default-color: #000;
+
+  /* Selection highlight */
+  --selected-cell-bg: #3d82950e;
+
+  --selected-grid-outline-color: #3d8295;
+  --selected-grid-outline-width: 1px;
+  --selected-grid-outline-offset: 1px;
+  --selected-grid-outline-style: dotted;
 }
 
 #page {
@@ -36,9 +44,25 @@
   justify-content: center;
   align-items: center;
 }
-/* when cell is focused, set a light blue border */
-.cell:focus {
-  box-shadow: inset 0 0 0 4px #fac918;
+/* Selected outlines (non-intrusive, no layout shift) */
+.cell.cell--selected {
+  position: relative; /* establish containing block for overlay */
+}
+.cell.cell--selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Use a single variable with a default (~90% transparent blue) */
+  background: var(--selected-cell-bg);
+  pointer-events: none; /* don't block editing/clicks */
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.grid.grid--selected {
+  outline: var(--selected-grid-outline-width)
+    var(--selected-grid-outline-style, solid) var(--selected-grid-outline-color);
+  outline-offset: var(--selected-grid-outline-offset);
 }
 
 .cell > div[contenteditable="true"] {

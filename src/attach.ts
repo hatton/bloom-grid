@@ -4,12 +4,15 @@ import { addColumn, addRow } from "./structure";
 import { migrateGrid } from "./migrate";
 import { attachTextEditing } from "./text-editing";
 import { render } from "./grid-renderer";
+import { ensureSelectionHighlighting } from "./selection-highlight";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
 
   // Ensure the grid has the correct class and attributes
   gridDiv.classList.add("grid");
+  // Install global selection highlighter once
+  ensureSelectionHighlighting();
   if (!gridDiv.hasAttribute("data-column-widths")) {
     gridDiv.setAttribute("data-column-widths", "");
     // add two columns by default
