@@ -20,6 +20,8 @@ import { gridHistoryManager } from "./history";
 import { render } from "./grid-renderer";
 
 let installed = false;
+// Unique ID source for anchor names
+let anchorCounter = 0;
 
 // Reset function for testing
 export function resetTableSizeButtons(): void {
@@ -157,7 +159,7 @@ function ensureCornerHandle() {
   Object.assign(el.style, {
     width: "16px",
     height: "16px",
-    position: "absolute",
+    position: "static",
     border: "1px solid rgba(0,0,0,0.3)",
     borderRadius: "4px",
     background:
@@ -511,6 +513,8 @@ function ensureOverlayStyles() {
   if (overlayStylesInstalled) return;
   const style = document.createElement("style");
   style.textContent = `
+/* Enable referencing anchors anywhere in the document */
+html { anchor-scope: all; }
 @keyframes bgrid-pulse {
   0% { opacity: 0.25; }
   50% { opacity: 0.9; }
@@ -596,18 +600,15 @@ function ensureGroupContainer(side: OverlaySide): HTMLDivElement {
   const div = document.createElement("div");
   div.setAttribute("data-overlay-group", side);
   Object.assign(div.style, {
-    position: "absolute",
+    // Positioned by the ProximityDiv wrapper via anchor positioning
+    position: "static",
     zIndex: "2147483647",
     display: "none",
     gap: "6px",
     alignItems: "center",
     justifyContent: "center",
     boxSizing: "border-box",
-    // We'll center on the appropriate axis using transform
-    transform:
-      side === "right" || side === "left"
-        ? "translateY(-50%)"
-        : "translateX(-50%)",
+    // No transform here; centering handled on wrapper element
   } as any);
   // flex direction depends on side and we'll toggle display when showing
   div.style.flexDirection =
@@ -752,7 +753,8 @@ function showEdgeOverlays(grid: HTMLElement) {
   if (groupTop) groupTop.style.display = "flex";
   if (groupBottom) groupBottom.style.display = "flex";
   if (cornerHandle) cornerHandle.style.display = "block";
-  repositionEdgeOverlays();
+  // Apply anchor-based positioning
+  applyAnchorPositioning(grid);
 }
 
 function hideEdgeOverlays() {
@@ -792,85 +794,8 @@ function repositionEdgeOverlays() {
     hideEdgeOverlays();
     return;
   }
-  const cells: HTMLElement[] = Array.from(overlayGrid.children).filter(
-    (el): el is HTMLElement =>
-      el instanceof HTMLElement && el.classList.contains("cell")
-  );
-
-  let minLeft = Infinity;
-  let maxRight = -Infinity;
-  let minTop = Infinity;
-  let maxBottom = -Infinity;
-  for (const cell of cells) {
-    const r = cell.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) continue;
-    if (r.left < minLeft) minLeft = r.left;
-    if (r.right > maxRight) maxRight = r.right;
-    if (r.top < minTop) minTop = r.top;
-    if (r.bottom > maxBottom) maxBottom = r.bottom;
-  }
-
-  if (
-    !isFinite(minLeft) ||
-    !isFinite(maxRight) ||
-    !isFinite(minTop) ||
-    !isFinite(maxBottom)
-  ) {
-    const rect = overlayGrid.getBoundingClientRect();
-    const isVisible = rect.width > 0 && rect.height > 0;
-    if (!isVisible) {
-      hideEdgeOverlays();
-      return;
-    }
-    minLeft = rect.left;
-    maxRight = rect.right;
-    minTop = rect.top;
-    maxBottom = rect.bottom;
-  }
-
-  const centerX = (minLeft + maxRight) / 2;
-  const centerY = (minTop + maxBottom) / 2;
-
-  // Sizes and gap
-  const base = 24; // button base size (also top/bottom group height)
-  const size = 24;
-  const gap = 8;
-
-  // Right group (vertical, centered on Y)
-  if (proxRightGroup && groupRight) {
-    groupRight.style.display = "flex";
-    const px = Math.round(window.scrollX + maxRight + gap);
-    const py = Math.round(window.scrollY + centerY);
-    proxRightGroup.setPosition(px, py);
-  }
-  // Left group (vertical, centered on Y). Width ~ base, position to the left of grid
-  if (proxLeftGroup && groupLeft) {
-    groupLeft.style.display = "flex";
-    const px = Math.round(window.scrollX + minLeft - gap - base);
-    const py = Math.round(window.scrollY + centerY);
-    proxLeftGroup.setPosition(px, py);
-  }
-  // Top group (horizontal, centered on X). Height ~ base, position above grid
-  if (proxTopGroup && groupTop) {
-    groupTop.style.display = "flex";
-    const px = Math.round(window.scrollX + centerX);
-    const py = Math.round(window.scrollY + minTop - gap - size);
-    proxTopGroup.setPosition(px, py);
-  }
-  // Bottom group (horizontal, centered on X)
-  if (proxBottomGroup && groupBottom) {
-    groupBottom.style.display = "flex";
-    const px = Math.round(window.scrollX + centerX);
-    const py = Math.round(window.scrollY + maxBottom + gap);
-    proxBottomGroup.setPosition(px, py);
-  }
-
-  // Corner handle (positioned at bottom-right corner of grid)
-  if (proxCornerHandle && cornerHandle) {
-    const px = Math.round(window.scrollX + maxRight - 8); // 8px offset from corner
-    const py = Math.round(window.scrollY + maxBottom - 8);
-    proxCornerHandle.setPosition(px, py);
-  }
+  // Ensure wrappers remain configured for the current grid anchor
+  applyAnchorPositioning(overlayGrid);
 
   // If a delete preview is visible, reposition/update it to track row/column bounds
   if (deletePreviewVisible) {
@@ -879,6 +804,121 @@ function repositionEdgeOverlays() {
   // If an add preview is visible, reposition/update it as well
   if (addPreviewVisible) {
     updateAddPreviewGeometry();
+  }
+}
+
+// Create or retrieve a unique anchor-name for an element
+function getElementAnchorName(
+  el: HTMLElement,
+  key: string,
+  prefix: string
+): string {
+  const existing = (el.dataset as any)[key] as string | undefined;
+  if (existing) return existing;
+  const name = `--${prefix}-${++anchorCounter}`;
+  (el.style as any).anchorName = name;
+  el.style.setProperty("anchor-name", name);
+  (el.dataset as any)[key] = name;
+  return name;
+}
+
+function getCellAt(
+  grid: HTMLElement,
+  targetRow: number,
+  targetCol: number
+): HTMLElement | null {
+  const children = Array.from(grid.children) as HTMLElement[];
+  for (const el of children) {
+    if (!el.classList || !el.classList.contains("cell")) continue;
+    try {
+      const { row, column } = getRowAndColumn(grid, el);
+      if (row === targetRow && column === targetCol) return el;
+    } catch {}
+  }
+  return null;
+}
+
+// Apply anchor-based placement to all overlay wrappers relative to the grid
+function applyAnchorPositioning(grid: HTMLElement) {
+  const gap = 8; // px
+  let rows = 0,
+    cols = 0;
+  try {
+    const info = getGridInfo(grid);
+    rows = info.rowCount;
+    cols = info.columnCount;
+  } catch {}
+
+  const midRow = Math.max(0, Math.floor((rows - 1) / 2));
+  const midCol = Math.max(0, Math.floor((cols - 1) / 2));
+
+  // Resolve anchor cells for each overlay
+  const rightCell = rows && cols ? getCellAt(grid, midRow, cols - 1) : null; // middle row, last col
+  const leftCell = rows && cols ? getCellAt(grid, midRow, 0) : null; // middle row, first col
+  const topCell = rows && cols ? getCellAt(grid, 0, midCol) : null; // first row, middle col
+  const bottomCell = rows && cols ? getCellAt(grid, rows - 1, midCol) : null; // last row, middle col
+  const cornerCell = rows && cols ? getCellAt(grid, rows - 1, cols - 1) : null; // last cell
+
+  const setWrapperToCell = (
+    prox: ProximityDiv | null,
+    cell: HTMLElement | null,
+    side: OverlaySide
+  ) => {
+    if (!prox || !cell) return;
+    const el = prox.element;
+    el.style.position = "fixed";
+    const cellAnchor = getElementAnchorName(
+      cell,
+      "bgridAnchorName",
+      "bgrid-cell"
+    );
+    (el.style as any).positionAnchor = cellAnchor;
+    el.style.setProperty("position-anchor", cellAnchor);
+    // Clear inline offsets first
+    el.style.left = "";
+    el.style.top = "";
+    el.style.right = "";
+    el.style.bottom = "";
+    el.style.transform = "";
+
+    if (side === "right") {
+      (el.style as any).left = `calc(anchor(right) + ${gap}px)`;
+      (el.style as any).top = `anchor(center)`;
+      el.style.transform = "translateY(-50%)";
+    } else if (side === "left") {
+      (el.style as any).left = `calc(anchor(left) - ${gap}px)`;
+      (el.style as any).top = `anchor(center)`;
+      el.style.transform = "translate(-100%, -50%)";
+    } else if (side === "top") {
+      (el.style as any).top = `calc(anchor(top) - ${gap}px)`;
+      (el.style as any).left = `anchor(center)`;
+      el.style.transform = "translate(-50%, -100%)";
+    } else if (side === "bottom") {
+      (el.style as any).top = `calc(anchor(bottom) + ${gap}px)`;
+      (el.style as any).left = `anchor(center)`;
+      el.style.transform = "translateX(-50%)";
+    }
+  };
+
+  setWrapperToCell(proxRightGroup, rightCell, "right");
+  setWrapperToCell(proxLeftGroup, leftCell, "left");
+  setWrapperToCell(proxTopGroup, topCell, "top");
+  setWrapperToCell(proxBottomGroup, bottomCell, "bottom");
+
+  // Corner handle at bottom-right cell
+  if (proxCornerHandle && cornerCell) {
+    const el = proxCornerHandle.element;
+    el.style.position = "fixed";
+    const cellAnchor = getElementAnchorName(
+      cornerCell,
+      "bgridAnchorName",
+      "bgrid-cell"
+    );
+    (el.style as any).positionAnchor = cellAnchor;
+    el.style.setProperty("position-anchor", cellAnchor);
+    el.style.left = `calc(anchor(right) - 8px)`;
+    el.style.top = `calc(anchor(bottom) - 8px)`;
+    el.style.transform = "translate(0, 0)";
   }
 }
 
