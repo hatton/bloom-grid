@@ -9,7 +9,7 @@ export default defineConfig({
   // Use html reporter but never auto-open UI to avoid hanging
   reporter: [["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: process.env.BASE_URL || "http://localhost:5173",
     trace: "on-first-retry",
   },
 
