@@ -5,6 +5,7 @@ import { migrateGrid } from "./migrate";
 import { attachTextEditing } from "./text-editing";
 import { render } from "./grid-renderer";
 import { ensureSelectionHighlighting } from "./selection-highlight";
+import { ensureTableSizeButtons } from "./table-size-buttons";
 
 export function attachGrid(gridDiv: HTMLElement): void {
   if (!gridDiv) throw new Error("Grid element is required");
@@ -13,6 +14,8 @@ export function attachGrid(gridDiv: HTMLElement): void {
   gridDiv.classList.add("grid");
   // Install global selection highlighter once
   ensureSelectionHighlighting();
+  // Install global table size buttons once
+  ensureTableSizeButtons();
   if (!gridDiv.hasAttribute("data-column-widths")) {
     gridDiv.setAttribute("data-column-widths", "");
     // add two columns by default
