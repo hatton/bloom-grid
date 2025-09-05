@@ -5,8 +5,7 @@ import {
   SelectedEdges,
 } from "./logic/types";
 import type { SelectorLook } from "./logic/types";
-
-const TEAL = "#2b6e77";
+import { kBloomBlue } from "../../constants";
 
 export function BorderSelector(props: {
   valueMap: BorderValueMap;
@@ -18,7 +17,7 @@ export function BorderSelector(props: {
 }) {
   const { showInner = true, selected, onChange } = props;
   const size = props.size ?? 112;
-  const stroke = TEAL;
+  const stroke = kBloomBlue;
   const look: SelectorLook = props.look ?? "flat";
 
   const isSel = (e: EdgeKey) => selected.has(e);
