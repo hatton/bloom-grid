@@ -497,8 +497,15 @@ export function render(grid: HTMLElement): void {
     spec: BorderSpec | null | undefined
   ) {
     if (spec) {
-      (cell.style as any)[`border${side}Width`] = `${spec.weight}px`;
-      (cell.style as any)[`border${side}Style`] = spec.style;
+      // Clamp 'double' to at least 4px so the double lines are visible.
+      // Do not clamp when weight is 0 or style is 'none'.
+      const style = spec.style;
+      const rawW = Number.isFinite((spec as any).weight)
+        ? (spec as any).weight
+        : 0;
+      const effectiveW = style === "double" && rawW > 0 && rawW < 4 ? 4 : rawW;
+      (cell.style as any)[`border${side}Width`] = `${effectiveW}px`;
+      (cell.style as any)[`border${side}Style`] = style;
       (cell.style as any)[`border${side}Color`] = spec.color;
     } else {
       (cell.style as any)[`border${side}Width`] = "0";

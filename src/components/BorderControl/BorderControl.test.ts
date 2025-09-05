@@ -82,9 +82,9 @@ describe("BorderControl", () => {
       expect(topLeftCell.style.borderTopStyle).toBe("dashed");
       expect(topLeftCell.style.borderTopWidth).toBe("2px");
 
-      // Left border should be double 2px
+      // Left border should be double and clamped to 4px
       expect(topLeftCell.style.borderLeftStyle).toBe("double");
-      expect(topLeftCell.style.borderLeftWidth).toBe("2px");
+      expect(topLeftCell.style.borderLeftWidth).toBe("4px");
     });
 
     it("should handle mixed border styles correctly", () => {

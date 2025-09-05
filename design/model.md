@@ -130,6 +130,7 @@ Behavior notes:
 - Zero gap: each shared edge yields a single visible stroke by conflict resolution (none > weight > style precedence; ties favor left/top). Sided entries are reconciled; shorthand applies identically to both sides.
 - Positive gap: both sides may render independently; sided entries allow asymmetric styling.
 - Spans: internal edges under a spanning cell are suppressed; only the span’s perimeter edges render.
+- Double style minimum width (render-time only): when an edge resolves to style "double" with a positive weight, the renderer clamps the painted width to at least 4px so the double lines are visible. If the edge is explicitly style "none" or weight 0, it remains invisible (no clamping). The data-\* model is not changed by this rule; only the rendered CSS width is affected.
 
 ## 3) Rendering at runtime
 

@@ -558,4 +558,65 @@ describe("grid-renderer", () => {
     expect(m.cellBorders[1].right).toEqual(def);
     expect(m.cellBorders[3].right).toEqual(def);
   });
+
+  it("clamps 'double' style to at least 4px when rendering", () => {
+    const g = makeGrid();
+    g.className = "grid";
+    g.setAttribute("data-column-widths", "100px,100px");
+    g.setAttribute("data-row-heights", "30px,30px");
+    // create 2x2
+    const a = addCell(g);
+    addCell(g);
+    addCell(g);
+    addCell(g);
+    // Set top perimeter to double weight 1 and left perimeter to double weight 2
+    g.setAttribute(
+      "data-edges-h",
+      JSON.stringify([
+        [
+          { weight: 1, style: "double", color: "#000" },
+          { weight: 1, style: "double", color: "#000" },
+        ],
+        [null, null],
+        [null, null],
+      ])
+    );
+    g.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [{ weight: 2, style: "double", color: "#000" }, null, null],
+        [{ weight: 2, style: "double", color: "#000" }, null, null],
+      ])
+    );
+    render(g);
+    // Top-left cell should have top and left borders as double and clamped to 4px
+    expect((a.style as any).borderTopStyle).toBe("double");
+    expect((a.style as any).borderTopWidth).toBe("4px");
+    expect((a.style as any).borderLeftStyle).toBe("double");
+    expect((a.style as any).borderLeftWidth).toBe("4px");
+
+    // If explicit weight is 0 with style double, it should remain none (not forced visible)
+    const g2 = makeGrid();
+    g2.setAttribute("data-column-widths", "100px");
+    g2.setAttribute("data-row-heights", "30px");
+    const only = addCell(g2);
+    g2.setAttribute(
+      "data-edges-h",
+      JSON.stringify([[{ weight: 0, style: "double", color: "#000" }], [null]])
+    );
+    g2.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        [
+          { weight: 0, style: "double", color: "#000" },
+          { weight: 0, style: "double", color: "#000" },
+        ],
+      ])
+    );
+    render(g2);
+    expect((only.style as any).borderTopStyle).toBe("none");
+    expect((only.style as any).borderTopWidth).toBe("0px");
+    expect((only.style as any).borderLeftStyle).toBe("none");
+    expect((only.style as any).borderLeftWidth).toBe("0px");
+  });
 });

@@ -7,6 +7,7 @@ const options: { value: BorderStyle; label: string }[] = [
   { value: "solid", label: "Solid" },
   { value: "dashed", label: "Dashed" },
   { value: "dotted", label: "Dotted" },
+  { value: "double", label: "Double" },
 ];
 
 export default function StyleMenu(props: {
