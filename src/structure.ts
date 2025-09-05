@@ -632,7 +632,11 @@ export const addRowAt = (
  * @param grid The grid container element
  * @param index The column index to remove (0-based)
  */
-export const removeColumnAt = (grid: HTMLElement, index: number): void => {
+export const removeColumnAt = (
+  grid: HTMLElement,
+  index: number,
+  skipHistory = false
+): void => {
   if (!grid) return;
 
   const gridInfo = getGridInfo(grid);
@@ -677,7 +681,11 @@ export const removeColumnAt = (grid: HTMLElement, index: number): void => {
     cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
 
-  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
 };
 
 /**
@@ -685,7 +693,11 @@ export const removeColumnAt = (grid: HTMLElement, index: number): void => {
  * @param grid The grid container element
  * @param index The row index to remove (0-based)
  */
-export const removeRowAt = (grid: HTMLElement, index: number): void => {
+export const removeRowAt = (
+  grid: HTMLElement,
+  index: number,
+  skipHistory = false
+): void => {
   if (!grid) return;
 
   const gridInfo = getGridInfo(grid);
@@ -732,7 +744,11 @@ export const removeRowAt = (grid: HTMLElement, index: number): void => {
     cellsToRemove.forEach((cell) => grid.removeChild(cell));
   };
 
-  gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  if (skipHistory) {
+    performOperation();
+  } else {
+    gridHistoryManager.addHistoryEntry(grid, description, performOperation);
+  }
 };
 
 export function getRowIndex(cell: HTMLElement) {

@@ -2,21 +2,64 @@
 // Right/Left insert columns; Top/Bottom insert rows.
 
 import { BloomGrid } from "./BloomGrid";
-import { getRowAndColumn } from "./structure";
+import {
+  addColumnAt,
+  addRowAt,
+  getGridInfo,
+  getRowAndColumn,
+  removeColumnAt,
+  removeRowAt,
+} from "./structure";
 import { ProximityDiv } from "./ProximityDiv";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { kBloomBlue } from "./constants";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { gridHistoryManager } from "./history";
+import { render } from "./grid-renderer";
 
 let installed = false;
+
+// Reset function for testing
+export function resetTableSizeButtons(): void {
+  installed = false;
+  cornerHandle = null;
+  proxCornerHandle = null;
+  overlayGrid = null;
+
+  // Reset other overlay elements
+  overlayRight = null;
+  overlayLeft = null;
+  overlayTop = null;
+  overlayBottom = null;
+  overlayRightDel = null;
+  overlayLeftDel = null;
+  overlayTopDel = null;
+  overlayBottomDel = null;
+
+  groupRight = null;
+  groupLeft = null;
+  groupTop = null;
+  groupBottom = null;
+
+  proxRightGroup = null;
+  proxLeftGroup = null;
+  proxTopGroup = null;
+  proxBottomGroup = null;
+
+  if (repositionRaf) {
+    cancelAnimationFrame(repositionRaf);
+    repositionRaf = 0;
+  }
+}
 
 export function ensureTableSizeButtons(): void {
   if (installed) return;
   installed = true;
 
   ensureEdgeOverlays();
+  ensureCornerHandle();
 
   document.addEventListener(
     "focusin",
@@ -73,6 +116,385 @@ let proxBottomGroup: ProximityDiv | null = null;
 let overlayGrid: HTMLElement | null = null;
 let repositionRaf = 0;
 
+// --- Corner drag affordance (lower-right grow/shrink handle) ---
+let cornerHandle: HTMLDivElement | null = null;
+let proxCornerHandle: ProximityDiv | null = null;
+let cornerDragging = false;
+let cornerInitialState: {
+  innerHTML: string;
+  attributes: Record<string, string>;
+} | null = null;
+let cornerDragGrid: HTMLElement | null = null;
+let cornerStartX = 0;
+let cornerStartY = 0;
+let cornerStartRows = 0;
+let cornerStartCols = 0;
+let cornerUpdateRaf = 0; // RAF handle for throttling updates
+// Store initial selection state to restore after drag ends
+let cornerInitialSelection: {
+  activeCell: HTMLElement | null;
+  selectedGrid: HTMLElement | null;
+} | null = null;
+
+const kCornerUnitColPx = 20; // pixels per column step - reduced for better responsiveness
+const kCornerUnitRowPx = 20; // pixels per row step - reduced for better responsiveness
+
+function ensureCornerHandle() {
+  // If an existing handle is present but detached (e.g., test reset document.body), recreate it
+  if (cornerHandle && document.body.contains(cornerHandle)) return cornerHandle;
+  if (
+    proxCornerHandle &&
+    (!cornerHandle || !document.body.contains(proxCornerHandle.element))
+  ) {
+    try {
+      proxCornerHandle.destroy();
+    } catch {}
+    proxCornerHandle = null;
+  }
+  cornerHandle = null;
+  const el = document.createElement("div");
+  el.setAttribute("data-bgrid-corner-handle", "");
+  Object.assign(el.style, {
+    width: "16px",
+    height: "16px",
+    position: "absolute",
+    border: "1px solid rgba(0,0,0,0.3)",
+    borderRadius: "4px",
+    background:
+      "linear-gradient(135deg, rgba(255,255,255,0.6) 0 30%, rgba(0,0,0,0.15) 30% 60%, rgba(255,255,255,0.6) 60% 100%)",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+    cursor: "nwse-resize",
+    display: "none",
+    zIndex: "2147483647",
+  } as CSSStyleDeclaration);
+
+  // Mouse interactions
+  const onMouseDown = (e: MouseEvent) => {
+    console.log("🟢 Corner handle mousedown", {
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
+
+    const grid =
+      (
+        document.querySelector(".cell.cell--selected") as HTMLElement | null
+      )?.closest(".grid") ||
+      overlayGrid ||
+      (document.querySelector(".grid") as HTMLElement | null);
+    if (!grid) {
+      console.log("🔴 No grid found for corner drag");
+      return;
+    }
+
+    console.log("🎯 Found grid for corner drag", { grid: grid.tagName });
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Store initial selection state to restore after drag
+    const initialActiveCell =
+      document.querySelector(".cell.selected") ||
+      document.activeElement?.closest(".cell");
+    const initialSelectedGrid = initialActiveCell?.closest(".grid");
+    cornerInitialSelection = {
+      activeCell: initialActiveCell as HTMLElement | null,
+      selectedGrid: initialSelectedGrid as HTMLElement | null,
+    };
+    console.log("💾 Stored initial selection", {
+      hasActiveCell: !!cornerInitialSelection.activeCell,
+      hasSelectedGrid: !!cornerInitialSelection.selectedGrid,
+    });
+
+    // Capture start and initial counts
+    cornerDragging = true;
+    cornerDragGrid = grid as HTMLElement;
+    cornerStartX = e.clientX;
+    cornerStartY = e.clientY;
+    try {
+      const info = getGridInfo(grid as HTMLElement);
+      cornerStartRows = info.rowCount;
+      cornerStartCols = info.columnCount;
+      console.log("📊 Initial grid state", {
+        startRows: cornerStartRows,
+        startCols: cornerStartCols,
+        startX: cornerStartX,
+        startY: cornerStartY,
+      });
+    } catch (err) {
+      console.log("🔴 Error getting grid info:", err);
+      cornerStartRows = 0;
+      cornerStartCols = 0;
+    }
+    cornerInitialState = snapshotGrid(grid as HTMLElement);
+    console.log("📸 Grid snapshot taken");
+
+    // Install global listeners once per drag
+    console.log("👂 Installing mousemove and mouseup listeners");
+    document.addEventListener("mousemove", handleCornerDragMove);
+    document.addEventListener("mouseup", handleCornerDragUp, { once: true });
+    document.addEventListener("mouseup", handleCornerDragUp, { once: true });
+  };
+  el.addEventListener("mousedown", onMouseDown);
+
+  // Wrap with ProximityDiv so opacity eases in near cursor
+  const prox = new ProximityDiv(document.body, el);
+  cornerHandle = el;
+  proxCornerHandle = prox;
+  return el;
+}
+
+function snapshotGrid(grid: HTMLElement): {
+  innerHTML: string;
+  attributes: Record<string, string>;
+} {
+  const attributes: Record<string, string> = {};
+  for (let i = 0; i < grid.attributes.length; i++) {
+    const a = grid.attributes[i];
+    attributes[a.name] = a.value || "";
+  }
+  return { innerHTML: grid.innerHTML, attributes };
+}
+
+function restoreGrid(
+  grid: HTMLElement,
+  state: { innerHTML: string; attributes: Record<string, string> }
+) {
+  // Remove all current attributes
+  const toRemove: string[] = [];
+  for (let i = 0; i < grid.attributes.length; i++) {
+    toRemove.push(grid.attributes[i].name);
+  }
+  toRemove.forEach((n) => grid.removeAttribute(n));
+  // Restore saved
+  Object.entries(state.attributes).forEach(([n, v]) => grid.setAttribute(n, v));
+  grid.innerHTML = state.innerHTML;
+}
+
+function handleCornerDragMove(e: MouseEvent) {
+  console.log("🔵 handleCornerDragMove called", {
+    cornerDragging,
+    cornerDragGrid: !!cornerDragGrid,
+    clientX: e.clientX,
+    clientY: e.clientY,
+  });
+
+  if (!cornerDragging || !cornerDragGrid) {
+    console.log("🔴 Early return - not dragging or no grid");
+    return;
+  }
+  e.preventDefault();
+
+  const dx = e.clientX - cornerStartX;
+  const dy = e.clientY - cornerStartY;
+  const targetCols = Math.max(
+    1,
+    cornerStartCols + Math.floor(dx / kCornerUnitColPx)
+  );
+  const targetRows = Math.max(
+    1,
+    cornerStartRows + Math.floor(dy / kCornerUnitRowPx)
+  );
+
+  console.log("📐 Drag calculations", {
+    dx,
+    dy,
+    cornerStartCols,
+    cornerStartRows,
+    targetCols,
+    targetRows,
+    unitColPx: kCornerUnitColPx,
+    unitRowPx: kCornerUnitRowPx,
+    "dx/unitColPx": dx / kCornerUnitColPx,
+    "dy/unitRowPx": dy / kCornerUnitRowPx,
+    "floor(dx/unitColPx)": Math.floor(dx / kCornerUnitColPx),
+    "floor(dy/unitRowPx)": Math.floor(dy / kCornerUnitRowPx),
+  });
+
+  const info = getGridInfo(cornerDragGrid);
+  console.log("🔢 Current grid info", {
+    currentCols: info.columnCount,
+    currentRows: info.rowCount,
+  });
+
+  // During drag, we always use the stored grid reference instead of relying on DOM selection
+  // Check selection state only for logging/debugging purposes
+  const activeCell =
+    document.querySelector(".cell.selected") ||
+    document.activeElement?.closest(".cell");
+  const selectedGrid = activeCell?.closest(".grid");
+
+  console.log("🎯 Selection state (logging only)", {
+    hasActiveCell: !!activeCell,
+    hasSelectedGrid: !!selectedGrid,
+    gridMatches: selectedGrid === cornerDragGrid,
+    activeElement: document.activeElement?.tagName,
+    activeElementClass: (document.activeElement as HTMLElement)?.className,
+    usingStoredGrid: true,
+  });
+
+  let colChanges = 0;
+  let rowChanges = 0;
+
+  console.log("🎯 Change analysis", {
+    needColIncrease: info.columnCount < targetCols,
+    needColDecrease: info.columnCount > targetCols && info.columnCount > 1,
+    needRowIncrease: info.rowCount < targetRows,
+    needRowDecrease: info.rowCount > targetRows && info.rowCount > 1,
+    colDiff: targetCols - info.columnCount,
+    rowDiff: targetRows - info.rowCount,
+  });
+
+  // Adjust columns
+  while (info.columnCount < targetCols) {
+    console.log("➕ Adding column", {
+      currentCols: info.columnCount,
+      targetCols,
+    });
+    addColumnAt(cornerDragGrid, info.columnCount, true);
+    info.columnCount++;
+    colChanges++;
+  }
+  while (info.columnCount > targetCols && info.columnCount > 1) {
+    console.log("➖ Removing column", {
+      currentCols: info.columnCount,
+      targetCols,
+    });
+    removeColumnAt(cornerDragGrid, info.columnCount - 1, true);
+    info.columnCount--;
+    colChanges++;
+  }
+  // Adjust rows
+  while (info.rowCount < targetRows) {
+    console.log("➕ Adding row", { currentRows: info.rowCount, targetRows });
+    addRowAt(cornerDragGrid, info.rowCount, true);
+    info.rowCount++;
+    rowChanges++;
+  }
+  while (info.rowCount > targetRows && info.rowCount > 1) {
+    console.log("➖ Removing row", { currentRows: info.rowCount, targetRows });
+    removeRowAt(cornerDragGrid, info.rowCount - 1, true);
+    info.rowCount--;
+    rowChanges++;
+  }
+
+  console.log("⚡ Grid adjustments", {
+    colChanges,
+    rowChanges,
+    newCols: info.columnCount,
+    newRows: info.rowCount,
+  });
+
+  // Throttle expensive visual updates using RAF, but fallback to immediate execution in tests
+  if (cornerUpdateRaf) {
+    console.log("🚫 Canceling previous RAF");
+    cancelAnimationFrame(cornerUpdateRaf);
+    cornerUpdateRaf = 0;
+  }
+
+  const updateVisuals = () => {
+    console.log("🎨 Running visual update");
+    if (!cornerDragGrid) {
+      console.log("🔴 No grid in visual update");
+      return;
+    }
+
+    try {
+      render(cornerDragGrid);
+      console.log("✅ Render completed");
+    } catch (err) {
+      console.log("🔴 Render error:", err);
+    }
+    scheduleOverlayReposition();
+    console.log("📍 Overlay reposition scheduled");
+    cornerUpdateRaf = 0;
+  };
+
+  // In test environments (like happy-dom), requestAnimationFrame may not work properly
+  // So we check if we're in a test environment and execute immediately
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestAnimationFrame === "function" &&
+    !window.location.href.includes("vitest")
+  ) {
+    console.log("🔄 Scheduling RAF update");
+    cornerUpdateRaf = requestAnimationFrame(updateVisuals);
+  } else {
+    console.log("⚡ Running immediate update");
+    updateVisuals();
+  }
+}
+
+function handleCornerDragUp() {
+  console.log("🛑 Corner drag up - ending drag session");
+
+  if (!cornerDragging || !cornerDragGrid) {
+    console.log("🔴 Not dragging or no grid on mouseup");
+    return;
+  }
+
+  // Cancel any pending RAF update
+  if (cornerUpdateRaf) {
+    console.log("🚫 Canceling pending RAF update");
+    cancelAnimationFrame(cornerUpdateRaf);
+    cornerUpdateRaf = 0;
+  }
+
+  console.log("🚮 Removing mousemove listener");
+  // Remove the move listener installed at drag start
+  document.removeEventListener("mousemove", handleCornerDragMove);
+  const grid = cornerDragGrid;
+  const saved = cornerInitialState;
+  const savedSelection = cornerInitialSelection;
+  cornerDragging = false;
+  cornerDragGrid = null;
+  cornerInitialState = null;
+  cornerInitialSelection = null;
+  console.log("🔄 Drag state reset");
+
+  // Restore selection to the grid we were working with
+  if (savedSelection && grid) {
+    console.log("🔄 Restoring selection to grid after drag");
+    try {
+      // If we had an initial selection, try to restore it
+      if (savedSelection.activeCell && savedSelection.selectedGrid) {
+        // Find equivalent cell in the potentially resized grid
+        const cells = grid.querySelectorAll(".cell");
+        if (cells.length > 0) {
+          // Just focus the first cell to restore grid context
+          const firstCell = cells[0] as HTMLElement;
+          firstCell.focus();
+          firstCell.classList.add("selected");
+          grid.classList.add("selected");
+          console.log("✅ Selection restored to grid");
+        }
+      } else if (grid) {
+        // No initial selection, but make sure grid is selected
+        const firstCell = grid.querySelector(".cell") as HTMLElement;
+        if (firstCell) {
+          firstCell.focus();
+          firstCell.classList.add("selected");
+          grid.classList.add("selected");
+          console.log("✅ Grid selection established");
+        }
+      }
+    } catch (err) {
+      console.log("🔴 Error restoring selection:", err);
+    }
+  }
+
+  // Finalize to history as a single undoable action
+  if (saved) {
+    const info = getGridInfo(grid);
+    const label = `Resize Table to ${info.rowCount}×${info.columnCount}`;
+    console.log("📝 Adding history entry:", label);
+    const noop = () => {};
+    const undoOp = (g: HTMLElement) => restoreGrid(g, saved);
+    gridHistoryManager.addHistoryEntry(grid, label, noop, undoOp);
+  } else {
+    console.log("🔴 No saved state for history");
+  }
+}
+
 // --- Hover preview overlay for delete actions ---
 let deletePreviewDiv: HTMLDivElement | null = null;
 let deletePreviewVisible = false;
@@ -80,7 +502,7 @@ type PreviewKind = "row" | "column";
 let currentPreviewKind: PreviewKind | null = null;
 
 // Shared dimensions
-const kAddButtonLength = 100; // px, long side of add button (tall for columns, wide for rows)
+const kAddButtonLength = 50; // px, long side of add button (tall for columns, wide for rows)
 const kAddPreviewThickness = 10; // px, thickness of the pulsing add preview bar
 
 // Ensure global overlay styles exist (for animations)
@@ -329,6 +751,7 @@ function showEdgeOverlays(grid: HTMLElement) {
   if (groupLeft) groupLeft.style.display = "flex";
   if (groupTop) groupTop.style.display = "flex";
   if (groupBottom) groupBottom.style.display = "flex";
+  if (cornerHandle) cornerHandle.style.display = "block";
   repositionEdgeOverlays();
 }
 
@@ -337,6 +760,7 @@ function hideEdgeOverlays() {
   if (groupLeft) groupLeft.style.display = "none";
   if (groupTop) groupTop.style.display = "none";
   if (groupBottom) groupBottom.style.display = "none";
+  if (cornerHandle) cornerHandle.style.display = "none";
   overlayGrid = null;
   hideDeletePreview();
   hideAddPreview();
@@ -350,6 +774,19 @@ function scheduleOverlayReposition() {
 }
 
 function repositionEdgeOverlays() {
+  if (!overlayGrid) {
+    // Try to derive from selected cell or any grid (for test env)
+    const grid =
+      (
+        document.querySelector(".cell.cell--selected") as HTMLElement | null
+      )?.closest(".grid") ||
+      (document.querySelector(".grid") as HTMLElement | null);
+    if (grid) {
+      overlayGrid = grid as HTMLElement;
+    } else {
+      return;
+    }
+  }
   if (!overlayGrid) return;
   if (!document.body.contains(overlayGrid)) {
     hideEdgeOverlays();
@@ -426,6 +863,13 @@ function repositionEdgeOverlays() {
     const px = Math.round(window.scrollX + centerX);
     const py = Math.round(window.scrollY + maxBottom + gap);
     proxBottomGroup.setPosition(px, py);
+  }
+
+  // Corner handle (positioned at bottom-right corner of grid)
+  if (proxCornerHandle && cornerHandle) {
+    const px = Math.round(window.scrollX + maxRight - 8); // 8px offset from corner
+    const py = Math.round(window.scrollY + maxBottom - 8);
+    proxCornerHandle.setPosition(px, py);
   }
 
   // If a delete preview is visible, reposition/update it to track row/column bounds
