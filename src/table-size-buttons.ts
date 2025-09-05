@@ -401,31 +401,31 @@ function repositionEdgeOverlays() {
 
   // Right group (vertical, centered on Y)
   if (proxRightGroup && groupRight) {
+    groupRight.style.display = "flex";
     const px = Math.round(window.scrollX + maxRight + gap);
     const py = Math.round(window.scrollY + centerY);
     proxRightGroup.setPosition(px, py);
-    groupRight.style.display = "flex";
   }
   // Left group (vertical, centered on Y). Width ~ base, position to the left of grid
   if (proxLeftGroup && groupLeft) {
+    groupLeft.style.display = "flex";
     const px = Math.round(window.scrollX + minLeft - gap - base);
     const py = Math.round(window.scrollY + centerY);
     proxLeftGroup.setPosition(px, py);
-    groupLeft.style.display = "flex";
   }
   // Top group (horizontal, centered on X). Height ~ base, position above grid
   if (proxTopGroup && groupTop) {
+    groupTop.style.display = "flex";
     const px = Math.round(window.scrollX + centerX);
     const py = Math.round(window.scrollY + minTop - gap - size);
     proxTopGroup.setPosition(px, py);
-    groupTop.style.display = "flex";
   }
   // Bottom group (horizontal, centered on X)
   if (proxBottomGroup && groupBottom) {
+    groupBottom.style.display = "flex";
     const px = Math.round(window.scrollX + centerX);
     const py = Math.round(window.scrollY + maxBottom + gap);
     proxBottomGroup.setPosition(px, py);
-    groupBottom.style.display = "flex";
   }
 
   // If a delete preview is visible, reposition/update it to track row/column bounds

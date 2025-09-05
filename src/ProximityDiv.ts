@@ -55,6 +55,16 @@ export class ProximityDiv {
     parent.appendChild(wrapper);
 
     globalInstances.push(this);
+
+    // Ensure immediate updates when the mouse enters/moves over the child,
+    // even if the document-level mousemove hasn't fired yet.
+    const onHover = (e: MouseEvent) => {
+      lastMousePageX = e.pageX;
+      lastMousePageY = e.pageY;
+      this.updateOpacity();
+    };
+    this.child.addEventListener("mouseenter", onHover, { passive: true });
+    this.child.addEventListener("mousemove", onHover, { passive: true });
   }
 
   setPosition(left: number, top: number) {
@@ -64,11 +74,24 @@ export class ProximityDiv {
   }
 
   updateOpacity() {
-    const rect = this.element.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2 + window.scrollX;
-    const cy = rect.top + rect.height / 2 + window.scrollY;
-    const dx = lastMousePageX - cx;
-    const dy = lastMousePageY - cy;
+    // Prefer the child's rect (the visible area), since the wrapper may have zero size
+    let rect = this.child.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      // Fallback to wrapper rect if child rect is degenerate (e.g., display:none)
+      rect = this.element.getBoundingClientRect();
+    }
+    // Work in page coordinates to match lastMousePageX/Y
+    const left = rect.left + window.scrollX;
+    const top = rect.top + window.scrollY;
+    const right = left + rect.width;
+    const bottom = top + rect.height;
+
+    const px = lastMousePageX;
+    const py = lastMousePageY;
+
+    // Distance from point to rectangle (0 if inside)
+    const dx = px < left ? left - px : px > right ? px - right : 0;
+    const dy = py < top ? top - py : py > bottom ? py - bottom : 0;
     const distance = Math.hypot(dx, dy);
 
     // Dead-zone: keep initial/min opacity until within activationDistance

@@ -117,7 +117,7 @@ const Demo: React.FC = () => {
               </h3>
               {/* Inline Save to the right of the heading */}
               {currentExample && (
-                <span>
+                <span style={{ marginLeft: "auto" }}>
                   <SaveButton
                     currentExamplePath={`${currentExample.group}/${currentExample.htmlFile}`}
                     variant="text"
