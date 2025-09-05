@@ -195,7 +195,7 @@ function ensureCornerHandle() {
 
     // Store initial selection state to restore after drag
     const initialActiveCell =
-      document.querySelector(".cell.selected") ||
+      document.querySelector(".cell.cell--selected") ||
       document.activeElement?.closest(".cell");
     const initialSelectedGrid = initialActiveCell?.closest(".grid");
     cornerInitialSelection = {
@@ -210,6 +210,11 @@ function ensureCornerHandle() {
     // Capture start and initial counts
     cornerDragging = true;
     cornerDragGrid = grid as HTMLElement;
+
+    // Ensure overlayGrid points to our target grid throughout the drag
+    overlayGrid = cornerDragGrid;
+    console.log("🎯 Set overlayGrid to cornerDragGrid for stable targeting");
+
     cornerStartX = e.clientX;
     cornerStartY = e.clientY;
     try {
@@ -318,21 +323,10 @@ function handleCornerDragMove(e: MouseEvent) {
     currentRows: info.rowCount,
   });
 
-  // During drag, we always use the stored grid reference instead of relying on DOM selection
-  // Check selection state only for logging/debugging purposes
-  const activeCell =
-    document.querySelector(".cell.selected") ||
-    document.activeElement?.closest(".cell");
-  const selectedGrid = activeCell?.closest(".grid");
-
-  console.log("🎯 Selection state (logging only)", {
-    hasActiveCell: !!activeCell,
-    hasSelectedGrid: !!selectedGrid,
-    gridMatches: selectedGrid === cornerDragGrid,
-    activeElement: document.activeElement?.tagName,
-    activeElementClass: (document.activeElement as HTMLElement)?.className,
-    usingStoredGrid: true,
-  });
+  // During drag, we always use the stored grid reference - no need to check DOM selection
+  console.log(
+    "🎯 Using stored cornerDragGrid for all operations (no DOM selection dependency)"
+  );
 
   let colChanges = 0;
   let rowChanges = 0;
@@ -406,8 +400,8 @@ function handleCornerDragMove(e: MouseEvent) {
     } catch (err) {
       console.log("🔴 Render error:", err);
     }
-    scheduleOverlayReposition();
-    console.log("📍 Overlay reposition scheduled");
+    // Skip overlay repositioning during drag to prevent DOM timing issues
+    console.log("⏸️ Skipping overlay reposition during active drag");
     cornerUpdateRaf = 0;
   };
 
@@ -444,41 +438,115 @@ function handleCornerDragUp() {
   console.log("🚮 Removing mousemove listener");
   // Remove the move listener installed at drag start
   document.removeEventListener("mousemove", handleCornerDragMove);
+
   const grid = cornerDragGrid;
   const saved = cornerInitialState;
   const savedSelection = cornerInitialSelection;
+
+  // Reset drag state but keep overlayGrid pointing to our target
   cornerDragging = false;
   cornerDragGrid = null;
   cornerInitialState = null;
   cornerInitialSelection = null;
-  console.log("🔄 Drag state reset");
+
+  // Important: Keep overlayGrid pointing to our target grid so overlays don't get confused
+  overlayGrid = grid;
+  console.log("🔄 Drag state reset, overlayGrid preserved for target grid");
 
   // Restore selection to the grid we were working with
   if (savedSelection && grid) {
-    console.log("🔄 Restoring selection to grid after drag");
+    console.log("🔄 Restoring selection to grid after drag", {
+      hadActiveCell: !!savedSelection.activeCell,
+      hadSelectedGrid: !!savedSelection.selectedGrid,
+      gridCellCount: grid.querySelectorAll(".cell").length,
+    });
+
     try {
-      // If we had an initial selection, try to restore it
-      if (savedSelection.activeCell && savedSelection.selectedGrid) {
-        // Find equivalent cell in the potentially resized grid
-        const cells = grid.querySelectorAll(".cell");
-        if (cells.length > 0) {
-          // Just focus the first cell to restore grid context
-          const firstCell = cells[0] as HTMLElement;
+      // Find the first cell in the potentially resized grid
+      const firstCell = grid.querySelector(".cell") as HTMLElement;
+      if (firstCell) {
+        // Explicitly clear any existing selection before setting new one
+        document
+          .querySelectorAll(".cell.cell--selected")
+          .forEach((el) => el.classList.remove("cell--selected"));
+        document
+          .querySelectorAll(".grid.grid--selected")
+          .forEach((el) => el.classList.remove("grid--selected"));
+
+        // Apply selection classes directly to ensure they're set
+        firstCell.classList.add("cell--selected");
+        grid.classList.add("grid--selected");
+
+        // Also focus to ensure proper interaction state
+        const editable =
+          firstCell.querySelector<HTMLElement>("[contenteditable]");
+        if (editable) {
+          editable.focus();
+          console.log(
+            "✅ Selection restored to grid via editable focus + direct class setting",
+            {
+              cellClasses: firstCell.className,
+              gridClasses: grid.className,
+              activeElement:
+                document.activeElement?.tagName +
+                "." +
+                document.activeElement?.className,
+            }
+          );
+        } else {
           firstCell.focus();
-          firstCell.classList.add("selected");
-          grid.classList.add("selected");
-          console.log("✅ Selection restored to grid");
+          console.log(
+            "✅ Selection restored to grid via cell focus + direct class setting",
+            {
+              cellClasses: firstCell.className,
+              gridClasses: grid.className,
+              activeElement:
+                document.activeElement?.tagName +
+                "." +
+                document.activeElement?.className,
+            }
+          );
         }
-      } else if (grid) {
-        // No initial selection, but make sure grid is selected
-        const firstCell = grid.querySelector(".cell") as HTMLElement;
-        if (firstCell) {
-          firstCell.focus();
-          firstCell.classList.add("selected");
-          grid.classList.add("selected");
-          console.log("✅ Grid selection established");
-        }
+      } else {
+        console.log("🔴 No cells found in grid for selection restoration");
       }
+
+      // Add a slight delay then verify the final state
+      setTimeout(() => {
+        const finalSelectedCell = document.querySelector(
+          ".cell.cell--selected"
+        );
+        const finalSelectedGrid = document.querySelector(
+          ".grid.grid--selected"
+        );
+        const finalActiveElement = document.activeElement;
+
+        console.log("🔍 Final selection state after restoration", {
+          hasSelectedCell: !!finalSelectedCell,
+          hasSelectedGrid: !!finalSelectedGrid,
+          selectedGridMatchesOurGrid: finalSelectedGrid === grid,
+          activeElementTag: finalActiveElement?.tagName,
+          activeElementClass: (finalActiveElement as HTMLElement)?.className,
+          activeElementInOurGrid:
+            !!finalActiveElement?.closest(".grid") &&
+            finalActiveElement?.closest(".grid") === grid,
+        });
+
+        if (!finalSelectedCell || finalSelectedGrid !== grid) {
+          console.log("⚠️ Selection restoration may have failed!", {
+            expectedGrid: grid,
+            actualSelectedGrid: finalSelectedGrid,
+            allSelectedCells: document.querySelectorAll(".cell.cell--selected")
+              .length,
+            allSelectedGrids: document.querySelectorAll(".grid.grid--selected")
+              .length,
+          });
+        }
+
+        // Now that drag is complete and selection is restored, reposition overlays
+        scheduleOverlayReposition();
+        console.log("📍 Scheduled overlay reposition after drag completion");
+      }, 10);
     } catch (err) {
       console.log("🔴 Error restoring selection:", err);
     }
@@ -769,6 +837,12 @@ function hideEdgeOverlays() {
 }
 
 function scheduleOverlayReposition() {
+  // Skip overlay repositioning during corner drag to avoid DOM access issues
+  if (cornerDragging) {
+    console.log("⏸️ Skipping overlay reposition during corner drag");
+    return;
+  }
+
   if (repositionRaf) cancelAnimationFrame(repositionRaf);
   repositionRaf = requestAnimationFrame(() => {
     repositionEdgeOverlays();
@@ -776,26 +850,39 @@ function scheduleOverlayReposition() {
 }
 
 function repositionEdgeOverlays() {
-  if (!overlayGrid) {
-    // Try to derive from selected cell or any grid (for test env)
+  // During corner drag, always use the stored cornerDragGrid to avoid selection issues
+  let targetGrid = overlayGrid;
+
+  if (cornerDragging && cornerDragGrid) {
+    console.log(
+      "🎯 Using stored cornerDragGrid for overlay positioning during drag"
+    );
+    targetGrid = cornerDragGrid;
+    // During active drag, skip complex repositioning to avoid DOM timing issues
+    return;
+  } else if (!targetGrid) {
+    // Only derive from selected cell when not dragging
     const grid =
       (
         document.querySelector(".cell.cell--selected") as HTMLElement | null
       )?.closest(".grid") ||
       (document.querySelector(".grid") as HTMLElement | null);
     if (grid) {
-      overlayGrid = grid as HTMLElement;
+      targetGrid = grid as HTMLElement;
+      overlayGrid = targetGrid; // Update the stored reference
     } else {
       return;
     }
   }
-  if (!overlayGrid) return;
-  if (!document.body.contains(overlayGrid)) {
+
+  if (!targetGrid) return;
+  if (!document.body.contains(targetGrid)) {
     hideEdgeOverlays();
     return;
   }
+
   // Ensure wrappers remain configured for the current grid anchor
-  applyAnchorPositioning(overlayGrid);
+  applyAnchorPositioning(targetGrid);
 
   // If a delete preview is visible, reposition/update it to track row/column bounds
   if (deletePreviewVisible) {

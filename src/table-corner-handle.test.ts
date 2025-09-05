@@ -346,4 +346,89 @@ describe("corner handle drag to resize table", () => {
 
     detachGrid(grid);
   });
+
+  it("maintains grid selection after corner drag operations", () => {
+    // Start with a 3x3 grid
+    const colsAttr = Array(3).fill("hug").join(",");
+    const rowsAttr = Array(3).fill("hug").join(",");
+    const cellsHtml = Array.from(
+      { length: 9 },
+      (_, i) => `<div class="cell"><div contenteditable>${i + 1}</div></div>`
+    ).join("");
+    document.body.innerHTML = `
+      <div class="grid" data-column-widths="${colsAttr}" data-row-heights="${rowsAttr}">
+        ${cellsHtml}
+      </div>`;
+
+    const grid = document.querySelector(".grid") as HTMLElement;
+    attachGrid(grid);
+
+    // Focus a cell to trigger overlays and establish initial selection
+    const firstEditable = grid.querySelector(
+      ".cell [contenteditable]"
+    ) as HTMLElement;
+    firstEditable.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+
+    // Verify initial selection state
+    expect(document.querySelector(".cell.cell--selected")).toBeTruthy();
+    expect(document.querySelector(".grid.grid--selected")).toBe(grid);
+
+    const handle = document.querySelector(
+      "[data-bgrid-corner-handle]"
+    ) as HTMLElement;
+    expect(handle).toBeTruthy();
+
+    const rect = grid.getBoundingClientRect();
+    const startX = rect.right + 10;
+    const startY = rect.bottom + 10;
+
+    // Begin drag - this should store initial selection state
+    dispatchMouse(handle, "mousedown", { clientX: startX, clientY: startY });
+
+    // Shrink the grid (drag towards origin) - this removes rows/columns
+    document.dispatchEvent(
+      new MouseEvent("mousemove", {
+        clientX: startX - 50, // Move left to reduce columns
+        clientY: startY - 40, // Move up to reduce rows
+        bubbles: true,
+      })
+    );
+
+    // Verify grid was resized (should be smaller)
+    const colsDuringDrag = (grid.getAttribute("data-column-widths") || "")
+      .split(",")
+      .filter(Boolean).length;
+    const rowsDuringDrag = (grid.getAttribute("data-row-heights") || "")
+      .split(",")
+      .filter(Boolean).length;
+    expect(colsDuringDrag).toBeLessThan(3);
+    expect(rowsDuringDrag).toBeLessThan(3);
+
+    // End drag - this should restore selection
+    document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+
+    // ❓ THE BUG: After corner drag ends, selection should be maintained
+    // but currently these expectations fail because selection is lost
+    const selectedCellAfter = document.querySelector(".cell.cell--selected");
+    const selectedGridAfter = document.querySelector(".grid.grid--selected");
+
+    console.log("🔍 Selection state after drag:", {
+      selectedCell: !!selectedCellAfter,
+      selectedGrid: !!selectedGridAfter,
+      gridMatch: selectedGridAfter === grid,
+      activeElement: document.activeElement?.tagName,
+      activeElementClass: (document.activeElement as HTMLElement)?.className,
+    });
+
+    expect(selectedCellAfter).toBeTruthy();
+    expect(selectedGridAfter).toBe(grid);
+
+    // Also verify that a cell in the grid is focused
+    const activeElement = document.activeElement;
+    const activeCell = activeElement?.closest(".cell");
+    expect(activeCell).toBeTruthy();
+    expect(activeCell?.closest(".grid")).toBe(grid);
+
+    detachGrid(grid);
+  });
 });
