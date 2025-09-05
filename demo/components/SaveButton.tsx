@@ -4,9 +4,16 @@ import { gridHistoryManager } from "../../src";
 interface SaveButtonProps {
   // e.g. "tests/table-border.html" or "exercises/alphabet.html"
   currentExamplePath: string;
+  // Visual style variant: 'default' (sidebar big button) or 'text' (inline white text button)
+  variant?: "default" | "text";
+  className?: string;
 }
 
-const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
+const SaveButton: React.FC<SaveButtonProps> = ({
+  currentExamplePath,
+  variant = "default",
+  className,
+}) => {
   const [canUndo, setCanUndo] = useState(gridHistoryManager.canUndo());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,13 +31,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
       const exampleName = currentExamplePath.replace(/\.html$/, "");
       const content = pageElement.innerHTML;
 
-      console.log(`Saving example: ${exampleName}`);
-
       const apiUrl = `/api/save-example`;
-      console.log(
-        `API URL: ${apiUrl} (using relative path to avoid base URL issues)`
-      );
-
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -41,7 +42,6 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
           content,
         }),
       });
-      console.log(`Response status: ${response.status}`);
 
       if (response.ok) {
         alert("Saved successfully!");
@@ -49,8 +49,6 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
         setCanUndo(false);
       } else {
         const errorText = await response.text();
-        console.error(`Error response body: ${errorText}`);
-
         let errorObj;
         try {
           errorObj = JSON.parse(errorText);
@@ -61,12 +59,10 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
         console.error("Failed to save:", errorObj, "Response:", response);
       }
     } catch (error) {
-      console.error("Error saving:", error);
       const errorDetails =
         error instanceof Error
           ? `${error.name}: ${error.message}`
           : String(error);
-      console.log(`Error details: ${errorDetails}`);
       alert(`Error saving: ${errorDetails}`);
     } finally {
       setIsSaving(false);
@@ -77,28 +73,57 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExamplePath }) => {
     const handleHistoryUpdate = () => {
       setCanUndo(gridHistoryManager.canUndo());
     };
-
     document.addEventListener("gridHistoryUpdated", handleHistoryUpdate);
     return () => {
       document.removeEventListener("gridHistoryUpdated", handleHistoryUpdate);
     };
   }, []);
 
+  const isEnabled = canUndo && !isSaving;
+  const baseProps = {
+    disabled: isSaving,
+    onClick: handleSave,
+  } as const;
+
+  if (variant === "text") {
+    return (
+      <button
+        {...baseProps}
+        className={className}
+        style={{
+          background: "transparent",
+          border: "none",
+          color: "#ffffff",
+          padding: 0,
+          margin: 0,
+          cursor: isEnabled ? "pointer" : "default",
+          opacity: isEnabled ? 1 : 0.6,
+          fontSize: "0.9rem",
+          fontWeight: 600,
+        }}
+        title={isEnabled ? "Save changes" : "No changes to save"}
+      >
+        {isSaving ? "Saving..." : "Save"}
+      </button>
+    );
+  }
+
   return (
     <button
-      disabled={isSaving}
-      onClick={handleSave}
+      {...baseProps}
+      className={className}
       style={{
         padding: "10px 20px",
-        backgroundColor: canUndo && !isSaving ? "#28a745" : "#cccccc",
-        color: canUndo && !isSaving ? "#fff" : "#666666",
+        backgroundColor: isEnabled ? "#28a745" : "#cccccc",
+        color: isEnabled ? "#fff" : "#666666",
         border: "none",
         borderRadius: "5px",
-        cursor: canUndo && !isSaving ? "pointer" : "not-allowed",
-        opacity: canUndo && !isSaving ? 1 : 0.7,
+        cursor: isEnabled ? "pointer" : "not-allowed",
+        opacity: isEnabled ? 1 : 0.7,
         marginTop: "20px",
         width: "100%",
       }}
+      title={isEnabled ? "Save changes" : "No changes to save"}
     >
       {isSaving ? "Saving..." : "Save"}
     </button>

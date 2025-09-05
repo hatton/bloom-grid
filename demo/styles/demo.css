@@ -34,6 +34,17 @@ body {
   position: relative;
 }
 
+/* Compact variant removes extra padding/margins */
+.main-content.compact {
+  padding: 0;
+}
+
+/* Reduce top margin directly under section labels */
+.section-label + .main-content,
+.section-label + .main-content.compact {
+  margin-top: 8px;
+}
+
 #controls-panel {
   padding-left: 20px;
   overflow-y: auto;
@@ -67,6 +78,11 @@ body {
   padding: 10px;
   border-radius: 8px;
   min-height: 400px;
+}
+
+/* Remove inner padding for attempt container to avoid indentation */
+#attempt-container {
+  padding: 0;
 }
 
 .no-examples-message {

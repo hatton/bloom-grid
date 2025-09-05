@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import ExampleListItem from "./ExampleListItem";
-import SaveButton from "./SaveButton";
 
 export interface Example {
   name: string;
@@ -105,7 +104,7 @@ const ExampleBar: React.FC<ExampleBarProps> = ({ onExampleSelect }) => {
         </div>
       </div>
 
-      <SaveButton currentExamplePath={activeId} />
+      {/* Save button moved next to Worked Example heading */}
     </div>
   );
 };
