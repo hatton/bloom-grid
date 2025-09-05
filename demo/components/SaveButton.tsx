@@ -85,7 +85,7 @@ const SaveButton: React.FC<SaveButtonProps> = ({ currentExampleFile }) => {
 
   return (
     <button
-      disabled={!canUndo || isSaving}
+      disabled={isSaving}
       onClick={handleSave}
       style={{
         padding: "10px 20px",

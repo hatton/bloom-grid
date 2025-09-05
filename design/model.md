@@ -55,6 +55,8 @@ Corners:
 Nested grids:
 
 - Where a nested grid sits inside a parent cell, the parent grid’s perimeter takes precedence over the nested grid’s perimeter where they coincide (the parent cell defines the visual outer boundary).
+- Initial behavior: a nested grid renders with no outer perimeter by default. Its interior edges still render normally.
+- Author control: if you explicitly set perimeter entries in `data-edges-h`/`data-edges-v` for the nested grid, those perimeters are honored. When nested, perimeter sides do not fall back to `data-border-default` or CSS defaults; only explicitly provided perimeter entries render. This avoids accidental double borders while still allowing deliberate outer borders on embedded grids.
 
 - `data-gap-x`: comma list or single CSS length for column gaps (C-1 entries if list)
 - `data-gap-y`: comma list or single CSS length for row gaps (R-1 entries if list)

@@ -17,7 +17,7 @@ function addCell(grid: HTMLElement, spanX = 1, spanY = 1): HTMLElement {
 }
 
 describe("grid-renderer", () => {
-  it("suppresses nested grid perimeters to avoid double borders with parent cell", () => {
+  it("nested grid defaults to no outer perimeter; explicit perimeters are allowed", () => {
     // Parent grid: 1 row x 2 cols; left cell will contain a nested grid
     const parent = document.createElement("div");
     parent.className = "grid";
@@ -58,72 +58,145 @@ describe("grid-renderer", () => {
     rightCell.className = "cell";
     parent.appendChild(rightCell);
 
-    // Build a nested grid inside left cell with its own perimeters
-    const nested = document.createElement("div");
-    nested.className = "grid";
-    nested.setAttribute("data-column-widths", "fill,fill");
-    nested.setAttribute("data-row-heights", "fill,fill");
-    nested.setAttribute(
+    // Scenario A: Build a nested grid inside left cell WITHOUT explicit perimeters (interior-only arrays)
+    const nestedA = document.createElement("div");
+    nestedA.className = "grid";
+    nestedA.setAttribute("data-column-widths", "fill,fill");
+    nestedA.setAttribute("data-row-heights", "fill,fill");
+    // interior-only: H length = R-1 = 1, V length per row = C-1 = 1
+    nestedA.setAttribute(
       "data-edges-h",
       JSON.stringify([
         [
           { weight: 1, style: "solid", color: "#000" },
           { weight: 1, style: "solid", color: "#000" },
         ],
-        [
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-        ],
-        [
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-        ],
       ])
     );
-    nested.setAttribute(
+    nestedA.setAttribute(
       "data-edges-v",
       JSON.stringify([
-        [
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-        ],
-        [
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-          { weight: 1, style: "solid", color: "#000" },
-        ],
+        [{ weight: 1, style: "solid", color: "#000" }],
+        [{ weight: 1, style: "solid", color: "#000" }],
       ])
     );
-
-    // Add four cells to nested grid
+    // Add four cells to nested grid A
     for (let i = 0; i < 4; i++) {
       const c = document.createElement("div");
       c.className = "cell";
-      nested.appendChild(c);
+      nestedA.appendChild(c);
     }
-    leftCell.appendChild(nested);
+    leftCell.appendChild(nestedA);
 
-    // Build models but do not render to DOM styles (model check is enough)
-    const nestedModel = buildRenderModel(nested);
+    const nestedModelA = buildRenderModel(nestedA);
+    // Expect that nested grid perimeters are not painted by default (no edgeDefault fallback on nested)
+    expect(nestedModelA.cellBorders[0].top).toBeNull();
+    expect(nestedModelA.cellBorders[1].top).toBeNull();
+    expect(nestedModelA.cellBorders[2].bottom).toBeNull();
+    expect(nestedModelA.cellBorders[3].bottom).toBeNull();
+    expect(nestedModelA.cellBorders[0].left).toBeNull();
+    expect(nestedModelA.cellBorders[2].left).toBeNull();
+    expect(nestedModelA.cellBorders[1].right).toBeNull();
+    expect(nestedModelA.cellBorders[3].right).toBeNull();
+    // Inner vertical edge between [0] and [1] should exist on at least one side
+    {
+      const innerTopRight = nestedModelA.cellBorders[0].right;
+      const innerTopLeft = nestedModelA.cellBorders[1].left;
+      expect(innerTopRight === null && innerTopLeft === null).toBe(false);
+    }
 
-    // Expect that nested grid perimeters are suppressed (no top/left/right/bottom on its outer cells)
-    // Cell order in 2x2: [0,1,2,3]
-    // Top row top should be null, bottom row bottom null, left col left null, right col right null
-    expect(nestedModel.cellBorders[0].top).toBeNull();
-    expect(nestedModel.cellBorders[1].top).toBeNull();
-    expect(nestedModel.cellBorders[2].bottom).toBeNull();
-    expect(nestedModel.cellBorders[3].bottom).toBeNull();
-    expect(nestedModel.cellBorders[0].left).toBeNull();
-    expect(nestedModel.cellBorders[2].left).toBeNull();
-    expect(nestedModel.cellBorders[1].right).toBeNull();
-    expect(nestedModel.cellBorders[3].right).toBeNull();
+    // Scenario B: A nested grid WITH explicit perimeters in H and V arrays should honor those perimeters
+    const nestedB = document.createElement("div");
+    nestedB.className = "grid";
+    nestedB.setAttribute("data-column-widths", "fill,fill");
+    nestedB.setAttribute("data-row-heights", "fill,fill");
+    nestedB.setAttribute(
+      "data-edges-h",
+      JSON.stringify([
+        // top perimeter row
+        [
+          { weight: 2, style: "solid", color: "#000" },
+          { weight: 2, style: "solid", color: "#000" },
+        ],
+        // interior boundary row
+        [
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+        ],
+        // bottom perimeter row
+        [
+          { weight: 2, style: "solid", color: "#000" },
+          { weight: 2, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    nestedB.setAttribute(
+      "data-edges-v",
+      JSON.stringify([
+        // first row: left perimeter, interior, right perimeter
+        [
+          { weight: 2, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 2, style: "solid", color: "#000" },
+        ],
+        // second row
+        [
+          { weight: 2, style: "solid", color: "#000" },
+          { weight: 1, style: "solid", color: "#000" },
+          { weight: 2, style: "solid", color: "#000" },
+        ],
+      ])
+    );
+    // Add four cells to nested grid B
+    for (let i = 0; i < 4; i++) {
+      const c = document.createElement("div");
+      c.className = "cell";
+      nestedB.appendChild(c);
+    }
+    leftCell.appendChild(nestedB);
 
-    // But inner edges inside the nested grid should still exist (at least one side assigned)
-    // Shared edge between [0] and [1]
-    const innerTopRight = nestedModel.cellBorders[0].right;
-    const innerTopLeft = nestedModel.cellBorders[1].left;
-    expect(innerTopRight === null && innerTopLeft === null).toBe(false);
+    const nestedModelB = buildRenderModel(nestedB);
+    // Expect explicit perimeters to be present on outer sides
+    expect(nestedModelB.cellBorders[0].top).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[1].top).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[2].bottom).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[3].bottom).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[0].left).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[2].left).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[1].right).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
+    expect(nestedModelB.cellBorders[3].right).toEqual({
+      weight: 2,
+      style: "solid",
+      color: "#000",
+    });
   });
   it("sided edges with gap allow neighbors to differ", () => {
     const grid = document.createElement("div");
